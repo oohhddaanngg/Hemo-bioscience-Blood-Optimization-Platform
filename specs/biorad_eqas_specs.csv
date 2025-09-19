@@ -1,0 +1,49 @@
+customer,event,year,sample_id,sample_type_id,antibody_1,antibody_2,abo,rh,antigens,is_dat_positive
+Bio-Rad EQAS,A,2023,370701,WB15_4ml,Anti-Fya,,B,Positive,Fya-neg,FALSE
+Bio-Rad EQAS,A,2023,370702,WB15_4ml,,,O,Negative,,FALSE
+Bio-Rad EQAS,A,2023,370703,WB15_4ml,Anti-c,,O,Positive,c-neg,FALSE
+Bio-Rad EQAS,A,2023,3707DA,RBC25_2ml,,,O,Positive,c-neg Fya-pos,FALSE
+Bio-Rad EQAS,B,2023,370704,WB15_4ml,,,A,Negative,,FALSE
+Bio-Rad EQAS,B,2023,370705,WB15_4ml,Anti-Jka,,O,Positive,Jka-neg,FALSE
+Bio-Rad EQAS,B,2023,370706,WB15_4ml,,,AB,Positive,,TRUE
+Bio-Rad EQAS,B,2023,3707DB,RBC25_2ml,,,O,Positive,Jka-pos,FALSE
+Bio-Rad EQAS,C,2023,370707,WB15_4ml,Anti-S,,A,Positive,S-neg,FALSE
+Bio-Rad EQAS,C,2023,370708,WB15_4ml,Anti-K,,O,Positive,K-neg,FALSE
+Bio-Rad EQAS,C,2023,370709,WB15_4ml,,,B,Negative,,FALSE
+Bio-Rad EQAS,C,2023,3707DC,RBC25_2ml,,,O,Positive,K-neg S-pos,FALSE
+Bio-Rad EQAS,A,2024,370801,WB15_4ml,Anti-E,,A,Negative,E-neg,FALSE
+Bio-Rad EQAS,A,2024,370802,WB15_4ml,,,B,Positive,,FALSE
+Bio-Rad EQAS,A,2024,370803,WB15_4ml,Anti-s,,O,Positive,s-neg,FALSE
+Bio-Rad EQAS,A,2024,3708DA,RBC25_2ml,,,O,Positive,E-neg s-pos,FALSE
+Bio-Rad EQAS,B,2024,370804,WB15_4ml,,,AB,Positive,,FALSE
+Bio-Rad EQAS,B,2024,370805,WB15_4ml,Anti-D,,O,Negative,,FALSE
+Bio-Rad EQAS,B,2024,370806,WB15_4ml,,,A,Positive,,FALSE
+Bio-Rad EQAS,B,2024,3708DB,RBC25_2ml,,,O,Positive,,FALSE
+Bio-Rad EQAS,C,2024,370807,WB15_4ml,,,O,Positive,,TRUE
+Bio-Rad EQAS,C,2024,370808,WB15_4ml,Anti-c,,B,Positive,c-neg,FALSE
+Bio-Rad EQAS,C,2024,370809,WB15_4ml,Anti-Fyb,,O,Negative,Fyb-neg,FALSE
+Bio-Rad EQAS,C,2024,3708DC,RBC25_2ml,,,B,Positive,c-pos Fyb-neg,FALSE
+Bio-Rad EQAS,A,2025,370901,WB15_4ml,Anti-S,,O,Positive,S-neg,FALSE
+Bio-Rad EQAS,A,2025,370902,WB15_4ml,Anti-c,,A,Positive,c-neg,FALSE
+Bio-Rad EQAS,A,2025,370903,WB15_4ml,,,B,Negative,,FALSE
+Bio-Rad EQAS,A,2025,3709DA,RBC25_2ml,,,O,Negative,S-neg c-pos,FALSE
+Bio-Rad EQAS,B,2025,370904,WB15_4ml,Anti-Fya,,A,Positive,Fya-neg,FALSE
+Bio-Rad EQAS,B,2025,370905,WB15_4ml,Anti-K,Anti-Jka,O,Negative,K-neg Jka-neg,FALSE
+Bio-Rad EQAS,B,2025,370906,WB15_4ml,,,AB,Positive,,FALSE
+Bio-Rad EQAS,B,2025,3709DB,RBC25_2ml,,,A,Positive,Fya-pos K-neg Jka-neg,FALSE
+Bio-Rad EQAS,C,2025,370907,WB15_4ml,,,B,Positive,,TRUE
+Bio-Rad EQAS,C,2025,370908,WB15_4ml,Anti-K,,O,Positive,K-neg,FALSE
+Bio-Rad EQAS,C,2025,370909,WB15_4ml,Anti-D,,A,Negative,,FALSE
+Bio-Rad EQAS,C,2025,3709DC,RBC25_2ml,,,O,Positive,K-neg,FALSE
+Bio-Rad EQAS,A,2026,371001,WB15_4ml,,,,,,
+Bio-Rad EQAS,A,2026,371002,WB15_4ml,,,,,,
+Bio-Rad EQAS,A,2026,371003,WB15_4ml,,,,,,
+Bio-Rad EQAS,A,2026,3710DA,RBC25_2ml,,,,,,
+Bio-Rad EQAS,B,2026,371004,WB15_4ml,,,,,,
+Bio-Rad EQAS,B,2026,371005,WB15_4ml,,,,,,
+Bio-Rad EQAS,B,2026,371006,WB15_4ml,,,,,,
+Bio-Rad EQAS,B,2026,3710DB,RBC25_2ml,,,,,,
+Bio-Rad EQAS,C,2026,371007,WB15_4ml,,,,,,
+Bio-Rad EQAS,C,2026,371008,WB15_4ml,,,,,,
+Bio-Rad EQAS,C,2026,371009,WB15_4ml,,,,,,
+Bio-Rad EQAS,C,2026,3710DC,RBC25_2ml,,,,,,
