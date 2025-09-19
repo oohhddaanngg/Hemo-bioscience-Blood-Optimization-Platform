@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Blood Optimization Platform v0.3.7 - Megedition | Hemo bioscience</title>
+    <title>Blood Optimization Platform v0.3.8 - Megedition | Hemo bioscience</title>
     <style>
       * {
         margin: 0;
@@ -1730,7 +1730,7 @@
       <!-- Header Bar -->
       <header class="header-bar">
         <div class="header-left">
-          <div class="version-badge">v0.3.7 - Megedition</div>
+          <div class="version-badge">v0.3.8 - Megedition</div>
           <div class="active-users" id="active-users" style="display: none">
             <span>👤 Active:</span>
             <span id="active-user-list">-</span>
@@ -4180,6 +4180,276 @@
         }
       }
 
+      // ===============================
+      // Data Migration Utilities
+      // ===============================
+
+      function migrateDataFormats(data) {
+        console.log('Starting data format migration...');
+
+        // Helper function to convert antigen string to new format
+        const convertAntigens = (antigenString) => {
+          if (typeof antigenString !== 'string' || !antigenString.trim()) {
+            return []; // Return empty array if not a string or is empty
+          }
+
+          const result = [];
+          // Handle formats like "A1-pos K-neg", "K-neg Jka-pos", etc.
+          const antigenPairs = antigenString.split(/\s+/);
+
+          for (const pair of antigenPairs) {
+            if (pair.includes('-')) {
+              const [antigen, status] = pair.split('-');
+              if (antigen && status) {
+                const formattedStatus = status.toLowerCase() === 'pos' ? 'Positive' : 'Negative';
+                result.push({ antigen: antigen.trim(), status: formattedStatus });
+              }
+            }
+          }
+
+          return result;
+        };
+
+        // Helper function to convert legacy antibody fields to new format
+        const convertAntibodies = (antibody1, antibody2) => {
+          const result = [];
+          if (typeof antibody1 === 'string' && antibody1.trim()) {
+            result.push(antibody1.trim());
+          }
+          if (typeof antibody2 === 'string' && antibody2.trim()) {
+            result.push(antibody2.trim());
+          }
+          return result;
+        };
+
+        // Helper function to convert DAT status
+        const convertDatStatus = (isDatPositive) => {
+          if (typeof isDatPositive === 'string') {
+            return isDatPositive.toUpperCase() === 'TRUE' ? 'Positive' : 'Negative';
+          }
+          return 'Negative'; // Default
+        };
+
+        // Process customerSpecs
+        if (data.customerSpecs && Array.isArray(data.customerSpecs)) {
+          for (const spec of data.customerSpecs) {
+            // Migrate antibodies from antibody_1/antibody_2 to antibodies array
+            if (spec.antibody_1 !== undefined || spec.antibody_2 !== undefined) {
+              spec.antibodies = convertAntibodies(spec.antibody_1, spec.antibody_2);
+              delete spec.antibody_1;
+              delete spec.antibody_2;
+            }
+
+            // Migrate antigens from string to array format
+            if (typeof spec.antigens === 'string') {
+              spec.antigens = convertAntigens(spec.antigens);
+            }
+
+            // Migrate DAT status
+            if (spec.is_dat_positive !== undefined) {
+              spec.dat_status = convertDatStatus(spec.is_dat_positive);
+              delete spec.is_dat_positive;
+            }
+          }
+          console.log(`Migrated ${data.customerSpecs.length} customer specifications`);
+        }
+
+        // Process futureSpecs.entries
+        if (
+          data.futureSpecs &&
+          data.futureSpecs.entries &&
+          Array.isArray(data.futureSpecs.entries)
+        ) {
+          for (const spec of data.futureSpecs.entries) {
+            // Migrate antibodies from antibody_1/antibody_2 to antibodies array
+            if (spec.antibody_1 !== undefined || spec.antibody_2 !== undefined) {
+              spec.antibodies = convertAntibodies(spec.antibody_1, spec.antibody_2);
+              delete spec.antibody_1;
+              delete spec.antibody_2;
+            }
+
+            // Migrate antigens from string to array format
+            if (typeof spec.antigens === 'string') {
+              spec.antigens = convertAntigens(spec.antigens);
+            }
+
+            // Migrate DAT status
+            if (spec.is_dat_positive !== undefined) {
+              spec.dat_status = convertDatStatus(spec.is_dat_positive);
+              delete spec.is_dat_positive;
+            }
+          }
+          console.log(`Migrated ${data.futureSpecs.entries.length} future specifications`);
+        }
+
+        // Process futureSpecs.versions (historical data)
+        if (data.futureSpecs && data.futureSpecs.versions) {
+          Object.keys(data.futureSpecs.versions).forEach((versionKey) => {
+            const versionData = data.futureSpecs.versions[versionKey];
+            if (versionData.samples && Array.isArray(versionData.samples)) {
+              for (const spec of versionData.samples) {
+                // Apply same migrations to historical versions
+                if (spec.antibody_1 !== undefined || spec.antibody_2 !== undefined) {
+                  spec.antibodies = convertAntibodies(spec.antibody_1, spec.antibody_2);
+                  delete spec.antibody_1;
+                  delete spec.antibody_2;
+                }
+
+                if (typeof spec.antigens === 'string') {
+                  spec.antigens = convertAntigens(spec.antigens);
+                }
+
+                if (spec.is_dat_positive !== undefined) {
+                  spec.dat_status = convertDatStatus(spec.is_dat_positive);
+                  delete spec.is_dat_positive;
+                }
+              }
+            }
+          });
+          console.log(
+            `Migrated ${Object.keys(data.futureSpecs.versions).length} future spec versions`
+          );
+        }
+
+        console.log('Data format migration completed');
+        return data;
+      }
+
+      // ===============================
+      // Data Migration Utilities
+      // ===============================
+
+      function migrateDataFormats(data) {
+        console.log('Starting data format migration...');
+
+        // Helper function to convert antigen string to new format
+        const convertAntigens = (antigenString) => {
+          if (typeof antigenString !== 'string' || !antigenString.trim()) {
+            return []; // Return empty array if not a string or is empty
+          }
+
+          const result = [];
+          // Handle formats like "A1-pos K-neg", "K-neg Jka-pos", etc.
+          const antigenPairs = antigenString.split(/\s+/);
+
+          for (const pair of antigenPairs) {
+            if (pair.includes('-')) {
+              const [antigen, status] = pair.split('-');
+              if (antigen && status) {
+                const formattedStatus = status.toLowerCase() === 'pos' ? 'Positive' : 'Negative';
+                result.push({ antigen: antigen.trim(), status: formattedStatus });
+              }
+            }
+          }
+
+          return result;
+        };
+
+        // Helper function to convert legacy antibody fields to new format
+        const convertAntibodies = (antibody1, antibody2) => {
+          const result = [];
+          if (typeof antibody1 === 'string' && antibody1.trim()) {
+            result.push(antibody1.trim());
+          }
+          if (typeof antibody2 === 'string' && antibody2.trim()) {
+            result.push(antibody2.trim());
+          }
+          return result;
+        };
+
+        // Helper function to convert DAT status
+        const convertDatStatus = (isDatPositive) => {
+          if (typeof isDatPositive === 'string') {
+            return isDatPositive.toUpperCase() === 'TRUE' ? 'Positive' : 'Negative';
+          }
+          return 'Negative'; // Default
+        };
+
+        // Process customerSpecs
+        if (data.customerSpecs && Array.isArray(data.customerSpecs)) {
+          for (const spec of data.customerSpecs) {
+            // Migrate antibodies from antibody_1/antibody_2 to antibodies array
+            if (spec.antibody_1 !== undefined || spec.antibody_2 !== undefined) {
+              spec.antibodies = convertAntibodies(spec.antibody_1, spec.antibody_2);
+              delete spec.antibody_1;
+              delete spec.antibody_2;
+            }
+
+            // Migrate antigens from string to array format
+            if (typeof spec.antigens === 'string') {
+              spec.antigens = convertAntigens(spec.antigens);
+            }
+
+            // Migrate DAT status
+            if (spec.is_dat_positive !== undefined) {
+              spec.dat_status = convertDatStatus(spec.is_dat_positive);
+              delete spec.is_dat_positive;
+            }
+          }
+          console.log(`Migrated ${data.customerSpecs.length} customer specifications`);
+        }
+
+        // Process futureSpecs.entries
+        if (
+          data.futureSpecs &&
+          data.futureSpecs.entries &&
+          Array.isArray(data.futureSpecs.entries)
+        ) {
+          for (const spec of data.futureSpecs.entries) {
+            // Migrate antibodies from antibody_1/antibody_2 to antibodies array
+            if (spec.antibody_1 !== undefined || spec.antibody_2 !== undefined) {
+              spec.antibodies = convertAntibodies(spec.antibody_1, spec.antibody_2);
+              delete spec.antibody_1;
+              delete spec.antibody_2;
+            }
+
+            // Migrate antigens from string to array format
+            if (typeof spec.antigens === 'string') {
+              spec.antigens = convertAntigens(spec.antigens);
+            }
+
+            // Migrate DAT status
+            if (spec.is_dat_positive !== undefined) {
+              spec.dat_status = convertDatStatus(spec.is_dat_positive);
+              delete spec.is_dat_positive;
+            }
+          }
+          console.log(`Migrated ${data.futureSpecs.entries.length} future specifications`);
+        }
+
+        // Process futureSpecs.versions (historical data)
+        if (data.futureSpecs && data.futureSpecs.versions) {
+          Object.keys(data.futureSpecs.versions).forEach((versionKey) => {
+            const versionData = data.futureSpecs.versions[versionKey];
+            if (versionData.samples && Array.isArray(versionData.samples)) {
+              for (const spec of versionData.samples) {
+                // Apply same migrations to historical versions
+                if (spec.antibody_1 !== undefined || spec.antibody_2 !== undefined) {
+                  spec.antibodies = convertAntibodies(spec.antibody_1, spec.antibody_2);
+                  delete spec.antibody_1;
+                  delete spec.antibody_2;
+                }
+
+                if (typeof spec.antigens === 'string') {
+                  spec.antigens = convertAntigens(spec.antigens);
+                }
+
+                if (spec.is_dat_positive !== undefined) {
+                  spec.dat_status = convertDatStatus(spec.is_dat_positive);
+                  delete spec.is_dat_positive;
+                }
+              }
+            }
+          });
+          console.log(
+            `Migrated ${Object.keys(data.futureSpecs.versions).length} future spec versions`
+          );
+        }
+
+        console.log('Data format migration completed');
+        return data;
+      }
+
       async function loadData() {
         if (!APP_STATE.dirHandle) return;
 
@@ -4190,33 +4460,41 @@
           const text = await file.text();
           const data = JSON.parse(text);
 
+          // *** MIGRATE DATA FORMATS ***
+          const migratedData = migrateDataFormats(data);
+
           // Check for different user
-          if (data.lastModifiedBy && data.lastModifiedBy !== APP_STATE.currentUser) {
+          if (
+            migratedData.lastModifiedBy &&
+            migratedData.lastModifiedBy !== APP_STATE.currentUser
+          ) {
             // Create backup before loading
             await createAutomaticBackup('different_user_detected');
           }
 
           // Load data into state
-          APP_STATE.customers = data.customers || [];
-          APP_STATE.sampleDefinitions = data.sampleDefinitions || [];
-          APP_STATE.customerSpecs = data.customerSpecs || [];
-          APP_STATE.quantities = data.quantities || [];
-          APP_STATE.antibodies = data.antibodies || [];
-          APP_STATE.bloodUnits = data.bloodUnits || [];
-          APP_STATE.manufacturingCalendar = data.manufacturingCalendar || [];
+          APP_STATE.customers = migratedData.customers || [];
+          APP_STATE.sampleDefinitions = migratedData.sampleDefinitions || [];
+          APP_STATE.customerSpecs = migratedData.customerSpecs || [];
+          APP_STATE.quantities = migratedData.quantities || [];
+          APP_STATE.antibodies = migratedData.antibodies || [];
+          APP_STATE.bloodUnits = migratedData.bloodUnits || [];
+          APP_STATE.manufacturingCalendar = migratedData.manufacturingCalendar || [];
           // Generate standing orders for current month after data load
-          APP_STATE.activityLog = data.activityLog || [];
-          APP_STATE.decisions = data.decisions || [];
-          APP_STATE.activeUsers = data.activeUsers || [];
-          APP_STATE.futureSpecs = data.futureSpecs || { entries: [], versions: {}, metadata: {} };
+          APP_STATE.activityLog = migratedData.activityLog || [];
+          APP_STATE.decisions = migratedData.decisions || [];
+          APP_STATE.activeUsers = migratedData.activeUsers || [];
+          APP_STATE.futureSpecs = migratedData.futureSpecs || {
+            entries: [],
+            versions: {},
+            metadata: {},
+          };
           // Ensure future specs display updates after data load
-          if (APP_STATE.futureSpecs.entries && APP_STATE.futureSpecs.entries.length > 0) {
-            setTimeout(() => {
-              if (document.getElementById('future-specs-list')) {
-                updateFutureSpecsList();
-              }
-            }, 100);
-          }
+          setTimeout(() => {
+            if (document.getElementById('future-specs-list')) {
+              updateFutureSpecsList();
+            }
+          }, 100);
           if (APP_STATE.futureSpecs.entries && APP_STATE.futureSpecs.entries.length > 0) {
             setTimeout(() => {
               if (document.getElementById('future-specs-list')) {
@@ -4226,7 +4504,7 @@
           }
 
           // Update active users list
-          updateActiveUsers(data.lastModifiedBy);
+          updateActiveUsers(migratedData.lastModifiedBy);
 
           // Update all displays
           updateDashboard();
