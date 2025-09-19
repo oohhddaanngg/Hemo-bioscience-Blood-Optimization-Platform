@@ -30,13 +30,33 @@ Allocation ledger system introduced.
 Multi-unit cohort consistency enforced.
 Decision logging + Activity Log integration.
 Year-aware BUP generation (customer/event/year now tracked).
+
 🔜 Next Planned Work
-Enhance Future Specs optimization algorithm.
-Implement phenotype cohort tracking for multi-unit allocations.
-Add cost analysis for antigen specifications ($35 per antigen).
-Build enhanced reporting features (including BUP export).
-Develop historical trend analysis.
-Add vendor management module.
+🔜 Next Planned Work
+
+**Phase 1: Forecasting & Data Infrastructure**
+-   **Build Historical Quantities Module:**
+    -   Develop the UI and backend logic for the "Historical Quantities" modal to allow for the input and storage of past order data.
+-   **Create Forecasting Module:**
+    -   Implement a "Forecasted Order Quantities" modal that uses data from both historical and current year orders to project future needs (e.g., for 2026).
+-   **Integrate Forecasting with Future Specs:**
+    -   Connect the "Future Specifications" module to the new forecasting module, so it can automatically use projected quantities for planning.
+
+**Phase 2: Supplier & Cost Management**
+-   **Build Blood Suppliers Module:**
+    -   Repurpose the "Vendors" placeholder.
+    -   Create a modal that allows for entering detailed, customizable pricing structures for each blood supplier (e.g., cost per antigen, rarity surcharges, blood type costs).
+    -   Integrate this data to calculate and display potential order costs from various suppliers.
+-   **Build Antibody Suppliers Module:**
+    -   Create a new modal to manage antibody suppliers, including their product offerings, price per ml, and bulk discount rules.
+
+**Phase 3: UI/UX & Cleanup**
+-   **Rename Modals for Clarity:**
+    -   Rename "Order Quantities" to "Current Year Order Quantities".
+    -   Rename "Specifications" to "Confirmed Specifications".
+    -   Rename "Vendors" to "Blood Suppliers".
+-   **Remove Redundant Modals:**
+    -   Remove the "Specifications Generator" placeholder, as its functionality is handled by the "Future Specifications" module.
 
 🧭 Notes for Developers
 Refer to Project Instructions for dev rules and workflow.
