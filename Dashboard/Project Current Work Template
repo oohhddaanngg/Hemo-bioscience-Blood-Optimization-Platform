@@ -1,0 +1,63 @@
+# Blood Optimization Platform — Project Current Work
+
+## 📌 Current Version
+
+* Version: `v0.x.x`
+* Release date: `YYYY-MM-DD`
+
+---
+
+## 🚧 Active Work in Progress
+
+* [ ] Feature or bug fix #1
+* [ ] Feature or bug fix #2
+* [ ] Feature or bug fix #3
+
+---
+
+## 🧪 Testing Focus
+
+* [ ] Test case 1 (short description)
+* [ ] Test case 2
+* [ ] Test case 3
+
+---
+
+## ✅ Recent Completions
+
+* Item A (completed date)
+* Item B (completed date)
+* Item C (completed date)
+
+---
+
+## 🔜 Next Planned Work
+
+* Planned feature #1
+* Planned feature #2
+* Planned bug fix #3
+
+---
+
+## 🧭 Notes for Developers
+
+* Refer to **Project Instructions** for dev rules and workflow.
+* Refer to **Project Quick Reference** for business logic cheat sheet.
+* Refer to **Project Reference Briefing** for full technical + business context.
+* Do not edit those documents here — this file is the **only one to update regularly**.
+
+---
+
+## 🗂 Version Changelog
+
+### v0.x.x — YYYY-MM-DD
+
+* Summary of changes (short bullet points)
+
+### v0.(previous) — YYYY-MM-DD
+
+* Summary of changes
+
+### v0.(older) — YYYY-MM-DD
+
+* Summary of changes
