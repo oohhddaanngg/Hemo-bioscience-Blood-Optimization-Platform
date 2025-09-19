@@ -4803,6 +4803,7 @@
         if (panelName === 'bup') {
           populateBUPEvents();
         } else if (panelName === 'future-specs') {
+          runFutureSpecOptimization();
           updateFutureSpecsList();
         } else if (panelName === 'activity') {
           // default to All Activity on open; refresh Decisions as well
@@ -9063,6 +9064,255 @@
           });
         });
       }
+
+      // =======================================
+      // Future Spec Optimization Engine
+      // =======================================
+
+      function runFutureSpecOptimization() {
+        console.log('Running Future Spec Optimization...');
+        const futureSpecs = APP_STATE.futureSpecs.entries;
+        if (!futureSpecs || futureSpecs.length === 0) {
+          console.log('No future specs to optimize.');
+          return;
+        }
+
+        // Clear previous suggestions
+        futureSpecs.forEach((spec) => {
+          spec.optimizationSuggestions = [];
+        });
+
+        // Process each future spec
+        for (const spec of futureSpecs) {
+          optimizeFutureSpecSample(spec);
+        }
+
+        console.log('Future Spec Optimization completed');
+      }
+
+      function optimizeFutureSpecSample(spec) {
+        if (!spec || spec.abo === 'TBD' || spec.rh === 'TBD') {
+          // Skip specs that don't have blood types assigned yet
+          return;
+        }
+
+        const fulfillmentWindow = calculateSpecFulfillmentWindow(spec);
+        if (!fulfillmentWindow) {
+          return;
+        }
+
+        // Search current inventory for compatible units
+        searchInventoryForSpec(spec, fulfillmentWindow);
+
+        // Search manufacturing calendar for standing orders
+        searchStandingOrdersForSpec(spec, fulfillmentWindow);
+
+        // Search other PT events for sharing opportunities
+        searchPTEventsForSpec(spec, fulfillmentWindow);
+      }
+
+      function calculateSpecFulfillmentWindow(spec) {
+        // For future specs, we need to estimate dates based on typical patterns
+        // In a real implementation, these dates would come from scheduling data
+
+        // Estimate ship date as beginning of the year + event quarter
+        const shipDate = new Date(spec.year, (parseInt(spec.event.replace(/\D/g, '')) - 1) * 3, 1);
+
+        // Estimate expiration date (typically 51 days after ship)
+        const expirationDate = new Date(shipDate);
+        expirationDate.setDate(expirationDate.getDate() + 51);
+
+        // Calculate acceptable window using 77-day rule
+        const earliestBleed = new Date(expirationDate);
+        earliestBleed.setDate(earliestBleed.getDate() - 77); // Max 77 days before expiration
+
+        const latestBleed = new Date(shipDate);
+        latestBleed.setDate(latestBleed.getDate() - 10); // Manufacturing buffer
+
+        return {
+          earliest: earliestBleed,
+          latest: latestBleed,
+          ship: shipDate,
+          expiration: expirationDate,
+        };
+      }
+
+      function searchInventoryForSpec(spec, window) {
+        if (!APP_STATE.bloodUnits || APP_STATE.bloodUnits.length === 0) {
+          return;
+        }
+
+        APP_STATE.bloodUnits.forEach((unit) => {
+          if (isBloodUnitCompatible(spec, unit) && isDateInWindow(unit.bleed_date, window)) {
+            addOptimizationSuggestion(spec, {
+              sourceType: 'Current Inventory',
+              sourceId: unit.id,
+              description: `Inventory Unit ${unit.id}`,
+              details: `Bleed: ${unit.bleed_date}, Type: ${unit.abo} ${unit.rh}`,
+              compatibility: 'Exact Match',
+              volume: unit.volume || 180,
+              savings: calculateUnitSavings(unit),
+            });
+          }
+        });
+      }
+
+      function searchStandingOrdersForSpec(spec, window) {
+        // Check HQC standing orders
+        const hqcCompatibility = checkHQCCompatibility(spec);
+        if (hqcCompatibility.compatible) {
+          addOptimizationSuggestion(spec, {
+            sourceType: 'Standing Order',
+            sourceId: `HQC-${hqcCompatibility.cellId}`,
+            description: `HQC-${hqcCompatibility.cellId} Standing Order`,
+            details: `${hqcCompatibility.description} - Overage available`,
+            compatibility: hqcCompatibility.exactMatch
+              ? 'Exact Match'
+              : 'Compatible with flexibility',
+            volume: 180, // Standard unit volume
+            savings: calculateStandingOrderSavings(),
+          });
+        }
+
+        // Check other standing orders (C3, Korea, MQC)
+        checkOtherStandingOrders(spec, window);
+      }
+
+      function searchPTEventsForSpec(spec, window) {
+        // Look for other PT events in the same timeframe that might have overage
+        const otherPTEvents = APP_STATE.futureSpecs.entries.filter(
+          (otherSpec) =>
+            otherSpec.customer !== spec.customer &&
+            otherSpec.abo !== 'TBD' &&
+            isSpecCompatible(spec, otherSpec)
+        );
+
+        otherPTEvents.forEach((otherSpec) => {
+          const otherWindow = calculateSpecFulfillmentWindow(otherSpec);
+          if (otherWindow && isWindowOverlapping(window, otherWindow)) {
+            addOptimizationSuggestion(spec, {
+              sourceType: 'PT Event Sharing',
+              sourceId: `${otherSpec.customer}_${otherSpec.event}_${otherSpec.year}`,
+              description: `${otherSpec.customer} ${otherSpec.event} ${otherSpec.year}`,
+              details: `Compatible PT event with potential overage`,
+              compatibility: 'Cross-Event Compatible',
+              volume: 90, // Estimate half unit sharing
+              savings: calculatePTSharingSavings(),
+            });
+          }
+        });
+      }
+
+      // Helper functions for compatibility checking (reusing existing logic)
+      function isBloodUnitCompatible(spec, unit) {
+        // Reuse existing compatibility logic
+        const specABO = spec.abo || '';
+        const specRh = spec.rh || '';
+        const unitABO = unit.abo || '';
+        const unitRh = unit.rh || '';
+
+        // Handle blank specs as "any type acceptable"
+        const isABOFlexible = !specABO || specABO === '';
+        const isRhFlexible = !specRh || specRh === '';
+
+        // Check ABO compatibility
+        const aboCompatible =
+          isABOFlexible ||
+          specABO === unitABO ||
+          specABO === 'AB' || // AB can receive any
+          (specABO === 'A' && unitABO === 'O') || // A can receive O
+          (specABO === 'B' && unitABO === 'O'); // B can receive O
+
+        // Check Rh compatibility
+        const rhCompatible = isRhFlexible || specRh === unitRh || specRh === 'Positive'; // Pos can receive Neg
+
+        return aboCompatible && rhCompatible;
+      }
+
+      function checkHQCCompatibility(spec) {
+        const specABO = spec.abo || '';
+        const specRh = spec.rh || '';
+        const specAntigens = spec.antigens || [];
+
+        // Check HQC-1: AsubB Pos (RhD+ required; others flexible)
+        if ((specABO === 'AsubB' || specABO === '') && (specRh === 'Positive' || specRh === '')) {
+          return {
+            compatible: true,
+            cellId: 1,
+            description: 'AsubB Pos',
+            exactMatch: specABO === 'AsubB',
+          };
+        }
+
+        // Check HQC-2: O Pos, R1r, Fya− (Rh fixed: D+, C+, E−, c+, e+; Fy(a−))
+        if ((specABO === 'O' || specABO === '') && (specRh === 'Positive' || specRh === '')) {
+          const needsFyaNeg = specAntigens.some(
+            (ag) => ag.antigen === 'Fya' && ag.status === 'Negative'
+          );
+          if (needsFyaNeg || specAntigens.length === 0) {
+            return {
+              compatible: true,
+              cellId: 2,
+              description: 'O Pos R1r Fya-',
+              exactMatch: specABO === 'O',
+            };
+          }
+        }
+
+        // Check HQC-3: A1 Neg, rr (Rh fixed: D−, C−, E−, c+, e+)
+        if (
+          (specABO === 'A1' || specABO === 'A' || specABO === '') &&
+          (specRh === 'Negative' || specRh === '')
+        ) {
+          return {
+            compatible: true,
+            cellId: 3,
+            description: 'A1 Neg rr',
+            exactMatch: specABO === 'A1',
+          };
+        }
+
+        return { compatible: false };
+      }
+
+      function checkOtherStandingOrders(spec, window) {
+        // Simplified check for other standing orders
+        // In production, this would check C3, Korea, and MQC compatibility
+      }
+
+      function isSpecCompatible(spec1, spec2) {
+        return isBloodUnitCompatible(spec1, { abo: spec2.abo, rh: spec2.rh });
+      }
+
+      function isDateInWindow(dateStr, window) {
+        if (!dateStr || !window) return false;
+        const date = new Date(dateStr);
+        return date >= window.earliest && date <= window.latest;
+      }
+
+      function isWindowOverlapping(window1, window2) {
+        return window1.latest >= window2.earliest && window2.latest >= window1.earliest;
+      }
+
+      function addOptimizationSuggestion(spec, suggestion) {
+        if (!spec.optimizationSuggestions) {
+          spec.optimizationSuggestions = [];
+        }
+        spec.optimizationSuggestions.push(suggestion);
+      }
+
+      function calculateUnitSavings(unit) {
+        return { cost: 450, description: 'Avoids new unit purchase' };
+      }
+
+      function calculateStandingOrderSavings() {
+        return { cost: 350, description: 'Uses existing overage' };
+      }
+
+      function calculatePTSharingSavings() {
+        return { cost: 300, description: 'Cross-event sharing' };
+      }
+
       // ===============================
       // Future Specifications Functions
       // ===============================
@@ -9306,8 +9556,43 @@
         <div style="padding: 1rem;">
           <p>Samples: ${total} (${assigned} assigned, ${total - assigned} TBD)</p>
           <p>Quantity: ${metadata.quantity || 'Not set'}</p>
-          <p>Version: v${metadata.currentVersion || 1}</p>
-          <div class="btn-group mt-2">
+          <p>Version: v${metadata.currentVersion || 1}</p>`;
+
+          // Add optimization suggestions if they exist
+          const specsWithSuggestions = specs.filter(
+            (s) => s.optimizationSuggestions && s.optimizationSuggestions.length > 0
+          );
+          if (specsWithSuggestions.length > 0) {
+            const totalSuggestions = specsWithSuggestions.reduce(
+              (sum, s) => sum + s.optimizationSuggestions.length,
+              0
+            );
+            html += `
+            <div class="alert alert-info" style="margin: 0.5rem 0; padding: 0.75rem; background: #e3f2fd; border: 1px solid #1976d2; border-radius: 4px;">
+              <strong>💡 ${totalSuggestions} Optimization Opportunities Found!</strong><br>
+              <small>Compatible blood sources identified for ${specsWithSuggestions.length} samples</small>
+              <details style="margin-top: 0.5rem;">
+                <summary style="cursor: pointer; font-weight: 500;">View Suggestions</summary>
+                <div style="margin-top: 0.5rem;">`;
+
+            specsWithSuggestions.forEach((spec) => {
+              html += `<div style="margin: 0.5rem 0; padding: 0.5rem; background: white; border-radius: 3px;">
+                <strong>Sample ${spec.sample_id} (${spec.abo} ${spec.rh}):</strong><br>`;
+
+              spec.optimizationSuggestions.forEach((suggestion) => {
+                html += `<div style="margin-left: 1rem; margin-top: 0.25rem;">
+                  • <strong>${suggestion.sourceType}:</strong> ${suggestion.description}<br>
+                  <small style="color: #666;">${suggestion.details} | ${suggestion.compatibility}</small>
+                </div>`;
+              });
+              html += '</div>';
+            });
+
+            html += `</div></details>
+            </div>`;
+          }
+
+          html += `<div class="btn-group mt-2">
             <button class="btn btn-primary btn-sm" onclick="optimizeFutureSpec('${key}')">
               Optimize
             </button>
