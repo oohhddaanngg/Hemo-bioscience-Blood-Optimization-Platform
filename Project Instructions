@@ -1,0 +1,242 @@
+Blood Optimization Platform — Project Instructions (Stable Reference)
+⚠️ CRITICAL DEVELOPMENT RULES
+Code Assistance & Review
+Always search the actual HTML file before referencing or modifying code.
+
+
+Use precise line numbers or unique search strings when citing code.
+
+
+If something is not found, state clearly: “I cannot find [X] in the actual file” and request clarification.
+
+
+Never guess code structure or make assumptions about function names.
+
+
+When file is large, use targeted searches (e.g., logDecision, switchPanel, updateFutureSpecsList).
+
+
+Before providing modifications, show current code and proposed code in separate blocks.
+
+
+For insertions, provide context before & after the insertion point.
+
+
+After any change, conduct a senior developer–level code review (accuracy, completeness, quality).
+
+
+No features, instructions, or modules should be removed without explicit approval.
+
+
+All removals or redesigns must include a Current → Proposed comparison.
+
+
+File Naming & Versioning
+Minor updates: ... v0.3.6.html, ... v0.3.7.html, etc.
+
+
+Major updates: ... v0.4.0.html, ... v0.5.0.html.
+
+
+v1.0.0 = first production release (live).
+
+
+Always keep old versions; no overwriting.
+
+
+
+Technical Architecture
+Platform: Single-page application (SPA)
+
+
+Frontend: HTML5 / CSS3 / Vanilla JavaScript
+
+
+Storage: Chrome File System Access API (no backend)
+
+
+Data Format: CSV files for all storage and exchange
+
+
+Deployment: Self-contained single HTML file (~6k+ lines)
+
+
+Key Modules
+Manufacturing Calendar — Tracks all blood deliveries and production schedules.
+
+
+Master Schedule — Lists all PT events with required specifications.
+
+
+BUP Generator — Core optimization engine.
+
+
+Sharing Algorithm — Identifies cross-product sharing opportunities.
+
+
+Decision Log & Activity Log — Audit trail of allocations and choices.
+
+
+Inventory & Data Manager — Handles specs, quantities, and persistence.
+
+
+Future Specifications Module — Enables planning and optimization of future PT events.
+
+
+
+Core Business Logic
+The 77-Day Rule
+Red cells hemolyze at 78 days in Alsever’s solution.
+
+
+Standard planning: Expiration − 70 days = bleed date.
+
+
+Optimization window: Can extend to 77 days for sharing.
+
+
+Per-event windows:
+
+
+Earliest = Bleed − 7 days
+
+
+Cross-check against Expiration − 77 days
+
+
+Latest = Ship − 10 days
+
+
+Blood Type Matching
+Exact Match: ABO and Rh must match unless special rules apply.
+
+
+Blank ABO/Rh = Accept ANY type.
+
+
+Blank antigens = Accept ANY antigen profile.
+
+
+DAT Negative = Any ABO/Rh acceptable.
+
+
+DAT IgG Positive = Any ABO with RhD+ required.
+
+
+C3 Control = Accepts O Pos or O Neg.
+
+
+Sharing Priority
+Standing Orders First — Overage otherwise wasted.
+
+
+PT Events Second — Must work within fixed schedules.
+
+
+Within each category: Prioritize by logistics/proximity.
+
+
+Allocation Rules
+No double allocation — All blood units must be tracked globally.
+
+
+Normal Allocation: One unit can serve multiple samples in same event.
+
+
+Self-Sharing (Prohibited): PT event cannot donate blood to itself.
+
+
+Multi-Unit Cohorts: All units must have identical phenotype when antigens specified.
+
+
+
+Data Structures (Reference)
+Allocation Ledger
+APP_STATE.allocations = [{
+  id: string,
+  source_id: string,
+  source_kind: 'standing_order' | 'pt_event',
+  target_id: string,
+  event_from: string,
+  event_to: string,
+  units: number,
+  volume_min: number,
+  volume_max: number,
+  cohort_vector: object,
+  compatibilityReport: object,
+  window_ok: boolean,
+  priority_tier: number,
+  reason: string
+}]
+
+Decision Log
+APP_STATE.decisions = [{
+  timestamp: string,
+  user: string,
+  type: string,
+  summary: string,
+  context: object
+}]
+
+Future Specifications
+APP_STATE.futureSpecs = {
+  entries: [],      // Array of spec objects
+  versions: {},     // Version history
+  metadata: {}      // Indexed by customer_event_year
+}
+
+
+Development Guidelines
+When Adding Features
+Add refresh calls in switchPanel() for new panels.
+
+
+Add initialization in loadData() to ensure persistence.
+
+
+Use unique element IDs for dynamic UI components:
+
+ function generateElementId() {
+  return 'elem_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+}
+
+
+Antigen/Antibody Format
+Antigens: [ { antigen: 'K', status: 'Positive' }, ... ]
+
+
+Antibodies: [ 'Anti-D', 'Anti-K' ]
+
+
+DAT status: "Positive" or "Negative" (not boolean).
+
+
+Panel Navigation
+Ensure panels always trigger a refresh of data on switch.
+
+
+Use setTimeout wrappers when waiting on DOM elements.
+
+
+
+Critical Rules for AI/LLM Developers
+Never remove features without explicit permission.
+
+
+Always verify actual code before editing.
+
+
+Show before/after blocks for every modification.
+
+
+Test thoroughly — mission-critical blood optimization.
+
+
+Prioritize accuracy over speed — fix one thing correctly rather than breaking multiple.
+
+
+
+Contact
+Project Lead: Matt Hukill, PhD, MS, MBA, MLS(ASCP) SBB
+ Company: Hemo bioscience, Inc.
+ Location: Research Triangle Park, NC
