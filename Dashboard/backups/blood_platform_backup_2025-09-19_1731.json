@@ -1,0 +1,19 @@
+{
+  "version": "0.3.8",
+  "backupDate": "2025-09-19T17:31:35.316Z",
+  "backupReason": "existing_data_reconnection",
+  "customers": [],
+  "sampleDefinitions": [],
+  "customerSpecs": [],
+  "quantities": [],
+  "antibodies": [],
+  "bloodUnits": [],
+  "manufacturingCalendar": [],
+  "activityLog": [],
+  "decisions": [],
+  "futureSpecs": {
+    "entries": [],
+    "versions": {},
+    "metadata": {}
+  }
+}

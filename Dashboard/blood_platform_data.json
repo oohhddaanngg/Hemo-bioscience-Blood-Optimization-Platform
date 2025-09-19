@@ -1,0 +1,26 @@
+{
+  "version": "0.2.0",
+  "lastModified": "2025-08-29T00:26:27.418Z",
+  "lastModifiedBy": "Matt Hukill",
+  "customers": [],
+  "sampleDefinitions": [],
+  "customerSpecs": [],
+  "quantities": [],
+  "antibodies": [],
+  "suppliers": [],
+  "products": [],
+  "activityLog": [
+    {
+      "timestamp": "2025-08-27T10:28:50.449Z",
+      "user": "Matt Hukill",
+      "action": "Connected to storage folder",
+      "details": null
+    },
+    {
+      "timestamp": "2025-08-27T10:28:24.317Z",
+      "user": "Matt Hukill",
+      "action": "Updated user settings",
+      "details": null
+    }
+  ]
+}

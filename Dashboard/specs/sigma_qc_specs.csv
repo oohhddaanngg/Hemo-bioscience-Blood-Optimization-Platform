@@ -1,0 +1,10 @@
+customer,event,year,sample_id,sample_type_id,antibody_1,antibody_2,abo,rh,antigens,is_dat_positive
+Sigma QC,1st,2023,IN230101R,RBC3_2ml,,,B,Pos,Fya-neg,FALSE
+Sigma QC,1st,2023,IN230101S,SER_3ml,Anti-Fya,,,,FALSE
+Sigma QC,1st,2023,IN230101X,RBC3_2ml,,,O,Neg,Fya-pos,FALSE
+Sigma QC,1st,2024,IN240101R,RBC3_2ml,,,O,Pos,C-pos c-neg E-neg e-pos K-neg,FALSE
+Sigma QC,1st,2024,IN240101S,SER_3ml,Anti-E,Anti-K,,,FALSE
+Sigma QC,1st,2024,IN240101X,RBC3_2ml,,,O,Pos,C-neg c-pos E-pos e-neg K-pos,FALSE
+Sigma QC,1st,2025,RBC -- Patient,RBC3_2ml,,,Asub,Neg,C-neg E-neg c-pos e-pos K-neg S-neg,FALSE
+Sigma QC,1st,2025,Serum -- Patient,SER_3ml,Anti-D,Anti-S,,,FALSE
+Sigma QC,1st,2025,RBC -- Donor,RBC3_2ml,,,A1,Neg,S-neg,FALSE
