@@ -1,256 +1,130 @@
 Blood Optimization Platform — Project Current Work
 📌 Current Version
-Version: v0.3.8
-
-
-Release date: 2025-??-?? (fill in actual release date)
-
-
+Version: v0.3.9 (In Development)
+Release date: 2025-??-??
 
 🚧 Active Work in Progress
-Future Specs display initialization bug
-
-
-Specs not showing after page refresh.
-
-
-Fix requires adding updateFutureSpecsList() call in data load and panel switch.
-
-
-Antigen/antibody format migration for legacy data
-
-
-Old string-based antigen/antibody data must be converted to array format.
-
-
+Enhance Future Specs optimization algorithm
+    - Objective: Transform the Future Specs module into a recommendation engine.
+    - Logic: Create a new function `runFutureSpecOptimization()` to scan for and suggest potential ways to fulfill future orders using existing inventory or planned standing orders.
+    - UI Impact: The Future Specs panel will be updated to display these optimization suggestions.
 
 🧪 Testing Focus
+Validate Future Specs optimization algorithm suggestions.
+    - Confirm compatibility checks are accurate.
+    - Verify fulfillment window calculations are correct.
 Confirm allocation ledger prevents double-booking.
-
-
 Verify decision logging captures all critical events.
 
-
-Validate multi-unit cohort consistency (same phenotype across all units).
-
-
-Ensure Future Specs display persists correctly across refreshes.
-
-
-Test legacy data migration to new antigen/antibody format.
-
-
-
 ✅ Recent Completions
+Future Specs display initialization bug fixed.
+Antigen/antibody format migration for legacy data completed.
 Data persistence for Quantities CSV.
-
-
 Blank specification handling (blank = "ANY type acceptable").
-
-
+Data persistence for Quantities CSV.
+Blank specification handling (blank = "ANY type acceptable").
 BUP output now shows ranges (min/max overage).
-
-
 Standing order cell details (HQC-1, HQC-2, HQC-3, etc.) included in allocations.
-
-
 PT-to-PT event sharing implemented.
-
-
 Allocation ledger system introduced.
-
-
 Multi-unit cohort consistency enforced.
-
-
 Decision logging + Activity Log integration.
-
-
 Year-aware BUP generation (customer/event/year now tracked).
-
-
-
 🔜 Next Planned Work
 Enhance Future Specs optimization algorithm.
-
-
 Implement phenotype cohort tracking for multi-unit allocations.
-
-
 Add cost analysis for antigen specifications ($35 per antigen).
-
-
 Build enhanced reporting features (including BUP export).
-
-
 Develop historical trend analysis.
-
-
 Add vendor management module.
-
-
 
 🧭 Notes for Developers
 Refer to Project Instructions for dev rules and workflow.
-
-
 Refer to Project Quick Reference for business logic cheat sheet.
-
-
 Refer to Project Reference Briefing for full technical + business context.
-
-
 Do not edit those documents here — this file is the only one to update regularly.
 
-
-
 🗂 Version Changelog
+v0.3.9 — 2025-??-?? (In Development)
+Highlights:
+    - Began development of the Future Specs optimization algorithm.
+Details:
+    - Fixed: Future Specs panel now displays correctly after a page refresh, even with no entries.
+    - Added: A robust data migration function to automatically convert legacy antigen/antibody and DAT status formats to the new standard upon data load.
+    - Testing:
+        - ✅ Future Specs display persistence verified.
+        - ✅ Legacy data migration for customerSpecs, futureSpecs, and historical versions confirmed.
+---
+
 v0.3.8 — 2025-??-??
 Highlights:
-Implemented allocation ledger system.
-
-
-Added PT-to-PT sharing capability.
-
-
+    - Implemented allocation ledger system.
+    - Added PT-to-PT sharing capability.
 Introduced decision logging with Activity/Decisions tabs.
-
-
 Enforced multi-unit cohort consistency.
-
-
 Added year-aware BUP generation.
-
 
 Details:
 Fixed: Quantities CSV persistence.
-
-
 Fixed: Blank specification handling (ABO/Rh/antigens = ANY when blank).
-
-
 Changed: BUP output now shows ranges (min/max overage).
-
-
 Added: Standing-order cell details (HQC-1, HQC-2, HQC-3).
-
-
 Added: Allocation ledger with global tracking.
-
-
 Added: Decision logging + audit trail.
-
 
 Testing:
 ✅ OneWorld 4th 2025 pulls from HQC-2 & HQC-3.
-
-
 ✅ ISLA 3rd 2025 shares with HQC, Korea, OneWorld 3rd, Aurevia 2nd, API 3rd.
-
-
 ✅ Blank ABO and Rh specs accept any blood type.
-
-
 ✅ PT events share with each other (not themselves).
-
-
 ✅ Allocation ledger prevents double-use.
-
-
 ✅ Decision logging functional.
-
-
 
 v0.3.7 — 2025-??-??
 Highlights:
 Applied HQC date-finding fix to Korea, C3, and MQC standing orders.
-
-
 Removed global “first match” calendar searches — ensured matches remain window-specific.
-
 
 Details:
 Fixed: Calendar logic now only searches within event windows.
-
-
 Fixed: Date matching logic corrected for Korea, C3, MQC events.
-
-
 Improved: Event search functions more reliable across schedules.
-
 
 Testing:
 ✅ Verified HQC/Korea/C3 events pull blood within allowed windows.
-
-
 ✅ No global bleed-date assumptions remain.
-
-
 
 v0.3.6 — 2025-??-??
 Highlights:
 First critical bug-fix release addressing core platform stability.
 
-
 Details:
 Fixed: Quantities CSV now persists after refresh.
-
-
 Fixed: Blank specifications now treated as ANY ABO/Rh/antigens.
-
-
 Changed: BUP output now shows ranges (min → max overage).
-
-
 Added: Allocations specify exact standing-order cell (HQC-1, HQC-2, etc.).
-
 
 Testing:
 ✅ CSV persistence verified across refreshes.
-
-
 ✅ Blank ABO/Rh/antigen fields tested → accept all valid blood.
-
-
 ✅ BUP output validated with min/max ranges.
-
-
 ✅ Standing-order allocations labeled correctly.
-
-
 
 v0.3.5 — 2025-??-?? (Baseline)
 Highlights:
 First functional version of the Blood Optimization Platform.
-
-
 Contained critical bugs requiring immediate fix in later versions.
-
 
 Details:
 Issue: Quantities CSV did not persist after refresh.
-
-
 Issue: Blank ABO/Rh specs not handled as “ANY acceptable.”
-
-
 Issue: BUP output showed single values, not ranges.
-
-
 Issue: Did not specify which standing-order cell was used.
-
-
 Missing: PT-to-PT sharing — only standing orders were checked.
-
 
 Testing:
 ❌ Data persistence failed on refresh.
-
-
 ❌ Blank ABO/Rh caused rejections instead of ANY.
-
-
 ❌ BUP outputs inaccurate (single values only).
-
 
 ❌ No PT-to-PT sharing tested.
