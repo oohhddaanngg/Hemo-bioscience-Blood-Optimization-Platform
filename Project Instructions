@@ -30,6 +30,8 @@ No features, instructions, or modules should be removed without explicit approva
 
 All removals or redesigns must include a Current → Proposed comparison.
 
+All new features must be checked against the `Project Business Logic Manual.md` to ensure adherence to core business rules.
+
 
 File Naming & Versioning
 Minor updates: ... v0.3.6.html, ... v0.3.7.html, etc.
