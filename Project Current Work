@@ -1,161 +1,94 @@
+### **Project Current Work (as of v0.4.5)**
+
 📌 **Current Version**
-* **Version:** v0.4.1 (In Development)
-* **Release date:** 2025-??-??
+* **Version:** v0.4.5 (Stable)
+* **Release date:** 2025-09-22
 
 ---
 
 🚧 **Active Work in Progress**
-* **Manufacturing Calendar Overhaul & Bug Fix:**
-    * **Objective:** Fix the non-interactive calendar and implement a modern, modal-based event creation system. This is the top priority as it blocks a critical user workflow.
-    * **Task 1 (Bug Fix):** Implement on-click functionality for any day on the calendar to open a new "Add Event" modal.
-    * **Task 2 (New Feature):** Within the new modal, provide categorized event options (Manufacturing, Shipping, Administrative, etc.) and fields for event details and optional notes.
-    * **Task 3 (UI Cleanup):** Remove the old, separate manual entry section at the bottom of the calendar view.
+* **Rename & Relocate Modals:**
+    * **Objective:** Reorganize the application's structure to be more intuitive for the user, as per the roadmap. This is the first step in a broader UI/UX refinement pass.
+    * **Task 1 (Rename):** Rename the "Specifications" module to "Historical Specifications."
+    * **Task 2 (Relocate):** Move the "Future Specifications" module from the "Data Manager" section to the "Analysis" section.
 
 ---
 
 🧪 **Testing Focus**
-* Verify that clicking any day on the Manufacturing Calendar opens the "Add Event" modal.
-* Confirm that events can be created, edited, and deleted successfully.
-* Ensure the "Blood Ship Date" and "Blood Arrival Date" events function correctly, as this is critical for the optimization engine.
+* Verify that the "Specifications" sidebar button and panel title are correctly renamed to "Historical Specifications."
+* Confirm that the "Future Specifications" button is no longer under "Data Manager" and appears correctly under the "Analysis" section.
+* Ensure all navigation and panel-switching functionality remains intact after the changes.
 
 ---
 
 ✅ **Recent Completions**
-* Future Specs optimization algorithm implemented.
-* Future Specs display initialization bug fixed.
-* Antigen/antibody format migration for legacy data completed.
-* Data persistence for Quantities CSV.
-* Blank specification handling (blank = "ANY type acceptable").
-* PT-to-PT event sharing implemented.
-* Allocation ledger system introduced.
+* **v0.4.5:** Removed redundant placeholder buttons ("Master Schedule," "Specifications Generator," "Other Raw Materials") from the UI.
+* **v0.4.4:** Streamlined calendar event types in the modal to remove confusing, legacy options.
+* **v0.4.3:** Implemented ship/arrival date tracking for blood shipments in the calendar.
+* **v0.4.2:** Fixed calendar bugs related to initial blank loading and restored the "Delete Event" functionality.
+* **v0.4.1:** Resolved a critical JavaScript `ReferenceError` that was blocking calendar interaction.
+* **v0.4.0:** Completed a full overhaul of the Manufacturing Calendar, replacing the old manual entry form with a modern, on-click modal system.
 
 ---
 
 🔜 **Next Planned Work**
 
-**Priority 0: Foundational Changes**
-
-~~Manufacturing Calendar Overhaul & Bug Fix~~ (Completed in v0.4.1)
-
-NEW: Fix calendar blank on initial load.
-
-NEW: Re-implement Delete functionality in calendar modal.
-
-Next Up: * **Implement Shipment Tracking:** Add "Blood Ship Date" and "Blood Arrival Date" to the new calendar system to enable physical availability checks for the optimization engine.
+**Priority 0: Critical Fixes & Foundational Changes**
+* ✅ **(Completed)** Fix & Overhaul Manufacturing Calendar.
+* ✅ **(Completed)** Implement Shipment Tracking.
 
 **Priority 1: UI/UX & Structural Reorganization**
-* **Remove Redundant Modals:**
-    * Master Schedule
-    * Specifications Generator
-    * Other Raw Materials
-* **Rename & Relocate Modals:**
-    * Rename "Specifications" to **"Historical Specifications."**
-    * Move "Future Specifications" to the **"Analysis"** section.
-* **Implement Annual Spec Migration:** Create an automated process to move specs from "Future" to "Historical" on January 1st of each year.
+* ✅ **(Completed)** Remove Redundant Modals.
+* **(In Progress)** Rename & Relocate Modals.
+* Implement Annual Spec Migration.
 
 **Priority 2: New Module Development**
-* **Enhance Historical Quantities:** Add UI for both manual data entry and CSV upload.
-* **Build Vendors Module:** Develop the placeholder to manage non-blood suppliers (reagents, materials) with contact info, product lists, and pricing.
-* **Create Blood Suppliers Module:** A new, dedicated modal to manage blood suppliers, including their unique and complex pricing structures.
+* Enhance Historical Quantities.
+* Build Vendors Module.
+* Create Blood Suppliers Module.
 
 **Priority 3: Existing Module Enhancement**
-* **Implement Bulk Overage Tracking:** Build out the functionality for the "Bulk RBCs" and "Bulk Serums" modals for manual overage entry.
-* **Audit & Refine Antibodies Module:** Conduct a full review and enhancement to track qualification status, cost-per-use, and optimal dilutions for different applications.
+* Implement Bulk Overage Tracking.
+* Audit & Refine Antibodies Module.
 
 ---
 
 🗂 **Version Changelog**
 
-**v0.4.0 — 2025-??-?? (In Development)**
-* **Highlights:**
-    * Began a major overhaul of the Manufacturing Calendar to fix critical bugs and introduce a modern, interactive event management system. This is a foundational change for future forecasting and logistics features.
+**v0.4.5 — 2025-09-22**
+* **Highlights:** Cleaned up the main navigation sidebar by removing placeholder buttons for deprecated features.
 * **Details:**
-    * **Completed:** The Future Specs optimization algorithm has been successfully implemented and tested.
-    * **Testing:**
-        * ✅ Optimization engine correctly identifies potential donors from inventory and standing orders.
-        * ✅ UI correctly displays optimization suggestions in the Future Specs panel.
+    * Removed "Master Schedule" link.
+    * Removed "Specifications Generator" link.
+    * Removed "Other Raw Materials" link.
 
+**v0.4.4 — 2025-09-22**
+* **Highlights:** Improved calendar UX by removing redundant and confusing event type options.
+* **Details:**
+    * Removed legacy "Blood Arrival" and "Shipment" event types from the modal.
+    * Renamed "Blood Shipment (Ship/Arrival)" to the clearer "Blood Shipment".
 
-v0.3.9 — 2025-??-?? (In Development)
-Highlights:
-    - Began development of the Future Specs optimization algorithm.
-Details:
-    - Fixed: Future Specs panel now displays correctly after a page refresh, even with no entries.
-    - Added: A robust data migration function to automatically convert legacy antigen/antibody and DAT status formats to the new standard upon data load.
-    - Testing:
-        - ✅ Future Specs display persistence verified.
-        - ✅ Legacy data migration for customerSpecs, futureSpecs, and historical versions confirmed.
----
+**v0.4.3 — 2025-09-22**
+* **Highlights:** Added critical shipment tracking functionality to the calendar.
+* **Details:**
+    * Introduced a new "Blood Shipment" event type that dynamically shows fields for both "Ship Date" and "Arrival Date".
+    * Saving a shipment now correctly creates two linked events on the calendar.
 
-v0.3.8 — 2025-??-??
-Highlights:
-    - Implemented allocation ledger system.
-    - Added PT-to-PT sharing capability.
-Introduced decision logging with Activity/Decisions tabs.
-Enforced multi-unit cohort consistency.
-Added year-aware BUP generation.
+**v0.4.2 — 2025-09-22**
+* **Highlights:** Addressed key bugs and usability issues with the new calendar module.
+* **Details:**
+    * Fixed: Calendar no longer appears blank on initial application load.
+    * Added: The "Delete Event" button and its corresponding functionality have been restored to the event modal.
 
-Details:
-Fixed: Quantities CSV persistence.
-Fixed: Blank specification handling (ABO/Rh/antigens = ANY when blank).
-Changed: BUP output now shows ranges (min/max overage).
-Added: Standing-order cell details (HQC-1, HQC-2, HQC-3).
-Added: Allocation ledger with global tracking.
-Added: Decision logging + audit trail.
+**v0.4.1 — 2025-09-22**
+* **Highlights:** Critical bug fix for the calendar module.
+* **Details:**
+    * Fixed: A `ReferenceError` that prevented the calendar modal from opening has been resolved by correcting variable scope.
 
-Testing:
-✅ OneWorld 4th 2025 pulls from HQC-2 & HQC-3.
-✅ ISLA 3rd 2025 shares with HQC, Korea, OneWorld 3rd, Aurevia 2nd, API 3rd.
-✅ Blank ABO and Rh specs accept any blood type.
-✅ PT events share with each other (not themselves).
-✅ Allocation ledger prevents double-use.
-✅ Decision logging functional.
+**v0.4.0 — 2025-09-22**
+* **Highlights:** Major overhaul of the Manufacturing Calendar to fix critical bugs and introduce a modern, interactive event management system. This is a foundational change for future forecasting and logistics features.
+* **Details:**
+    * Implemented on-click functionality for any calendar day to open an "Add Event" modal.
+    * Removed the old, separate manual entry section.
 
-v0.3.7 — 2025-??-??
-Highlights:
-Applied HQC date-finding fix to Korea, C3, and MQC standing orders.
-Removed global “first match” calendar searches — ensured matches remain window-specific.
-
-Details:
-Fixed: Calendar logic now only searches within event windows.
-Fixed: Date matching logic corrected for Korea, C3, MQC events.
-Improved: Event search functions more reliable across schedules.
-
-Testing:
-✅ Verified HQC/Korea/C3 events pull blood within allowed windows.
-✅ No global bleed-date assumptions remain.
-
-v0.3.6 — 2025-??-??
-Highlights:
-First critical bug-fix release addressing core platform stability.
-
-Details:
-Fixed: Quantities CSV now persists after refresh.
-Fixed: Blank specifications now treated as ANY ABO/Rh/antigens.
-Changed: BUP output now shows ranges (min → max overage).
-Added: Allocations specify exact standing-order cell (HQC-1, HQC-2, etc.).
-
-Testing:
-✅ CSV persistence verified across refreshes.
-✅ Blank ABO/Rh/antigen fields tested → accept all valid blood.
-✅ BUP output validated with min/max ranges.
-✅ Standing-order allocations labeled correctly.
-
-v0.3.5 — 2025-??-?? (Baseline)
-Highlights:
-First functional version of the Blood Optimization Platform.
-Contained critical bugs requiring immediate fix in later versions.
-
-Details:
-Issue: Quantities CSV did not persist after refresh.
-Issue: Blank ABO/Rh specs not handled as “ANY acceptable.”
-Issue: BUP output showed single values, not ranges.
-Issue: Did not specify which standing-order cell was used.
-Missing: PT-to-PT sharing — only standing orders were checked.
-
-Testing:
-❌ Data persistence failed on refresh.
-❌ Blank ABO/Rh caused rejections instead of ANY.
-❌ BUP outputs inaccurate (single values only).
-
-❌ No PT-to-PT sharing tested.
+***
