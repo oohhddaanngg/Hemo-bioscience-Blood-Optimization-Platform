@@ -1,0 +1,56 @@
+### **Blood Optimization Platform - Business Logic & Process Manual**
+
+**Version:** 1.0
+**Date:** 2025-09-22
+**Purpose:** This document serves as the authoritative guide to the business logic, data rules, and operational processes embedded within the Hemo bioscience Blood Optimization Platform.
+
+### 1. Core Temporal Logic: The Unit Lifecycle
+
+* **The 77-Day Rule:** A Red Blood Cell (RBC) unit in Alsever's solution has a maximum usable lifespan of 77 days. It expires and hemolyzes on day 78.
+* **Physical Availability Constraint:** A unit cannot be used for any manufacturing or allocation purpose until it is physically on-site. The **"Arrival Date"** is the first day a unit is considered available.
+* **True Optimization Window:** The valid window to allocate or share a unit for a specific event is between **(Recipient's Expiration Date - 77 days)** and **(Recipient's Ship Date - 10 days)**. The unit's "Arrival Date" must be on or before the date it is needed within this window.
+
+### 2. Blood Compatibility & Phenotype Rules
+
+The platform's matching algorithm must adhere to the following rules:
+
+* **Standard Matching:** Default behavior is to match ABO and Rh types exactly.
+* **Flexible Requirements:**
+    * A blank `ABO/Rh` field in a requirement means "any type acceptable."
+    * A `DAT Negative` requirement means "any ABO/Rh is acceptable."
+* **Specific Requirements:**
+    * A `DAT IgG Positive` requirement must be filled by an `RhD Positive` unit, but the ABO type can be flexible.
+    * A `C3 Control` requirement can be filled by either an `O Pos` or `O Neg` unit.
+* **Antigen Matching Logic:**
+    * **Specified Antigens (e.g., K-Positive):** The donor unit must match the required status (Positive/Negative) for the specified antigen. Any other antigens on the donor unit that are *not* mentioned in the spec are considered irrelevant, as they will not be tested.
+    * **"As Measured" Antigens:** This designation is used when consensus (>95%) is the goal, not a specific result. The rule is **cohort consistency**. If multiple units are required for a single sample, all units in that cohort *must* have the exact same phenotype for all "as measured" antigens. For example, if the spec is `C/E/c/e as measured, K+`, all 10 units must be `K+` and they must all be, for instance, `C+ E- c+ e+`. They cannot be a mix of different C/E/c/e phenotypes.
+
+### 3. Allocation & Sharing Logic
+
+* **Two-Tier Priority Hierarchy:**
+    1.  **Standing Orders:** These have the highest priority for donating overage units, as any unused portion is a guaranteed waste.
+    2.  **PT Events:** These are the second priority for receiving shared units.
+* **Prioritization Within Tiers:** The rule "logistics/proximity" is defined as **temporal proximity**. The algorithm should prioritize the donor unit with the date closest to the start of the recipient's fulfillment window.
+
+### 4. Module-Specific Processes
+
+* **Manufacturing Calendar:**
+    * Events are created by clicking on a calendar day.
+    * An event stores its name, date, and optional notes.
+    * Existing events can be clicked to view details and can be edited or deleted.
+* **Bulk Overage Tracking (RBCs & Serums):**
+    * The quantity of overage material is entered **manually** by the user. This is not an automated calculation, as manufacturing processes (like washing) result in variable volume loss.
+    * The system should track the quantity and expiration date of this bulk material.
+* **Antibodies Module:**
+    * The cost-per-use at optimal dilution is a key metric.
+    * The calculation is: `(Price Paid / Quantity Bought in ml) * Optimal Dilution = Cost per ml at Use Concentration`.
+    * Example: `($500 / 1 ml) * (1/1000 dilution) = $0.50 per ml`.
+
+### 5. Data & Structural Logic
+
+* **Future vs. Historical Specs:**
+    * **Future Specifications:** Refers to specs for the *next* calendar year. As of today (September 22, 2025), this means specs for 2026.
+    * **Historical Specifications:** Refers to specs for the *current* calendar year and all previous years.
+* **Annual Data Migration:** On January 1st of each year, the system should automatically migrate all specifications from the "Future Specifications" module to the "Historical Specifications" module.
+
+I recommend you save this as **"Project Business Logic Manual.md"** in your GitHub repository. We can now add this document to my Gem instructions as a primary source of truth, ensuring I never forget these critical details.
