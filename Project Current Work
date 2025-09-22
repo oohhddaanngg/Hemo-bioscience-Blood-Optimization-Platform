@@ -1,5 +1,5 @@
 📌 **Current Version**
-* **Version:** v0.4.0 (In Development)
+* **Version:** v0.4.1 (In Development)
 * **Release date:** 2025-??-??
 
 ---
@@ -34,8 +34,14 @@
 🔜 **Next Planned Work**
 
 **Priority 0: Foundational Changes**
-* **(In Progress)** Fix & Overhaul Manufacturing Calendar.
-* **Implement Shipment Tracking:** Add "Blood Ship Date" and "Blood Arrival Date" to the new calendar system to enable physical availability checks for the optimization engine.
+
+~~Manufacturing Calendar Overhaul & Bug Fix~~ (Completed in v0.4.1)
+
+NEW: Fix calendar blank on initial load.
+
+NEW: Re-implement Delete functionality in calendar modal.
+
+Next Up: * **Implement Shipment Tracking:** Add "Blood Ship Date" and "Blood Arrival Date" to the new calendar system to enable physical availability checks for the optimization engine.
 
 **Priority 1: UI/UX & Structural Reorganization**
 * **Remove Redundant Modals:**
