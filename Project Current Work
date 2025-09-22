@@ -1,70 +1,75 @@
-Blood Optimization Platform — Project Current Work
-📌 Current Version
-Version: v0.3.9 (In Development)
-Release date: 2025-??-??
+📌 **Current Version**
+* **Version:** v0.4.0 (In Development)
+* **Release date:** 2025-??-??
 
-🚧 Active Work in Progress
-Enhance Future Specs optimization algorithm
-    - Objective: Transform the Future Specs module into a recommendation engine.
-    - Logic: Create a new function `runFutureSpecOptimization()` to scan for and suggest potential ways to fulfill future orders using existing inventory or planned standing orders.
-    - UI Impact: The Future Specs panel will be updated to display these optimization suggestions.
+---
 
-🧪 Testing Focus
-Validate Future Specs optimization algorithm suggestions.
-    - Confirm compatibility checks are accurate.
-    - Verify fulfillment window calculations are correct.
-Confirm allocation ledger prevents double-booking.
-Verify decision logging captures all critical events.
+🚧 **Active Work in Progress**
+* **Manufacturing Calendar Overhaul & Bug Fix:**
+    * **Objective:** Fix the non-interactive calendar and implement a modern, modal-based event creation system. This is the top priority as it blocks a critical user workflow.
+    * **Task 1 (Bug Fix):** Implement on-click functionality for any day on the calendar to open a new "Add Event" modal.
+    * **Task 2 (New Feature):** Within the new modal, provide categorized event options (Manufacturing, Shipping, Administrative, etc.) and fields for event details and optional notes.
+    * **Task 3 (UI Cleanup):** Remove the old, separate manual entry section at the bottom of the calendar view.
 
-✅ Recent Completions
-Future Specs display initialization bug fixed.
-Antigen/antibody format migration for legacy data completed.
-Data persistence for Quantities CSV.
-Blank specification handling (blank = "ANY type acceptable").
-Data persistence for Quantities CSV.
-Blank specification handling (blank = "ANY type acceptable").
-BUP output now shows ranges (min/max overage).
-Standing order cell details (HQC-1, HQC-2, HQC-3, etc.) included in allocations.
-PT-to-PT event sharing implemented.
-Allocation ledger system introduced.
-Multi-unit cohort consistency enforced.
-Decision logging + Activity Log integration.
-Year-aware BUP generation (customer/event/year now tracked).
+---
 
-🔜 Next Planned Work
-🔜 Next Planned Work
+🧪 **Testing Focus**
+* Verify that clicking any day on the Manufacturing Calendar opens the "Add Event" modal.
+* Confirm that events can be created, edited, and deleted successfully.
+* Ensure the "Blood Ship Date" and "Blood Arrival Date" events function correctly, as this is critical for the optimization engine.
 
-**Phase 1: Forecasting & Data Infrastructure**
--   **Build Historical Quantities Module:**
-    -   Develop the UI and backend logic for the "Historical Quantities" modal to allow for the input and storage of past order data.
--   **Create Forecasting Module:**
-    -   Implement a "Forecasted Order Quantities" modal that uses data from both historical and current year orders to project future needs (e.g., for 2026).
--   **Integrate Forecasting with Future Specs:**
-    -   Connect the "Future Specifications" module to the new forecasting module, so it can automatically use projected quantities for planning.
+---
 
-**Phase 2: Supplier & Cost Management**
--   **Build Blood Suppliers Module:**
-    -   Repurpose the "Vendors" placeholder.
-    -   Create a modal that allows for entering detailed, customizable pricing structures for each blood supplier (e.g., cost per antigen, rarity surcharges, blood type costs).
-    -   Integrate this data to calculate and display potential order costs from various suppliers.
--   **Build Antibody Suppliers Module:**
-    -   Create a new modal to manage antibody suppliers, including their product offerings, price per ml, and bulk discount rules.
+✅ **Recent Completions**
+* Future Specs optimization algorithm implemented.
+* Future Specs display initialization bug fixed.
+* Antigen/antibody format migration for legacy data completed.
+* Data persistence for Quantities CSV.
+* Blank specification handling (blank = "ANY type acceptable").
+* PT-to-PT event sharing implemented.
+* Allocation ledger system introduced.
 
-**Phase 3: UI/UX & Cleanup**
--   **Rename Modals for Clarity:**
-    -   Rename "Order Quantities" to "Current Year Order Quantities".
-    -   Rename "Specifications" to "Confirmed Specifications".
-    -   Rename "Vendors" to "Blood Suppliers".
--   **Remove Redundant Modals:**
-    -   Remove the "Specifications Generator" placeholder, as its functionality is handled by the "Future Specifications" module.
+---
 
-🧭 Notes for Developers
-Refer to Project Instructions for dev rules and workflow.
-Refer to Project Quick Reference for business logic cheat sheet.
-Refer to Project Reference Briefing for full technical + business context.
-Do not edit those documents here — this file is the only one to update regularly.
+🔜 **Next Planned Work**
 
-🗂 Version Changelog
+**Priority 0: Foundational Changes**
+* **(In Progress)** Fix & Overhaul Manufacturing Calendar.
+* **Implement Shipment Tracking:** Add "Blood Ship Date" and "Blood Arrival Date" to the new calendar system to enable physical availability checks for the optimization engine.
+
+**Priority 1: UI/UX & Structural Reorganization**
+* **Remove Redundant Modals:**
+    * Master Schedule
+    * Specifications Generator
+    * Other Raw Materials
+* **Rename & Relocate Modals:**
+    * Rename "Specifications" to **"Historical Specifications."**
+    * Move "Future Specifications" to the **"Analysis"** section.
+* **Implement Annual Spec Migration:** Create an automated process to move specs from "Future" to "Historical" on January 1st of each year.
+
+**Priority 2: New Module Development**
+* **Enhance Historical Quantities:** Add UI for both manual data entry and CSV upload.
+* **Build Vendors Module:** Develop the placeholder to manage non-blood suppliers (reagents, materials) with contact info, product lists, and pricing.
+* **Create Blood Suppliers Module:** A new, dedicated modal to manage blood suppliers, including their unique and complex pricing structures.
+
+**Priority 3: Existing Module Enhancement**
+* **Implement Bulk Overage Tracking:** Build out the functionality for the "Bulk RBCs" and "Bulk Serums" modals for manual overage entry.
+* **Audit & Refine Antibodies Module:** Conduct a full review and enhancement to track qualification status, cost-per-use, and optimal dilutions for different applications.
+
+---
+
+🗂 **Version Changelog**
+
+**v0.4.0 — 2025-??-?? (In Development)**
+* **Highlights:**
+    * Began a major overhaul of the Manufacturing Calendar to fix critical bugs and introduce a modern, interactive event management system. This is a foundational change for future forecasting and logistics features.
+* **Details:**
+    * **Completed:** The Future Specs optimization algorithm has been successfully implemented and tested.
+    * **Testing:**
+        * ✅ Optimization engine correctly identifies potential donors from inventory and standing orders.
+        * ✅ UI correctly displays optimization suggestions in the Future Specs panel.
+
+
 v0.3.9 — 2025-??-?? (In Development)
 Highlights:
     - Began development of the Future Specs optimization algorithm.
