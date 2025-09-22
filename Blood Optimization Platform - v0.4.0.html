@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Blood Optimization Platform v0.3.9 - Megedition | Hemo bioscience</title>
+    <title>Blood Optimization Platform v0.4.0 - Megedition | Hemo bioscience</title>
     <style>
       * {
         margin: 0;
@@ -1730,7 +1730,7 @@
       <!-- Header Bar -->
       <header class="header-bar">
         <div class="header-left">
-          <div class="version-badge">v0.3.9 - Megedition</div>
+          <div class="version-badge">v0.4.0 - Megedition</div>
           <div class="active-users" id="active-users" style="display: none">
             <span>👤 Active:</span>
             <span id="active-user-list">-</span>
@@ -2704,126 +2704,6 @@
                 </div>
               </div>
             </div>
-
-            <div class="card">
-              <div class="card-header">
-                <h3 class="card-title">Add Calendar Entry</h3>
-              </div>
-
-              <div class="form-grid">
-                <div class="form-group">
-                  <label class="form-label">Date</label>
-                  <input type="date" class="form-input" id="calendar-date" />
-                </div>
-                <div class="form-group">
-                  <label class="form-label">Entry Type</label>
-                  <select
-                    class="form-select"
-                    id="calendar-type"
-                    onchange="handleTypeChange('manual')"
-                  >
-                    <!-- Will be populated by JavaScript -->
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label class="form-label">Description</label>
-                  <input
-                    type="text"
-                    class="form-input"
-                    id="calendar-description"
-                    placeholder="e.g., C3/HQC, WSLH PT24-01"
-                  />
-                </div>
-              </div>
-
-              <!-- Recurrence Settings (hidden by default) -->
-              <div id="manual-recurrence-settings" style="display: none">
-                <h4 style="margin-top: 1.5rem; margin-bottom: 1rem">Recurrence Settings</h4>
-                <div class="form-grid">
-                  <div class="form-group">
-                    <label class="form-label">Repeat Every</label>
-                    <div style="display: flex; gap: 0.5rem">
-                      <input
-                        type="number"
-                        class="form-input"
-                        id="manual-recurrence-interval"
-                        style="width: 80px"
-                        min="1"
-                        value="1"
-                      />
-                      <select
-                        class="form-select"
-                        id="manual-recurrence-unit"
-                        onchange="handleUnitChange('manual')"
-                      >
-                        <option value="days">Days</option>
-                        <option value="weeks">Weeks</option>
-                        <option value="months">Months</option>
-                        <option value="custom">Custom</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div class="form-group" id="manual-custom-pattern-group" style="display: none">
-                    <label class="form-label">Custom Pattern</label>
-                    <input
-                      type="text"
-                      class="form-input"
-                      id="manual-custom-pattern"
-                      placeholder="e.g., First Monday of month"
-                    />
-                  </div>
-                  <div class="form-group">
-                    <label class="form-label">End Condition</label>
-                    <select
-                      class="form-select"
-                      id="manual-recurrence-end-type"
-                      onchange="handleEndTypeChange('manual')"
-                    >
-                      <option value="never">Never</option>
-                      <option value="count">After occurrences</option>
-                      <option value="date">On date</option>
-                    </select>
-                  </div>
-                  <div class="form-group" id="manual-end-count-group" style="display: none">
-                    <label class="form-label">Number of Occurrences</label>
-                    <input
-                      type="number"
-                      class="form-input"
-                      id="manual-end-count"
-                      min="1"
-                      value="10"
-                    />
-                  </div>
-                  <div class="form-group" id="manual-end-date-group" style="display: none">
-                    <label class="form-label">End Date</label>
-                    <input type="date" class="form-input" id="manual-end-date" />
-                  </div>
-                </div>
-              </div>
-
-              <button class="btn btn-primary" onclick="addCalendarEntry()">Add Entry</button>
-            </div>
-
-            <div class="card">
-              <div class="card-header">
-                <h3 class="card-title">Import Schedule</h3>
-              </div>
-              <div class="upload-area" onclick="document.getElementById('schedule-csv').click()">
-                <input
-                  type="file"
-                  id="schedule-csv"
-                  class="upload-input"
-                  accept=".csv"
-                  onchange="handleScheduleCSV(event)"
-                />
-                <div class="upload-icon">📅</div>
-                <div>Click to upload schedule CSV file</div>
-                <div style="font-size: 0.875rem; color: var(--gray); margin-top: 0.5rem">
-                  Format: customer, type, event, bleed_date, ship_date, expiration_date
-                </div>
-              </div>
-              <div id="schedule-import-status"></div>
-            </div>
           </div>
           <!-- closes .content-body -->
         </div>
@@ -3285,18 +3165,18 @@
       </div>
     </div>
 
-    <!-- Calendar Entry Modal -->
-    <div id="calendar-entry-modal" class="modal">
+    <!-- Calendar Add Event Modal -->
+    <div id="calendar-add-event-modal" class="modal">
       <div class="modal-content">
         <div class="modal-header">
-          <h3 class="modal-title" id="calendar-entry-modal-title">Edit Calendar Entry</h3>
-          <button class="close-btn" onclick="closeCalendarEntryModal()">×</button>
+          <h3 class="modal-title" id="calendar-add-event-modal-title">Add Event</h3>
+          <button class="close-btn" onclick="closeCalendarAddEventModal()">×</button>
         </div>
         <div class="modal-body">
           <div class="form-grid">
             <div class="form-group">
               <label class="form-label">Date <span class="required">*</span></label>
-              <input type="date" class="form-input" id="modal-calendar-date" />
+              <input type="date" class="form-input" id="modal-calendar-date" readonly />
             </div>
             <div class="form-group">
               <label class="form-label">Entry Type <span class="required">*</span></label>
@@ -3309,81 +3189,20 @@
               </select>
             </div>
             <div class="form-group">
-              <label class="form-label">Description <span class="required">*</span></label>
-              <input
-                type="text"
-                class="form-input"
-                id="modal-calendar-description"
-                placeholder="e.g., WSLH PT24-01, John Smith PTO"
-              />
-            </div>
-          </div>
-
-          <!-- Recurrence Settings (hidden by default) -->
-          <div id="modal-recurrence-settings" style="display: none">
-            <h4 style="margin-top: 1.5rem; margin-bottom: 1rem">Recurrence Settings</h4>
-            <div class="form-grid">
-              <div class="form-group">
-                <label class="form-label">Repeat Every</label>
-                <div style="display: flex; gap: 0.5rem">
-                  <input
-                    type="number"
-                    class="form-input"
-                    id="modal-recurrence-interval"
-                    style="width: 80px"
-                    min="1"
-                    value="1"
-                  />
-                  <select
-                    class="form-select"
-                    id="modal-recurrence-unit"
-                    onchange="handleUnitChange('modal')"
-                  >
-                    <option value="days">Days</option>
-                    <option value="weeks">Weeks</option>
-                    <option value="months">Months</option>
-                    <option value="custom">Custom</option>
-                  </select>
-                </div>
-              </div>
-              <div class="form-group" id="modal-custom-pattern-group" style="display: none">
-                <label class="form-label">Custom Pattern</label>
-                <input
-                  type="text"
-                  class="form-input"
-                  id="modal-custom-pattern"
-                  placeholder="e.g., First Monday of month"
-                />
-              </div>
-              <div class="form-group">
-                <label class="form-label">End Condition</label>
-                <select
-                  class="form-select"
-                  id="modal-recurrence-end-type"
-                  onchange="handleEndTypeChange('modal')"
-                >
-                  <option value="never">Never</option>
-                  <option value="count">After occurrences</option>
-                  <option value="date">On date</option>
-                </select>
-              </div>
-              <div class="form-group" id="modal-end-count-group" style="display: none">
-                <label class="form-label">Number of Occurrences</label>
-                <input type="number" class="form-input" id="modal-end-count" min="1" value="10" />
-              </div>
-              <div class="form-group" id="modal-end-date-group" style="display: none">
-                <label class="form-label">End Date</label>
-                <input type="date" class="form-input" id="modal-end-date" />
-              </div>
+              <label class="form-label">Notes</label>
+              <textarea
+                class="form-textarea"
+                id="modal-calendar-notes"
+                placeholder="Add optional notes..."
+              ></textarea>
             </div>
           </div>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-danger" onclick="deleteCalendarEntry()" style="margin-right: auto">
-            Delete Entry
+          <button class="btn btn-outline" onclick="closeCalendarAddEventModal()">Cancel</button>
+          <button class="btn btn-primary" id="calendar-add-event-submit" onclick="addCalendarEvent()">
+            Add Event
           </button>
-          <button class="btn btn-outline" onclick="closeCalendarEntryModal()">Cancel</button>
-          <button class="btn btn-primary" onclick="saveCalendarEntry()">Save Changes</button>
         </div>
       </div>
     </div>
@@ -3393,7 +3212,7 @@
       // ===============================
 
       const APP_STATE = {
-        version: '0.3.9', // Update version
+        version: '0.4.0', // Update version
         customers: [],
         sampleDefinitions: [],
         customerSpecs: [],
@@ -7581,7 +7400,7 @@
           // Get events for this day
           const events = APP_STATE.manufacturingCalendar.filter((event) => event.date === dateStr);
 
-          html += `<div class="calendar-day" data-date="${dateStr}" onclick="handleCalendarDayClick(event, '${dateStr}')">
+          html += `<div class="calendar-day" data-date="${dateStr}" onclick="openAddEventModal('${dateStr}')">
                                                 <div class="calendar-day-number">${day}</div>`;
 
           events.forEach((event) => {
@@ -7601,24 +7420,108 @@
         document.getElementById('calendar-grid').innerHTML = html;
       }
 
-      function handleCalendarDayClick(event, dateStr) {
-        // If clicking on an event, don't open new entry modal
-        if (event.target.classList.contains('calendar-event')) {
+      function resetCalendarAddEventModal() {
+        editingCalendarEntryId = null;
+        const submitButton = document.getElementById('calendar-add-event-submit');
+        if (submitButton) {
+          submitButton.textContent = 'Add Event';
+          submitButton.onclick = addCalendarEvent;
+        }
+
+        const title = document.getElementById('calendar-add-event-modal-title');
+        if (title) {
+          title.textContent = 'Add Event';
+        }
+      }
+
+      function openAddEventModal(dateStr) {
+        resetCalendarAddEventModal();
+
+        const modal = document.getElementById('calendar-add-event-modal');
+        if (!modal) return;
+
+        const dateInput = document.getElementById('modal-calendar-date');
+        if (dateInput) {
+          dateInput.value = dateStr;
+        }
+
+        const typeSelect = document.getElementById('modal-calendar-type');
+        if (typeSelect) {
+          typeSelect.selectedIndex = -1;
+          typeSelect.value = '';
+        }
+
+        const notesField = document.getElementById('modal-calendar-notes');
+        if (notesField) {
+          notesField.value = '';
+        }
+
+        modal.classList.add('active');
+      }
+
+      function closeCalendarAddEventModal() {
+        const modal = document.getElementById('calendar-add-event-modal');
+        if (modal) {
+          modal.classList.remove('active');
+        }
+
+        resetCalendarAddEventModal();
+      }
+
+      function getCalendarTypeLabel(type) {
+        for (const items of Object.values(CALENDAR_CATEGORIES)) {
+          const match = items.find((item) => item.value === type);
+          if (match) {
+            return match.label;
+          }
+        }
+        return type;
+      }
+
+      function buildCalendarDescription(type, notes) {
+        const trimmedNotes = notes ? notes.trim() : '';
+        if (trimmedNotes) {
+          return trimmedNotes;
+        }
+        return getCalendarTypeLabel(type);
+      }
+
+      function addCalendarEvent() {
+        const dateInput = document.getElementById('modal-calendar-date');
+        const typeSelect = document.getElementById('modal-calendar-type');
+        const notesField = document.getElementById('modal-calendar-notes');
+
+        const date = dateInput ? dateInput.value : '';
+        const type = typeSelect ? typeSelect.value : '';
+        const notes = notesField ? notesField.value.trim() : '';
+
+        if (!date || !type) {
+          showAlert('error', 'Please select a date and event type');
           return;
         }
 
-        // Open modal for new entry with date pre-filled
-        openCalendarEntryForNewDate(dateStr);
-      }
+        const description = buildCalendarDescription(type, notes);
 
-      function openCalendarEntryForNewDate(dateStr) {
-        document.getElementById('modal-calendar-date').value = dateStr;
-        document.getElementById('modal-calendar-type').value = 'blood-arrival';
-        document.getElementById('modal-calendar-description').value = '';
-        document.getElementById('calendar-entry-modal-title').textContent = 'Add Calendar Entry';
+        const newEvent = {
+          id: 'cal_' + Date.now(),
+          date: date,
+          type: type,
+          description: description,
+        };
 
-        editingCalendarEntryId = null;
-        document.getElementById('calendar-entry-modal').classList.add('active');
+        if (notes) {
+          newEvent.notes = notes;
+        }
+
+        APP_STATE.manufacturingCalendar.push(newEvent);
+
+        logActivity('Added calendar event', description);
+        showAlert('success', 'Calendar event added');
+
+        renderCalendar();
+        autoSave();
+
+        closeCalendarAddEventModal();
       }
 
       function previousMonth() {
@@ -7646,79 +7549,6 @@
         renderCalendar();
       }
 
-      function addCalendarEntry() {
-        const date = document.getElementById('calendar-date').value;
-        const type = document.getElementById('calendar-type').value;
-        const description = document.getElementById('calendar-description').value;
-
-        if (!date || !description) {
-          showAlert('error', 'Please fill in required fields');
-          return;
-        }
-
-        // Check if this is a recurring type
-        const isRecurring = CALENDAR_CATEGORIES[RECURRENCE_ENABLED_CATEGORY]?.some(
-          (item) => item.value === type
-        );
-
-        if (isRecurring) {
-          // Get recurrence settings
-          const recurrenceSettings = {
-            enabled: true,
-            interval: parseInt(document.getElementById('manual-recurrence-interval').value) || 1,
-            unit: document.getElementById('manual-recurrence-unit').value,
-            customPattern:
-              document.getElementById('manual-recurrence-unit').value === 'custom'
-                ? document.getElementById('manual-custom-pattern').value
-                : null,
-            endType: document.getElementById('manual-recurrence-end-type').value,
-            endCount:
-              document.getElementById('manual-recurrence-end-type').value === 'count'
-                ? parseInt(document.getElementById('manual-end-count').value)
-                : null,
-            endDate:
-              document.getElementById('manual-recurrence-end-type').value === 'date'
-                ? document.getElementById('manual-end-date').value
-                : null,
-          };
-
-          // Generate recurring instances
-          const instances = generateRecurringInstances(
-            { date, type, description },
-            recurrenceSettings
-          );
-          APP_STATE.manufacturingCalendar.push(...instances);
-
-          logActivity(
-            'Added recurring calendar entry',
-            `${description} (${instances.length} instances)`
-          );
-          showAlert('success', `Created ${instances.length} recurring entries`);
-        } else {
-          // Single entry
-          APP_STATE.manufacturingCalendar.push({
-            id: 'cal_' + Date.now(),
-            date: date,
-            type: type,
-            description: description,
-          });
-
-          logActivity('Added calendar entry', description);
-          showAlert('success', 'Calendar entry added');
-        }
-
-        renderCalendar();
-        autoSave();
-
-        // Clear form
-        document.getElementById('calendar-date').value = '';
-        document.getElementById('calendar-description').value = '';
-        // Reset recurrence settings
-        document.getElementById('manual-recurrence-interval').value = '1';
-        document.getElementById('manual-recurrence-unit').value = 'days';
-        document.getElementById('manual-recurrence-end-type').value = 'never';
-        document.getElementById('manual-recurrence-settings').style.display = 'none';
-      }
       let editingCalendarEntryId = null;
 
       function openCalendarEntry(event, entryId) {
@@ -7730,27 +7560,38 @@
         const entry = APP_STATE.manufacturingCalendar.find((e) => e.id === entryId);
 
         if (entry) {
-          document.getElementById('modal-calendar-date').value = entry.date;
-          document.getElementById('modal-calendar-type').value = entry.type;
-          document.getElementById('modal-calendar-description').value = entry.description;
-          document.getElementById('calendar-entry-modal-title').textContent = 'Edit Calendar Entry';
+          const dateInput = document.getElementById('modal-calendar-date');
+          const typeSelect = document.getElementById('modal-calendar-type');
+          const notesField = document.getElementById('modal-calendar-notes');
+          const title = document.getElementById('calendar-add-event-modal-title');
+          const submitButton = document.getElementById('calendar-add-event-submit');
+
+          if (dateInput) dateInput.value = entry.date;
+          if (typeSelect) typeSelect.value = entry.type;
+          if (notesField) notesField.value = entry.notes ?? entry.description ?? '';
+          if (title) title.textContent = 'Edit Event';
+          if (submitButton) {
+            submitButton.textContent = 'Save Changes';
+            submitButton.onclick = saveCalendarEntry;
+          }
 
           editingCalendarEntryId = entry.id;
-          document.getElementById('calendar-entry-modal').classList.add('active');
+          document.getElementById('calendar-add-event-modal').classList.add('active');
         }
       }
 
       function closeCalendarEntryModal() {
-        document.getElementById('calendar-entry-modal').classList.remove('active');
-        editingCalendarEntryId = null;
+        closeCalendarAddEventModal();
       }
 
       function saveCalendarEntry() {
         const date = document.getElementById('modal-calendar-date').value;
         const type = document.getElementById('modal-calendar-type').value;
-        const description = document.getElementById('modal-calendar-description').value;
+        const notesField = document.getElementById('modal-calendar-notes');
+        const notes = notesField ? notesField.value.trim() : '';
+        const description = buildCalendarDescription(type, notes);
 
-        if (!date || !type || !description) {
+        if (!date || !type) {
           showAlert('error', 'Please fill in all required fields');
           return;
         }
@@ -7762,14 +7603,17 @@
           );
 
           if (entryIndex > -1) {
-            APP_STATE.manufacturingCalendar[entryIndex] = {
-              id: editingCalendarEntryId,
-              date: date,
-              type: type,
-              description: description,
-            };
-            logActivity('Updated calendar entry', description);
-            showAlert('success', 'Calendar entry updated');
+            const existing = APP_STATE.manufacturingCalendar[entryIndex];
+            existing.date = date;
+            existing.type = type;
+            existing.description = description;
+            if (notes) {
+              existing.notes = notes;
+            } else {
+              delete existing.notes;
+            }
+            logActivity('Updated calendar event', description);
+            showAlert('success', 'Calendar event updated');
           }
         } else {
           // Creating new entry
@@ -7779,9 +7623,12 @@
             type: type,
             description: description,
           };
+          if (notes) {
+            newEntry.notes = notes;
+          }
           APP_STATE.manufacturingCalendar.push(newEntry);
-          logActivity('Added calendar entry', description);
-          showAlert('success', 'Calendar entry added');
+          logActivity('Added calendar event', description);
+          showAlert('success', 'Calendar event added');
         }
 
         renderCalendar();
@@ -7803,8 +7650,8 @@
               (e) => e.id !== editingCalendarEntryId
             );
 
-            logActivity('Deleted calendar entry', entry.description);
-            showAlert('success', 'Calendar entry deleted');
+            logActivity('Deleted calendar event', entry.description);
+            showAlert('success', 'Calendar event deleted');
             renderCalendar();
             autoSave();
             closeCalendarEntryModal();
