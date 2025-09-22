@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Blood Optimization Platform v0.4.0 - Megedition | Hemo bioscience</title>
+    <title>Blood Optimization Platform v0.4.1 - Megedition | Hemo bioscience</title>
     <style>
       * {
         margin: 0;
@@ -1730,7 +1730,7 @@
       <!-- Header Bar -->
       <header class="header-bar">
         <div class="header-left">
-          <div class="version-badge">v0.4.0 - Megedition</div>
+          <div class="version-badge">v0.4.1 - Megedition</div>
           <div class="active-users" id="active-users" style="display: none">
             <span>👤 Active:</span>
             <span id="active-user-list">-</span>
@@ -3212,7 +3212,7 @@
       // ===============================
 
       const APP_STATE = {
-        version: '0.4.0', // Update version
+        version: '0.4.1', // Update version
         customers: [],
         sampleDefinitions: [],
         customerSpecs: [],
@@ -3275,6 +3275,8 @@
         },
         bupSelectedPool: new Set(), // Stores selected event keys
       };
+
+      let editingCalendarEntryId = null;
 
       // Constants
       const RBC_UNIT_ML = 180.0;
@@ -7548,8 +7550,6 @@
         APP_STATE.currentYear = today.getFullYear();
         renderCalendar();
       }
-
-      let editingCalendarEntryId = null;
 
       function openCalendarEntry(event, entryId) {
         // Stop event propagation to prevent day click
