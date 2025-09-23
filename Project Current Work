@@ -4,25 +4,9 @@
 * **Version:** v0.4.5 (Stable)
 * **Release date:** 2025-09-22
 
----
-
-🚧 **Active Work in Progress**
-* **Rename & Relocate Modals:**
-    * **Objective:** Reorganize the application's structure to be more intuitive for the user, as per the roadmap. This is the first step in a broader UI/UX refinement pass.
-    * **Task 1 (Rename):** Rename the "Specifications" module to "Historical Specifications."
-    * **Task 2 (Relocate):** Move the "Future Specifications" module from the "Data Manager" section to the "Analysis" section.
-
----
-
-🧪 **Testing Focus**
-* Verify that the "Specifications" sidebar button and panel title are correctly renamed to "Historical Specifications."
-* Confirm that the "Future Specifications" button is no longer under "Data Manager" and appears correctly under the "Analysis" section.
-* Ensure all navigation and panel-switching functionality remains intact after the changes.
-
----
 
 ✅ **Recent Completions**
-* **v0.4.5:** Removed redundant placeholder buttons ("Master Schedule," "Specifications Generator," "Other Raw Materials") from the UI.
+* **v0.4.5:** Removed redundant placeholder buttons ("Master Schedule," "Specifications Generator," "Other Raw Materials") from the UI. Renamed "Specifications" panel to "Historical Specifications." Removed the old "Future Specifications" modal and promoted it to its own dedicated panel for better modularity.
 * **v0.4.4:** Streamlined calendar event types in the modal to remove confusing, legacy options.
 * **v0.4.3:** Implemented ship/arrival date tracking for blood shipments in the calendar.
 * **v0.4.2:** Fixed calendar bugs related to initial blank loading and restored the "Delete Event" functionality.
