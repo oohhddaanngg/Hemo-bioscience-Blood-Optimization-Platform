@@ -2850,6 +2850,29 @@
             </div>
 
             <div class="card">
+              <h3 class="card-title mb-3">Annual Data Migration</h3>
+              <div class="alert alert-info">
+                Use this tool at the end of a calendar year to move all 'Future Specifications' for
+                that year into the permanent 'Historical Specifications' database. This action is
+                irreversible.
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="migration-year-select">Select Year to Migrate</label>
+                <select id="migration-year-select" class="form-select" disabled>
+                  <option>Populating years...</option>
+                </select>
+                <button
+                  id="migrate-specs-btn"
+                  class="btn btn-warning"
+                  onclick="initiateSpecMigration()"
+                  disabled
+                >
+                  Migrate Specifications
+                </button>
+              </div>
+            </div>
+
+            <div class="card">
               <h3 class="card-title mb-3">Export/Import</h3>
               <div class="btn-group">
                 <button class="btn btn-primary" onclick="exportAllData()">Export All Data</button>
@@ -3509,6 +3532,8 @@
           updateUserDisplay();
           await checkFileAccess();
           await loadData();
+
+          populateMigrationYearOptions();
 
           updateDashboard();
           updateCustomerList();
@@ -9561,6 +9586,7 @@
         if (Object.keys(grouped).length === 0) {
           listDiv.innerHTML =
             '<p class="text-center" style="color: var(--gray);">No future specifications created yet</p>';
+          populateMigrationYearOptions();
           return;
         }
 
@@ -9641,6 +9667,226 @@
         });
 
         listDiv.innerHTML = html;
+        populateMigrationYearOptions();
+      }
+
+      function populateMigrationYearOptions() {
+        const yearSelect = document.getElementById('migration-year-select');
+        const migrateButton = document.getElementById('migrate-specs-btn');
+
+        if (!yearSelect || !migrateButton) {
+          return;
+        }
+
+        const futureEntries = (APP_STATE.futureSpecs && APP_STATE.futureSpecs.entries) || [];
+        const years = [
+          ...new Set(
+            futureEntries
+              .map((spec) => spec.year)
+              .filter((year) => year !== undefined && year !== null && `${year}`.trim() !== '')
+              .map((year) => `${year}`.trim())
+          ),
+        ].sort((a, b) => {
+          const yearA = parseInt(a, 10);
+          const yearB = parseInt(b, 10);
+
+          if (!isNaN(yearA) && !isNaN(yearB)) {
+            return yearB - yearA;
+          }
+
+          return `${a}`.localeCompare(`${b}`);
+        });
+
+        yearSelect.innerHTML = '';
+
+        if (years.length === 0) {
+          const emptyOption = document.createElement('option');
+          emptyOption.value = '';
+          emptyOption.textContent = 'No future specs available';
+          emptyOption.disabled = true;
+          emptyOption.selected = true;
+          yearSelect.appendChild(emptyOption);
+          yearSelect.disabled = true;
+          migrateButton.disabled = true;
+          return;
+        }
+
+        const defaultOption = document.createElement('option');
+        defaultOption.value = '';
+        defaultOption.textContent = 'Select a year...';
+        defaultOption.disabled = true;
+        defaultOption.selected = true;
+        yearSelect.appendChild(defaultOption);
+
+        years.forEach((year) => {
+          const option = document.createElement('option');
+          option.value = year;
+          option.textContent = year;
+          yearSelect.appendChild(option);
+        });
+
+        yearSelect.disabled = false;
+        migrateButton.disabled = true;
+
+        yearSelect.onchange = () => {
+          migrateButton.disabled = !yearSelect.value;
+        };
+      }
+
+      function initiateSpecMigration() {
+        if (!APP_STATE.writeAccess) {
+          showAlert('warning', 'Write access is required to migrate specifications.');
+          return;
+        }
+
+        const yearSelect = document.getElementById('migration-year-select');
+        const migrateButton = document.getElementById('migrate-specs-btn');
+
+        if (!yearSelect || !migrateButton) {
+          return;
+        }
+
+        const selectedYear = yearSelect.value;
+        if (!selectedYear) {
+          return;
+        }
+
+        if (
+          !confirm(
+            `Are you sure you want to migrate all future specs from ${selectedYear} to historical specs? This action cannot be undone.`
+          )
+        ) {
+          return;
+        }
+
+        if (
+          !confirm(
+            `FINAL CONFIRMATION: This will permanently move the data for ${selectedYear}. Proceed?`
+          )
+        ) {
+          return;
+        }
+
+        const futureEntries = (APP_STATE.futureSpecs && APP_STATE.futureSpecs.entries) || [];
+        const specsToMigrate = futureEntries.filter(
+          (spec) => String(spec.year) === String(selectedYear)
+        );
+
+        if (specsToMigrate.length === 0) {
+          showAlert('warning', `No future specifications found for ${selectedYear}.`);
+          return;
+        }
+
+        const migratedSpecs = specsToMigrate.map((futureSpec) => {
+          const historicalSpec = {
+            customer: futureSpec.customer,
+            event: futureSpec.event,
+            year:
+              typeof futureSpec.year === 'number'
+                ? futureSpec.year
+                : parseInt(futureSpec.year, 10) || parseInt(selectedYear, 10) || futureSpec.year,
+            sample_id: futureSpec.sample_id,
+            sample_type_id: futureSpec.sample_type_id,
+            abo: futureSpec.abo || 'TBD',
+            rh: futureSpec.rh || 'TBD',
+            antigens: Array.isArray(futureSpec.antigens)
+              ? futureSpec.antigens.map((antigen) => ({ ...antigen }))
+              : [],
+            antibodies: Array.isArray(futureSpec.antibodies)
+              ? futureSpec.antibodies.map((antibody) =>
+                  typeof antibody === 'object' && antibody !== null ? { ...antibody } : antibody
+                )
+              : [],
+            dat_status: futureSpec.dat_status || 'Negative',
+            status: futureSpec.status || 'draft',
+          };
+
+          if (historicalSpec.antibodies[0]) {
+            historicalSpec.antibody_1 = historicalSpec.antibodies[0];
+          }
+          if (historicalSpec.antibodies[1]) {
+            historicalSpec.antibody_2 = historicalSpec.antibodies[1];
+          }
+
+          const preservedFields = Object.keys(futureSpec || {}).filter(
+            (key) =>
+              ![
+                'customer',
+                'event',
+                'year',
+                'sample_id',
+                'sample_type_id',
+                'abo',
+                'rh',
+                'antigens',
+                'antibodies',
+                'dat_status',
+                'status',
+              ].includes(key)
+          );
+
+          preservedFields.forEach((field) => {
+            const value = futureSpec[field];
+
+            if (Array.isArray(value)) {
+              historicalSpec[field] = value.map((item) =>
+                typeof item === 'object' && item !== null ? { ...item } : item
+              );
+            } else if (value && typeof value === 'object') {
+              historicalSpec[field] = { ...value };
+            } else {
+              historicalSpec[field] = value;
+            }
+          });
+
+          return historicalSpec;
+        });
+
+        APP_STATE.customerSpecs.push(...migratedSpecs);
+
+        APP_STATE.futureSpecs.entries = futureEntries.filter(
+          (spec) => String(spec.year) !== String(selectedYear)
+        );
+
+        const keysToRemove = new Set(
+          specsToMigrate.map(
+            (spec) => `${spec.customer}_${spec.event}_${spec.year}`
+          )
+        );
+
+        keysToRemove.forEach((key) => {
+          delete APP_STATE.futureSpecs.metadata[key];
+        });
+
+        const versionKeys = Object.keys(APP_STATE.futureSpecs.versions || {});
+        versionKeys.forEach((versionKey) => {
+          for (const specKey of keysToRemove) {
+            if (versionKey.startsWith(`${specKey}_v`)) {
+              delete APP_STATE.futureSpecs.versions[versionKey];
+              break;
+            }
+          }
+        });
+
+        logActivity(
+          `Migrated ${migratedSpecs.length} specifications from ${selectedYear} to historical data.`
+        );
+
+        showAlert(
+          'success',
+          `Migrated ${migratedSpecs.length} specifications from ${selectedYear} to historical data.`
+        );
+
+        updateSpecTable();
+        populateSpecFilters();
+        updateFutureSpecsList();
+        updateDashboard();
+        populateMigrationYearOptions();
+
+        migrateButton.disabled = true;
+        yearSelect.value = '';
+
+        autoSave();
       }
 
       function optimizeFutureSpec(specKey) {
