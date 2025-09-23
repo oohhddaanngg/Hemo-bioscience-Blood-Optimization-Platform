@@ -1646,11 +1646,7 @@
             </button>
             <button class="nav-item" onclick="switchPanel('specs', event)">
               <span class="nav-icon">📝</span>
-              <span>Specifications</span>
-            </button>
-            <button class="nav-item" onclick="switchPanel('future-specs', event)">
-              <span class="nav-icon">🔮</span>
-              <span>Future Specifications</span>
+              <span>Historical Specifications</span>
             </button>
             <button class="nav-item" onclick="switchPanel('quantities', event)">
               <span class="nav-icon">📊</span>
@@ -1664,6 +1660,10 @@
 
           <div class="nav-section">
             <div class="nav-section-title">Analysis</div>
+            <button class="nav-item" onclick="switchPanel('future-specs', event)">
+              <span class="nav-icon">🔮</span>
+              <span>Future Specifications</span>
+            </button>
             <button class="nav-item" onclick="switchPanel('calculator', event)">
               <span class="nav-icon">🧮</span>
               <span>Blood Calculator</span>
@@ -1897,7 +1897,7 @@
           </div>
         </div>
 
-        <!-- Specifications Panel -->
+        <!-- Historical Specifications Panel -->
         <div id="specs-panel" class="panel">
           <div class="content-header">
             <h1 class="content-title">Historical Specifications</h1>
