@@ -1,78 +1,54 @@
-### **Project Current Work (as of v0.4.5)**
+# Hemo bioscience - Project Current Work
 
-📌 **Current Version**
-* **Version:** v0.4.5 (Stable)
-* **Release date:** 2025-09-22
-
-
-✅ **Recent Completions**
-* **v0.4.5:** Removed redundant placeholder buttons ("Master Schedule," "Specifications Generator," "Other Raw Materials") from the UI. Renamed "Specifications" panel to "Historical Specifications." Removed the old "Future Specifications" modal and promoted it to its own dedicated panel for better modularity.
-* **v0.4.4:** Streamlined calendar event types in the modal to remove confusing, legacy options.
-* **v0.4.3:** Implemented ship/arrival date tracking for blood shipments in the calendar.
-* **v0.4.2:** Fixed calendar bugs related to initial blank loading and restored the "Delete Event" functionality.
-* **v0.4.1:** Resolved a critical JavaScript `ReferenceError` that was blocking calendar interaction.
-* **v0.4.0:** Completed a full overhaul of the Manufacturing Calendar, replacing the old manual entry form with a modern, on-click modal system.
+**Version:** 0.4.6
+**Date:** 2025-09-23
 
 ---
 
-🔜 **Next Planned Work**
+### **Current Task: Enhance "Historical Quantities" with manual and CSV data input.**
 
-**Priority 0: Critical Fixes & Foundational Changes**
-* ✅ **(Completed)** Fix & Overhaul Manufacturing Calendar.
-* ✅ **(Completed)** Implement Shipment Tracking.
+**Phase:** 1 (Planning)
 
-**Priority 1: UI/UX & Structural Reorganization**
-* ✅ **(Completed)** Remove Redundant Modals.
-* **(In Progress)** Rename & Relocate Modals.
-* Implement Annual Spec Migration.
+**Goal:**
+Develop the "Historical Quantities" module, which is currently a placeholder. This involves building the UI and backend logic to allow users to both manually input historical order quantities and upload them via a CSV file.
 
-**Priority 2: New Module Development**
-* Enhance Historical Quantities.
-* Build Vendors Module.
-* Create Blood Suppliers Module.
-
-**Priority 3: Existing Module Enhancement**
-* Implement Bulk Overage Tracking.
-* Audit & Refine Antibodies Module.
+**Key Objectives:**
+1.  Design and build the UI panel for "Historical Quantities".
+2.  Implement a modal for manual data entry of a single historical quantity record.
+3.  Implement CSV upload and parsing functionality.
+4.  Create a table to display all historical quantity data with appropriate filters.
+5.  Ensure data persistence within the main JSON data file.
 
 ---
 
-🗂 **Version Changelog**
+## **Project Roadmap & Status**
 
-**v0.4.5 — 2025-09-22**
-* **Highlights:** Cleaned up the main navigation sidebar by removing placeholder buttons for deprecated features.
-* **Details:**
-    * Removed "Master Schedule" link.
-    * Removed "Specifications Generator" link.
-    * Removed "Other Raw Materials" link.
+### **Priority 0: Critical Fixes & Foundational Changes**
 
-**v0.4.4 — 2025-09-22**
-* **Highlights:** Improved calendar UX by removing redundant and confusing event type options.
-* **Details:**
-    * Removed legacy "Blood Arrival" and "Shipment" event types from the modal.
-    * Renamed "Blood Shipment (Ship/Arrival)" to the clearer "Blood Shipment".
+| Task | Status | Version | Notes |
+| :--- | :--- | :--- | :--- |
+| **Fix & Overhaul Manufacturing Calendar** | `Completed` | v0.4.4 | Implemented on-click modal for event entry/editing. Removed old manual entry section. |
+| **Implement Shipment Tracking** | `Completed` | v0.4.4 | Integrated "Blood Ship Date" & "Blood Arrival Date" into the new calendar modal system. |
 
-**v0.4.3 — 2025-09-22**
-* **Highlights:** Added critical shipment tracking functionality to the calendar.
-* **Details:**
-    * Introduced a new "Blood Shipment" event type that dynamically shows fields for both "Ship Date" and "Arrival Date".
-    * Saving a shipment now correctly creates two linked events on the calendar.
+### **Priority 1: UI/UX & Structural Reorganization**
 
-**v0.4.2 — 2025-09-22**
-* **Highlights:** Addressed key bugs and usability issues with the new calendar module.
-* **Details:**
-    * Fixed: Calendar no longer appears blank on initial application load.
-    * Added: The "Delete Event" button and its corresponding functionality have been restored to the event modal.
+| Task | Status | Version | Notes |
+| :--- | :--- | :--- | :--- |
+| **Remove Redundant Modals** | `Completed` | v0.4.2 | Removed "Master Schedule," "Specifications Generator," and "Other Raw Materials" modals. |
+| **Rename & Relocate Modals** | `Completed` | v0.4.5 | Renamed "Specifications" to "Historical Specifications". Promoted "Future Specifications" to its own panel. |
+| **Implement Automation: Annual Migration** | `Completed` | v0.4.6 | Created a user-initiated process in Settings to migrate future specs to historical specs. |
 
-**v0.4.1 — 2025-09-22**
-* **Highlights:** Critical bug fix for the calendar module.
-* **Details:**
-    * Fixed: A `ReferenceError` that prevented the calendar modal from opening has been resolved by correcting variable scope.
+### **Priority 2: New Module Development**
 
-**v0.4.0 — 2025-09-22**
-* **Highlights:** Major overhaul of the Manufacturing Calendar to fix critical bugs and introduce a modern, interactive event management system. This is a foundational change for future forecasting and logistics features.
-* **Details:**
-    * Implemented on-click functionality for any calendar day to open an "Add Event" modal.
-    * Removed the old, separate manual entry section.
+| Task | Status | Version | Notes |
+| :--- | :--- | :--- | :--- |
+| **Enhance "Historical Quantities"**| `Active` | | Build out the placeholder module with manual and CSV input. |
+| **Build out the "Vendors" module**| `Not Started`| | For non-blood suppliers. |
+| **Create the new "Blood Suppliers" module**| `Not Started`| | To handle complex pricing rules and supplier information. |
 
-***
+### **Priority 3: Existing Module Enhancement & Review**
+
+| Task | Status | Version | Notes |
+| :--- | :--- | :--- | :--- |
+| **Implement "Bulk RBCs" & "Bulk Serums" logic**| `Not Started`| | Add overage tracking and partial unit management. |
+| **Audit and enhance "Antibodies" module** | `Not Started`| | Full review of functionality and data structure. |
