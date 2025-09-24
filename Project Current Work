@@ -1,23 +1,22 @@
 # Hemo bioscience - Project Current Work
 
-**Version:** 0.4.6
+**Version:** 0.4.7
 **Date:** 2025-09-23
 
 ---
 
-### **Current Task: Enhance "Historical Quantities" with manual and CSV data input.**
+### **Current Task: Build out the "Vendors" module.**
 
 **Phase:** 1 (Planning)
 
 **Goal:**
-Develop the "Historical Quantities" module, which is currently a placeholder. This involves building the UI and backend logic to allow users to both manually input historical order quantities and upload them via a CSV file.
+Activate the placeholder "Vendors" module to manage non-blood suppliers (e.g., for reagents, consumables, and other lab materials).
 
 **Key Objectives:**
-1.  Design and build the UI panel for "Historical Quantities".
-2.  Implement a modal for manual data entry of a single historical quantity record.
-3.  Implement CSV upload and parsing functionality.
-4.  Create a table to display all historical quantity data with appropriate filters.
-5.  Ensure data persistence within the main JSON data file.
+1.  Design and build the UI panel for "Vendors".
+2.  Implement a modal for adding and editing vendor information, including contact details and primary materials supplied.
+3.  Create a data structure within `APP_STATE` to store vendor information.
+4.  Display vendors in a clean, card-based layout.
 
 ---
 
@@ -25,30 +24,30 @@ Develop the "Historical Quantities" module, which is currently a placeholder. Th
 
 ### **Priority 0: Critical Fixes & Foundational Changes**
 
-| Task | Status | Version | Notes |
-| :--- | :--- | :--- | :--- |
-| **Fix & Overhaul Manufacturing Calendar** | `Completed` | v0.4.4 | Implemented on-click modal for event entry/editing. Removed old manual entry section. |
-| **Implement Shipment Tracking** | `Completed` | v0.4.4 | Integrated "Blood Ship Date" & "Blood Arrival Date" into the new calendar modal system. |
+| Task                                   | Status      | Version | Notes                                                                                    |
+| :------------------------------------- | :---------- | :------ | :--------------------------------------------------------------------------------------- |
+| **Fix & Overhaul Manufacturing Calendar** | `Completed` | v0.4.4  | Implemented on-click modal for event entry/editing. Removed old manual entry section.    |
+| **Implement Shipment Tracking** | `Completed` | v0.4.4  | Integrated "Blood Ship Date" & "Blood Arrival Date" into the new calendar modal system. |
 
 ### **Priority 1: UI/UX & Structural Reorganization**
 
-| Task | Status | Version | Notes |
-| :--- | :--- | :--- | :--- |
-| **Remove Redundant Modals** | `Completed` | v0.4.2 | Removed "Master Schedule," "Specifications Generator," and "Other Raw Materials" modals. |
-| **Rename & Relocate Modals** | `Completed` | v0.4.5 | Renamed "Specifications" to "Historical Specifications". Promoted "Future Specifications" to its own panel. |
-| **Implement Automation: Annual Migration** | `Completed` | v0.4.6 | Created a user-initiated process in Settings to migrate future specs to historical specs. |
+| Task                                   | Status      | Version | Notes                                                                                             |
+| :------------------------------------- | :---------- | :------ | :------------------------------------------------------------------------------------------------ |
+| **Remove Redundant Modals** | `Completed` | v0.4.2  | Removed "Master Schedule," "Specifications Generator," and "Other Raw Materials" modals.         |
+| **Rename & Relocate Modals** | `Completed` | v0.4.5  | Renamed "Specifications" to "Historical Specifications". Promoted "Future Specifications" to its own panel. |
+| **Implement Automation: Annual Migration** | `Completed` | v0.4.6  | Created a user-initiated process in Settings to migrate future specs to historical specs.         |
 
 ### **Priority 2: New Module Development**
 
-| Task | Status | Version | Notes |
-| :--- | :--- | :--- | :--- |
-| **Enhance "Historical Quantities"**| `Active` | | Build out the placeholder module with manual and CSV input. |
-| **Build out the "Vendors" module**| `Not Started`| | For non-blood suppliers. |
-| **Create the new "Blood Suppliers" module**| `Not Started`| | To handle complex pricing rules and supplier information. |
+| Task                                   | Status      | Version | Notes                                                                                         |
+| :------------------------------------- | :---------- | :------ | :-------------------------------------------------------------------------------------------- |
+| **Enhance "Historical Quantities"** | `Completed` | v0.4.7  | Built out the module with manual/CSV input and created the annual migration tool for order quantities. |
+| **Build out the "Vendors" module** | `Active`    |         | For non-blood suppliers.                                                                      |
+| **Create the new "Blood Suppliers" module** | `Not Started` |         | To handle complex pricing rules and supplier information.                                     |
 
 ### **Priority 3: Existing Module Enhancement & Review**
 
-| Task | Status | Version | Notes |
-| :--- | :--- | :--- | :--- |
-| **Implement "Bulk RBCs" & "Bulk Serums" logic**| `Not Started`| | Add overage tracking and partial unit management. |
-| **Audit and enhance "Antibodies" module** | `Not Started`| | Full review of functionality and data structure. |
+| Task                                       | Status      | Version | Notes                                                   |
+| :----------------------------------------- | :---------- | :------ | :------------------------------------------------------ |
+| **Implement "Bulk RBCs" & "Bulk Serums" logic** | `Not Started` |         | Add overage tracking and partial unit management.       |
+| **Audit and enhance "Antibodies" module** | `Not Started` |         | Full review of functionality and data structure.        |
