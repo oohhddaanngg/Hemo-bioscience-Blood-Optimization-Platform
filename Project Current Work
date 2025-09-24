@@ -1,21 +1,22 @@
 # Hemo bioscience - Project Current Work
 
-**Version:** 0.4.8
+**Version:** 0.4.9
 **Date:** 2025-09-23
 
 ---
 
-### **Current Task: Create the new "Blood Suppliers" module.**
+### **Current Task: Implement logic for "Bulk RBCs" & "Bulk Serums" overage tracking.**
 
 **Phase:** 1 (Planning)
 
 **Goal:**
-Design and build a dedicated module for managing Red Blood Cell (RBC) suppliers. This module must handle more complex data than the general vendors module, including tiered pricing, antigen-specific fees, and shipping rules.
+Activate the placeholder "Bulk Serums" module and create a new "Bulk RBCs" module for inventory tracking. This involves building the UI and logic to log individual RBC/Serum units and, most importantly, track their partial usage and remaining overage.
 
 **Key Objectives:**
-1.  Design and build the UI panel for "Blood Suppliers".
-2.  Create a data structure in `APP_STATE` to store supplier details and their complex pricing rules.
-3.  Implement a modal for adding/editing suppliers and their pricing tiers (e.g., cost per unit, fees for specific antigens).
+1.  Design and build UI panels for both "Bulk RBCs" and "Bulk Serums".
+2.  Create data structures in `APP_STATE` to store individual units and their current volumes.
+3.  Implement a modal to add new units, including details like bleed date, expiration, and volume.
+4.  Develop a mechanism to log usage against a unit, automatically calculating the remaining volume.
 
 ---
 
@@ -42,11 +43,11 @@ Design and build a dedicated module for managing Red Blood Cell (RBC) suppliers.
 | :------------------------------------- | :---------- | :------ | :-------------------------------------------------------------------------------------------- |
 | **Enhance "Historical Quantities"** | `Completed` | v0.4.7  | Built out the module with manual/CSV input and created the annual migration tool for order quantities. |
 | **Build out the "Vendors" module** | `Completed` | v0.4.8  | Activated the module and implemented core CRUD functionality for non-blood suppliers.          |
-| **Create the new "Blood Suppliers" module** | `Active`    |         | To handle complex pricing rules and supplier information.                                     |
+| **Create the new "Blood Suppliers" module** | `Completed` | v0.4.9  | Built the module to manage RBC suppliers with complex, tiered pricing rules.                  |
 
 ### **Priority 3: Existing Module Enhancement & Review**
 
 | Task                                       | Status      | Version | Notes                                                   |
 | :----------------------------------------- | :---------- | :------ | :------------------------------------------------------ |
-| **Implement "Bulk RBCs" & "Bulk Serums" logic** | `Not Started` |         | Add overage tracking and partial unit management.       |
+| **Implement "Bulk RBCs" & "Bulk Serums" logic** | `Active`    |         | Add overage tracking and partial unit management.       |
 | **Audit and enhance "Antibodies" module** | `Not Started` |         | Full review of functionality and data structure.        |
