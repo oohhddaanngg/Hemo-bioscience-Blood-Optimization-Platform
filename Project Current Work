@@ -1,21 +1,21 @@
 # Hemo bioscience - Project Current Work
 
-**Version:** 0.5.0
+**Version:** 0.5.1  
 **Date:** 2025-09-24
 
 ---
 
-### **Current Task: Audit and enhance "Antibodies" module.**
+### **Current Task: Post-merge polish & regression QA (Antibodies + CSV imports)**
 
-**Phase:** 1 (Planning)
+**Phase:** 2 (Validation)
 
-**Goal:**
-Conduct a full review of the "Antibodies" module to identify and implement necessary enhancements. This will ensure the module is robust, user-friendly, and aligns with the final requirements of the platform.
+**Goal:** Validate the merged 0.5.1 changes in the Antibodies module and CSV import placements; capture any final string/UX polish for the next version.
 
-**Key Objectives:**
-1.  Review the existing data fields and identify any missing or redundant information.
-2.  Assess the UI/UX for clarity and ease of use.
-3.  Implement any required logic changes or feature additions based on the audit.
+**Key Objectives (this phase):**
+1. Smoke-test Antibodies CRUD (specificity + inventory lots + log usage) on migrated and new data.
+2. Verify price math (`Price/mL`, `Price/mL (Optimal)`) and requalification auto-calc across edge dates.
+3. Confirm CSV import widgets are at **page bottoms** and wired correctly (Calendar, Sample Definitions, Historical Specifications, Order Quantities, Historical Quantities).
+4. Capture minor copy/label fixes for v0.5.2.
 
 ---
 
@@ -23,30 +23,86 @@ Conduct a full review of the "Antibodies" module to identify and implement neces
 
 ### **Priority 0: Critical Fixes & Foundational Changes**
 
-| Task                                   | Status      | Version | Notes                                                                                    |
-| :------------------------------------- | :---------- | :------ | :--------------------------------------------------------------------------------------- |
-| **Fix & Overhaul Manufacturing Calendar** | `Completed` | v0.4.4  | Implemented on-click modal for event entry/editing. Removed old manual entry section.    |
-| **Implement Shipment Tracking** | `Completed` | v0.4.4  | Integrated "Blood Ship Date" & "Blood Arrival Date" into the new calendar modal system. |
+| Task                                       | Status      | Version | Notes                                                                                          |
+| :----------------------------------------- | :---------- | :------ | :--------------------------------------------------------------------------------------------- |
+| **Fix & Overhaul Manufacturing Calendar**  | `Completed` | v0.4.4  | On-click modal for event entry/edit; removed old manual entry section.                         |
+| **Implement Shipment Tracking**            | `Completed` | v0.4.4  | Added "Blood Ship Date" & "Blood Arrival Date" into the calendar modal system.                 |
 
 ### **Priority 1: UI/UX & Structural Reorganization**
 
-| Task                                   | Status      | Version | Notes                                                                                             |
-| :------------------------------------- | :---------- | :------ | :------------------------------------------------------------------------------------------------ |
-| **Remove Redundant Modals** | `Completed` | v0.4.2  | Removed "Master Schedule," "Specifications Generator," and "Other Raw Materials" modals.         |
-| **Rename & Relocate Modals** | `Completed` | v0.4.5  | Renamed "Specifications" to "Historical Specifications". Promoted "Future Specifications" to its own panel. |
-| **Implement Automation: Annual Migration** | `Completed` | v0.4.6  | Created a user-initiated process in Settings to migrate future specs to historical specs.         |
+| Task                                       | Status      | Version | Notes                                                                                                  |
+| :----------------------------------------- | :---------- | :------ | :----------------------------------------------------------------------------------------------------- |
+| **Remove Redundant Modals**                | `Completed` | v0.4.2  | Removed "Master Schedule," "Specifications Generator," and "Other Raw Materials" modals.               |
+| **Rename & Relocate Modals**               | `Completed` | v0.4.5  | Renamed "Specifications" → "Historical Specifications"; promoted "Future Specifications" panel.        |
+| **Implement Automation: Annual Migration** | `Completed` | v0.4.6  | User-initiated Settings process to migrate future specs to historical specs.                           |
 
 ### **Priority 2: New Module Development**
 
-| Task                                   | Status      | Version | Notes                                                                                         |
-| :------------------------------------- | :---------- | :------ | :-------------------------------------------------------------------------------------------- |
-| **Enhance "Historical Quantities"** | `Completed` | v0.4.7  | Built out the module with manual/CSV input and created the annual migration tool for order quantities. |
-| **Build out the "Vendors" module** | `Completed` | v0.4.8  | Activated the module and implemented core CRUD functionality for non-blood suppliers.          |
-| **Create the new "Blood Suppliers" module** | `Completed` | v0.4.9  | Built the module to manage RBC suppliers with complex, tiered pricing rules.                  |
+| Task                                  | Status      | Version | Notes                                                                                              |
+| :------------------------------------ | :---------- | :------ | :------------------------------------------------------------------------------------------------- |
+| **Enhance "Historical Quantities"**   | `Completed` | v0.4.7  | Built module with manual/CSV input and annual migration tool for order quantities.                 |
+| **Build out the "Vendors" module**    | `Completed` | v0.4.8  | Activated module; core CRUD for non-blood suppliers.                                               |
+| **Create the "Blood Suppliers" module** | `Completed` | v0.4.9  | Manage RBC suppliers with complex, tiered pricing rules.                                           |
 
 ### **Priority 3: Existing Module Enhancement & Review**
 
-| Task                                       | Status      | Version | Notes                                                                 |
-| :----------------------------------------- | :---------- | :------ | :-------------------------------------------------------------------- |
-| **Implement "Bulk RBCs" & "Bulk Serums" logic** | `Completed` | v0.5.0  | Built inventory tracking for RBCs and Serums with overage management. |
-| **Audit and enhance "Antibodies" module** | `Active`    |         | Full review of functionality and data structure.                      |
+| Task                                        | Status      | Version | Notes                                                                                                                                                                            |
+| :------------------------------------------ | :---------- | :------ | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Implement "Bulk RBCs" & "Bulk Serums" logic** | `Completed` | v0.5.0  | Inventory tracking for RBCs and Serums with overage management.                                                                                                                  |
+| **Audit and enhance "Antibodies" module**   | `Completed` | v0.5.1  | **Delivered:** (1) One-time, idempotent migration to lot-aware structure `{ id, specificity, inventory:[LOT] }`; (2) Specificity **table** with expandable lot **sub-table**; (3) New **Specificity** and **Inventory Lot** modals (Add/Edit + **Log Usage** mode); (4) **Requalification auto-calc** (+365 days) on qualification date change; (5) **Price/mL** and **Price/mL (Optimal)** columns; (6) Removed legacy flat-model UI and functions. |
+
+---
+
+## **Cross-Section Changes (0.5.1)**
+
+| Area/Panel                     | Change                                                                                                 | Status      | Notes                                                                                          |
+| :----------------------------- | :------------------------------------------------------------------------------------------------------ | :---------- | :--------------------------------------------------------------------------------------------- |
+| Manufacturing Calendar         | **Re-added** “Import schedule.csv” and **moved to bottom** of page (under calendar).                  | `Completed` | Import handler wired to refresh calendar.                                                      |
+| Sample Definitions             | **CSV import relocated** to **bottom** of page.                                                        | `Completed` | Mirrors Calendar placement pattern.                                                            |
+| Historical Specifications      | **CSV import relocated** to **bottom** of page.                                                        | `Completed` | —                                                                                              |
+| Order Quantities (Confirmed)   | **CSV import relocated** to **bottom** of page.                                                        | `Completed` | —                                                                                              |
+| Historical Quantities          | **CSV import relocated** to **bottom** of page.                                                        | `Completed` | Panel heading standardized to **“Historical Quantities.”**                                     |
+| Customers modal                | UI title renamed to **“PT Customers.”**                                                                | `Completed` | ID/handlers unchanged; user-visible title updated.                                             |
+
+---
+
+## **Post-Merge Validation Checklist (run on 0.5.1)**
+
+- Antibodies
+  - [ ] Legacy flat entries auto-migrate once; no repeat on reload.
+  - [ ] Create/Edit lot; **Log Usage** subtracts volume and appends history note.
+  - [ ] **Price/mL** = `purchasePrice / purchaseQuantity` (— if missing/0).
+  - [ ] **Price/mL (Optimal)** divides by parsed dilution factor (from Serum or DAT; supports `1:64`).
+  - [ ] **Requalification Date** auto-updates to +365 days (leap-year safe behavior).
+- CSV imports (all five sections above)
+  - [ ] Import widgets render at **page bottom**.
+  - [ ] Parsing aligns with existing CSV schemas; views refresh after import.
+
+---
+
+## **Known Follow-Ups (target v0.5.2)**
+
+1. **Copy polish:** In **Historical Quantities**, change the subtitle text to remove “order” (final phrasing: “Review archived quantities”).  
+2. **Antibodies UX niceties (optional):**
+   - Show toast/snackbar on successful lot save and usage log.
+   - Disable “Save” until required fields are valid; inline validation hints.
+3. **Calendar import UX (optional):**
+   - Show parsed row count and reject rows with missing required fields; download error CSV.
+
+---
+
+## **Risks & Mitigations**
+
+- **Data shape divergence:** Legacy antibody objects without `inventory` are now migrated at load; idempotent guard prevents repeat transforms.  
+  _Mitigation:_ Keep a console breadcrumb on first migration and unit test with a small legacy fixture.
+- **CSV schema drift:** Imports assume current CSV headers.  
+  _Mitigation:_ Validate headers before parse; surface a helpful error if mismatched; keep schemas documented alongside sample CSVs.
+
+---
+
+## **Release Notes (0.5.1)**
+
+- Antibodies module upgraded to **lot-aware** inventory with expandable specificity table, new modals, price visibility, and requalification logic.
+- CSV import components standardized and **relocated to page bottoms** across affected panels.
+- Customers modal retitled to **PT Customers**.
+- Minor copy standardization to **Historical Quantities** (heading); subtitle polish deferred to 0.5.2.
