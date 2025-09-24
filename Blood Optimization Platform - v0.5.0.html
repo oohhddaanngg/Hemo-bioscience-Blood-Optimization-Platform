@@ -3796,6 +3796,8 @@
       let editingSupplierId = null;
       let editingVendorId = null;
 
+      let antibodyMigrationChecked = false;
+
       let editingCalendarEntryId = null;
 
       // Constants
@@ -4149,9 +4151,14 @@
         });
       }
 
-      function migrateAntibodiesToLotStructure() {
+      function migrateAntibodiesToLotStructure(force = false) {
+        if (antibodyMigrationChecked && !force) {
+          return;
+        }
+
         if (!Array.isArray(APP_STATE.antibodies)) {
           APP_STATE.antibodies = [];
+          antibodyMigrationChecked = true;
           return;
         }
 
@@ -4166,6 +4173,8 @@
 
           return normalizeSpecificityEntry(entry);
         });
+
+        antibodyMigrationChecked = true;
       }
 
       // ===============================
@@ -4205,6 +4214,15 @@
           await checkFileAccess();
           await loadData();
 
+          const needsAntibodyMigration =
+            Array.isArray(APP_STATE.antibodies) &&
+            APP_STATE.antibodies.some((entry) => entry && !entry.inventory);
+          if (needsAntibodyMigration) {
+            migrateAntibodiesToLotStructure(true);
+          } else {
+            migrateAntibodiesToLotStructure();
+          }
+
           populateMigrationYearOptions();
           populateQuantityMigrationOptions();
 
@@ -4226,12 +4244,17 @@
         updateBulkSerumList();
 
         const lotQualInput = document.getElementById('lot-qualification-date');
-        if (lotQualInput) {
+        const lotRequalInput = document.getElementById('lot-requalification-date');
+        if (lotQualInput && lotRequalInput) {
           lotQualInput.addEventListener('change', function (e) {
-            if (e.target.value) {
-              document.getElementById('lot-requalification-date').value =
-                calculateRequalificationDate(e.target.value);
+            const newDate = e.target.value;
+            if (!newDate) {
+              lotRequalInput.value = '';
+              return;
             }
+
+            const calculated = calculateRequalificationDate(newDate);
+            lotRequalInput.value = calculated || '';
           });
         }
 
@@ -5008,7 +5031,8 @@
           APP_STATE.quantities = migratedData.quantities || [];
           APP_STATE.historicalQuantities = migratedData.historicalQuantities || [];
           APP_STATE.antibodies = migratedData.antibodies || [];
-          migrateAntibodiesToLotStructure();
+          antibodyMigrationChecked = false;
+          migrateAntibodiesToLotStructure(true);
           APP_STATE.vendors = migratedData.vendors || [];
           APP_STATE.bloodSuppliers = migratedData.bloodSuppliers || [];
           APP_STATE.bloodUnits = migratedData.bloodUnits || [];
@@ -10612,7 +10636,8 @@
               APP_STATE.quantities = data.quantities || [];
               APP_STATE.historicalQuantities = data.historicalQuantities || [];
               APP_STATE.antibodies = data.antibodies || [];
-              migrateAntibodiesToLotStructure();
+              antibodyMigrationChecked = false;
+              migrateAntibodiesToLotStructure(true);
               APP_STATE.vendors = data.vendors || [];
               APP_STATE.bloodSuppliers = data.bloodSuppliers || [];
               APP_STATE.bloodUnits = data.bloodUnits || [];
@@ -12306,9 +12331,6 @@
         updateFutureSpecsList();
         autoSave();
       }
-    </script>
-  </body>
-</html>
       function updateAntibodyView() {
         migrateAntibodiesToLotStructure();
 
@@ -12993,3 +13015,6 @@
             .join('');
         }
       }
+    </script>
+  </body>
+</html>
