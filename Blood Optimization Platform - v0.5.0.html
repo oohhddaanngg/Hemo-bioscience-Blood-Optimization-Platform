@@ -1512,6 +1512,10 @@
         margin-top: 1.5rem;
       }
 
+      .mt-4 {
+        margin-top: 2rem;
+      }
+
       .flex {
         display: flex;
       }
@@ -1605,7 +1609,7 @@
             <div class="nav-section-title">Data Manager</div>
             <button class="nav-item" onclick="switchPanel('customers', event)">
               <span class="nav-icon">🏢</span>
-              <span>Customers</span>
+              <span>PT Customers</span>
             </button>
             <button class="nav-item" onclick="switchPanel('samples', event)">
               <span class="nav-icon">🧪</span>
@@ -1750,7 +1754,7 @@
                   class="btn btn-primary"
                   onclick="switchPanel('customers'); openCustomerModal();"
                 >
-                  + Add Customer
+                  + Add PT Customer
                 </button>
                 <button
                   class="btn btn-primary"
@@ -1797,9 +1801,9 @@
           <div class="content-body">
             <div class="card">
               <div class="card-header">
-                <h3 class="card-title">Active Customers</h3>
+                <h3 class="card-title">Active PT Customers</h3>
                 <button class="btn btn-primary btn-sm" onclick="openCustomerModal()">
-                  + Add Customer
+                  + Add PT Customer
                 </button>
               </div>
 
@@ -1821,21 +1825,6 @@
             <div class="card">
               <div class="card-header">
                 <h3 class="card-title">Sample Type Definitions</h3>
-              </div>
-
-              <div class="upload-area" onclick="document.getElementById('sample-csv').click()">
-                <input
-                  type="file"
-                  id="sample-csv"
-                  class="upload-input"
-                  accept=".csv"
-                  onchange="handleSampleCSV(event)"
-                />
-                <div class="upload-icon">📁</div>
-                <div>Click to upload sample_definitions.csv</div>
-                <div style="font-size: 0.875rem; color: var(--gray); margin-top: 0.5rem">
-                  or drag and drop CSV file here
-                </div>
               </div>
 
               <div class="table-container">
@@ -1865,6 +1854,18 @@
                 </button>
               </div>
             </div>
+            <div class="card mt-4 import-section">
+              <div class="card-header">
+                <h3>Import sample_definitions.csv</h3>
+              </div>
+              <div class="card-body">
+                <input id="sample-definitions-import-file" type="file" accept=".csv" />
+                <button class="btn btn-primary" onclick="handleSampleDefinitionsCsvImport()">
+                  Import
+                </button>
+                <div id="sample-definitions-import-feedback" class="text-muted small mt-2"></div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -1879,22 +1880,6 @@
             <div class="card">
               <div class="card-header">
                 <h3 class="card-title">Customer Specifications</h3>
-              </div>
-
-              <div class="upload-area" onclick="document.getElementById('spec-csv').click()">
-                <input
-                  type="file"
-                  id="spec-csv"
-                  class="upload-input"
-                  accept=".csv"
-                  onchange="handleSpecCSV(event)"
-                  multiple
-                />
-                <div class="upload-icon">📁</div>
-                <div>Click to upload customer spec CSV files</div>
-                <div style="font-size: 0.875rem; color: var(--gray); margin-top: 0.5rem">
-                  Select multiple files: wslh_specs.csv, sigma_qc_specs.csv, etc.
-                </div>
               </div>
 
               <!-- Pagination Controls -->
@@ -2051,6 +2036,18 @@
                     </tr>
                   </tbody>
                 </table>
+              </div>
+            </div>
+            <div class="card mt-4 import-section">
+              <div class="card-header">
+                <h3>Import historical specifications CSVs</h3>
+              </div>
+              <div class="card-body">
+                <input id="historical-specifications-import-file" type="file" accept=".csv" multiple />
+                <button class="btn btn-primary" onclick="handleHistoricalSpecificationsCsvImport()">
+                  Import
+                </button>
+                <div id="historical-specifications-import-feedback" class="text-muted small mt-2"></div>
               </div>
             </div>
           </div>
@@ -2471,24 +2468,6 @@
           </div>
 
           <div class="content-body">
-            <div class="card">
-              <div class="card-header">
-                <h3 class="card-title">Import Quantities</h3>
-              </div>
-
-              <div class="upload-area" onclick="document.getElementById('quantities-csv').click()">
-                <input
-                  type="file"
-                  id="quantities-csv"
-                  class="upload-input"
-                  accept=".csv"
-                  onchange="handleQuantitiesCSV(event)"
-                />
-                <div class="upload-icon">📊</div>
-                <div>Click to upload order_quantities_confirmed.csv</div>
-              </div>
-            </div>
-
             <!-- Filter Quantities Card -->
             <div class="card">
               <div class="card-header">
@@ -2602,34 +2581,28 @@
                 </table>
               </div>
             </div>
+            <div class="card mt-4 import-section">
+              <div class="card-header">
+                <h3>Import order_quantities_confirmed.csv</h3>
+              </div>
+              <div class="card-body">
+                <input id="order-quantities-import-file" type="file" accept=".csv" />
+                <button class="btn btn-primary" onclick="handleOrderQuantitiesCsvImport()">
+                  Import
+                </button>
+                <div id="order-quantities-import-feedback" class="text-muted small mt-2"></div>
+              </div>
+            </div>
           </div>
         </div>
 
         <div id="historical-quantities-panel" class="panel">
           <div class="content-header">
-            <h1 class="content-title">Historical Order Quantities</h1>
+            <h1 class="content-title">Historical Quantities</h1>
             <p class="content-subtitle">Review archived order quantities</p>
           </div>
 
           <div class="content-body">
-            <div class="card">
-              <div class="card-header">
-                <h3 class="card-title">Import Historical Quantities</h3>
-              </div>
-
-              <div class="upload-area" onclick="document.getElementById('historical-quantities-csv').click()">
-                <input
-                  type="file"
-                  id="historical-quantities-csv"
-                  class="upload-input"
-                  accept=".csv"
-                  onchange="handleHistoricalQuantitiesCSV(event)"
-                />
-                <div class="upload-icon">📊</div>
-                <div>Click to upload order_quantities_historical.csv</div>
-              </div>
-            </div>
-
             <!-- Filter Historical Quantities Card -->
             <div class="card">
               <div class="card-header">
@@ -2743,6 +2716,18 @@
                 </table>
               </div>
             </div>
+            <div class="card mt-4 import-section">
+              <div class="card-header">
+                <h3>Import order_quantities_historical.csv</h3>
+              </div>
+              <div class="card-body">
+                <input id="historical-quantities-import-file" type="file" accept=".csv" />
+                <button class="btn btn-primary" onclick="handleHistoricalQuantitiesCsvImport()">
+                  Import
+                </button>
+                <div id="historical-quantities-import-feedback" class="text-muted small mt-2"></div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -2799,6 +2784,17 @@
                 <div class="calendar-grid" id="calendar-grid">
                   <!-- Calendar will be generated here -->
                 </div>
+              </div>
+            </div>
+            <div class="card mt-4 import-section">
+              <div class="card-header">
+                <h3>Import schedule.csv</h3>
+                <p class="text-muted">Upload the production schedule for the Manufacturing Calendar.</p>
+              </div>
+              <div class="card-body">
+                <input id="schedule-import-file" type="file" accept=".csv" />
+                <button class="btn btn-primary" onclick="handleScheduleCsvImport()">Import</button>
+                <div id="schedule-import-feedback" class="text-muted small mt-2"></div>
               </div>
             </div>
           </div>
@@ -3136,7 +3132,7 @@
     <div id="customer-modal" class="modal">
       <div class="modal-content">
         <div class="modal-header">
-          <h3 class="modal-title" id="customer-modal-title">Add Customer</h3>
+          <h3 class="modal-title" id="customer-modal-title">Add PT Customer</h3>
           <button class="close-btn" onclick="closeCustomerModal()">×</button>
         </div>
         <div class="modal-body">
@@ -4020,47 +4016,6 @@
         return Math.max(5, Math.round(baseQuantity * 0.2));
       }
 
-      function parseDilutionValue(value) {
-        if (value === undefined || value === null) return null;
-        if (typeof value === 'number' && !Number.isNaN(value)) return value;
-
-        const text = String(value).trim();
-        if (!text) return null;
-
-        const ratioMatch = text.match(/(\d+(?:\.\d+)?)\s*:\s*(\d+(?:\.\d+)?)/);
-        if (ratioMatch) {
-          const numerator = parseFloat(ratioMatch[1]);
-          const denominator = parseFloat(ratioMatch[2]);
-          if (numerator > 0 && denominator > 0) {
-            return denominator / numerator;
-          }
-        }
-
-        const numeric = parseFloat(text.replace(/[^0-9.]/g, ''));
-        if (!Number.isNaN(numeric) && numeric > 0) {
-          return numeric;
-        }
-
-        return null;
-      }
-
-      function formatPricePerMl(price, quantity, dilution) {
-        const totalPrice = Number(price);
-        const baseQuantity = Number(quantity);
-        if (!totalPrice || !baseQuantity) return '—';
-
-        let effectiveQuantity = baseQuantity;
-        if (dilution && dilution > 0) {
-          effectiveQuantity = baseQuantity * dilution;
-        }
-
-        if (!effectiveQuantity) return '—';
-
-        const costPerMl = totalPrice / effectiveQuantity;
-        if (!Number.isFinite(costPerMl)) return '—';
-        return `$${costPerMl.toFixed(2)}`;
-      }
-
       function normalizeLot(lot = {}, specificity = {}) {
         const normalized = {
           inventoryId: lot.inventoryId || createId('lot'),
@@ -4184,6 +4139,91 @@
       // ===============================
 
       document.addEventListener('DOMContentLoaded', async function () {
+        // === Antibodies v0.5.0 one-time migration (idempotent) ===
+        (function migrateAntibodiesV050() {
+          try {
+            let changed = false;
+
+            const add365Days = (iso) => {
+              if (!iso) return '';
+              const d = new Date(iso);
+              if (Number.isNaN(d.getTime())) return '';
+              d.setUTCFullYear(d.getUTCFullYear() + 1);
+              return d.toISOString().slice(0, 10);
+            };
+
+            const toNum = (v, def = 0) => {
+              const n = Number(v);
+              return Number.isFinite(n) ? n : def;
+            };
+
+            const parseDilution = (txt) => {
+              if (!txt) return null;
+              const s = String(txt).trim();
+              const m = s.match(/^1\s*[:/]\s*(\d+)$/i);
+              if (m) return toNum(m[1], null);
+              const n = toNum(s, null);
+              return n && n > 0 ? n : null;
+            };
+
+            window.__parseDilution = window.__parseDilution || parseDilution;
+
+            if (!Array.isArray(window.APP_STATE?.antibodies)) return;
+
+            window.APP_STATE.antibodies = window.APP_STATE.antibodies.map((item) => {
+              if (item && Array.isArray(item.inventory)) return item;
+
+              if (item && !Array.isArray(item.inventory)) {
+                changed = true;
+                const id =
+                  item.id ||
+                  (self.crypto?.randomUUID?.() || `ab_${Math.random().toString(36).slice(2)}`);
+                const inventoryId =
+                  self.crypto?.randomUUID?.() || `lot_${Math.random().toString(36).slice(2)}`;
+
+                const purchasePrice = toNum(item.purchasePrice, 0);
+                const purchaseQuantity = toNum(item.purchaseQuantity, 0);
+                const currentQuantity = toNum(item.currentQuantity, purchaseQuantity);
+
+                const qualificationDate = item.qualificationDate || '';
+                const requalificationDate =
+                  item.requalificationDate || add365Days(qualificationDate);
+
+                return {
+                  id,
+                  specificity: item.specificity || item.name || 'Unspecified',
+                  inventory: [
+                    {
+                      inventoryId,
+                      manufacturer: item.manufacturer || '',
+                      lotNumber: item.lotNumber || '',
+                      clone: item.clone || item.cloneName || '',
+                      type: item.type || 'Monoclonal',
+                      class: item.class || 'IgG',
+                      purchasePrice,
+                      purchaseQuantity,
+                      currentQuantity,
+                      qualificationDate,
+                      requalificationDate,
+                      optimalDilutionSerum: item.optimalDilutionSerum || 'N/A',
+                      optimalDilutionDAT: item.optimalDilutionDAT || 'N/A',
+                      history: Array.isArray(item.history) ? item.history : [],
+                    },
+                  ],
+                };
+              }
+              return item;
+            });
+
+            if (changed && typeof window.updateAntibodyView === 'function') {
+              console.info('[Antibodies v0.5.0] migration applied');
+              window.updateAntibodyView();
+            }
+          } catch (err) {
+            console.error('Antibodies v0.5.0 migration error:', err);
+          }
+        })();
+
         // Apply saved theme
         document.body.setAttribute('data-theme', APP_STATE.theme);
         updateThemeIcon();
@@ -5406,7 +5446,7 @@
         if (APP_STATE.customers.length === 0) {
           listDiv.innerHTML = `
                                                         <div class="text-center" style="grid-column: 1/-1; color: var(--gray);">
-                                                            No customers yet. Click "Add Customer" to get started.
+                                                            No customers yet. Click "Add PT Customer" to get started.
                                                         </div>
                                                     `;
           return;
@@ -5480,7 +5520,7 @@
 
       function openCustomerModal(customerId = null) {
         if (!APP_STATE.writeAccess) {
-          showAlert('warning', 'Please complete setup to add customers');
+          showAlert('warning', 'Please complete setup to add PT customers');
           return;
         }
 
@@ -5493,7 +5533,7 @@
 
         if (customerId) {
           const customer = APP_STATE.customers.find((c) => c.id === customerId);
-          title.textContent = 'Edit Customer';
+          title.textContent = 'Edit PT Customer';
           document.getElementById('customer-name').value = customer.name;
           document.getElementById('customer-code').value = customer.code;
           document.getElementById('customer-region').value = customer.region;
@@ -5508,7 +5548,7 @@
 
           APP_STATE.editingCustomerId = customerId;
         } else {
-          title.textContent = 'Add Customer';
+          title.textContent = 'Add PT Customer';
           document.getElementById('customer-name').value = '';
           document.getElementById('customer-code').value = '';
           document.getElementById('customer-region').value = '';
@@ -9153,20 +9193,27 @@
       // CSV Import Functions
       // ===============================
 
-      function handleSampleCSV(event) {
-        const file = event.target.files[0];
-        if (!file) return;
+      async function handleSampleDefinitionsCsvImport() {
+        const input = document.getElementById('sample-definitions-import-file');
+        const feedback = document.getElementById('sample-definitions-import-feedback');
+        const file = input?.files?.[0];
+        if (!file) {
+          alert('Select sample_definitions.csv first.');
+          return;
+        }
 
-        const reader = new FileReader();
-        reader.onload = function (e) {
-          const csv = e.target.result;
-          const lines = csv.split('\n');
+        try {
+          const csv = await file.text();
+          const lines = csv.split(/\r?\n/).filter((line) => line.trim());
+          if (lines.length <= 1) {
+            if (feedback) feedback.textContent = 'No sample definitions found in file.';
+            return;
+          }
+
           const headers = lines[0].split(',').map((h) => h.trim());
-
           let count = 0;
-          for (let i = 1; i < lines.length; i++) {
-            if (lines[i].trim() === '') continue;
 
+          for (let i = 1; i < lines.length; i++) {
             const values = lines[i].split(',');
             const sample = {};
 
@@ -9183,26 +9230,39 @@
           showAlert('success', `Loaded ${count} sample definitions`);
           autoSave();
           updateDashboard();
-        };
-
-        reader.readAsText(file);
+          if (feedback) {
+            feedback.textContent = `Import complete. Loaded ${count} sample definitions.`;
+          }
+        } catch (error) {
+          console.error('Sample definitions import error:', error);
+          if (feedback) feedback.textContent = 'Import failed.';
+        } finally {
+          if (input) input.value = '';
+        }
       }
 
-      function handleSpecCSV(event) {
-        const files = event.target.files;
+      async function handleHistoricalSpecificationsCsvImport() {
+        const input = document.getElementById('historical-specifications-import-file');
+        const feedback = document.getElementById('historical-specifications-import-feedback');
+        const files = input?.files;
+
+        if (!files || files.length === 0) {
+          alert('Select specification CSV files first.');
+          return;
+        }
+
         let totalSpecs = 0;
 
-        Array.from(files).forEach((file) => {
-          const reader = new FileReader();
-          reader.onload = function (e) {
-            const csv = e.target.result;
-            const lines = csv.split('\n');
+        for (const file of Array.from(files)) {
+          try {
+            const csv = await file.text();
+            const lines = csv.split(/\r?\n/).filter((line) => line.trim());
+            if (lines.length <= 1) continue;
+
             const headers = lines[0].split(',').map((h) => h.trim());
-
             let count = 0;
-            for (let i = 1; i < lines.length; i++) {
-              if (lines[i].trim() === '') continue;
 
+            for (let i = 1; i < lines.length; i++) {
               const values = lines[i].split(',');
               const spec = {};
 
@@ -9221,30 +9281,45 @@
             showAlert('success', `Loaded ${count} specifications from ${file.name}`);
             autoSave();
             updateDashboard();
-
-            // Refresh calculator dropdowns after import
             populateCalculatorDropdowns();
-          };
+          } catch (error) {
+            console.error('Specification import error:', error);
+          }
+        }
 
-          reader.readAsText(file);
-        });
+        if (feedback) {
+          feedback.textContent =
+            totalSpecs > 0
+              ? `Import complete. Loaded ${totalSpecs} specifications.`
+              : 'No specifications imported.';
+        }
+
+        if (input) input.value = '';
       }
 
-      function handleScheduleCSV(event) {
-        const file = event.target.files[0];
-        if (!file) return;
+      async function handleScheduleCsvImport() {
+        const input = document.getElementById('schedule-import-file');
+        const feedback = document.getElementById('schedule-import-feedback');
+        const file = input?.files?.[0];
+        if (!file) {
+          alert('Select schedule.csv first.');
+          return;
+        }
 
-        const reader = new FileReader();
-        reader.onload = function (e) {
-          const csv = e.target.result;
-          const lines = csv.split('\n');
+        try {
+          const csv = await file.text();
+          const lines = csv.split(/\r?\n/);
+          if (!lines.length) {
+            if (feedback) feedback.textContent = 'Schedule file was empty.';
+            return;
+          }
+
           const headers = lines[0].split(',').map((h) => h.trim());
-
           let imported = 0;
           let skipped = 0;
 
           for (let i = 1; i < lines.length; i++) {
-            if (lines[i].trim() === '') continue;
+            if (!lines[i] || !lines[i].trim()) continue;
 
             const values = lines[i].split(',').map((v) => v.trim());
             const row = {};
@@ -9253,7 +9328,6 @@
               row[header] = values[index] || '';
             });
 
-            // Add bleed date entry
             if (row.bleed_date) {
               const bleedId = `sched_bleed_${row.customer}_${row.event}_${Date.now()}`;
               const existingBleed = APP_STATE.manufacturingCalendar.find(
@@ -9278,7 +9352,6 @@
               }
             }
 
-            // Add ship date entry
             if (row.ship_date) {
               const shipId = `sched_ship_${row.customer}_${row.event}_${Date.now()}`;
               const existingShip = APP_STATE.manufacturingCalendar.find(
@@ -9303,7 +9376,6 @@
               }
             }
 
-            // Add expiration as reference (not shown on calendar but stored)
             if (row.expiration_date) {
               const expId = `sched_exp_${row.customer}_${row.event}_${Date.now()}`;
               APP_STATE.manufacturingCalendar.push({
@@ -9318,40 +9390,42 @@
             }
           }
 
-          // Update status
-          const statusDiv = document.getElementById('schedule-import-status');
-          statusDiv.innerHTML = `
-                                                        <div class="alert alert-success">
-                                                            ✅ Schedule imported: ${imported} entries added, ${skipped} duplicates skipped
-                                                        </div>
-                                                    `;
-
           renderCalendar();
           logActivity('Imported schedule', `${file.name}: ${imported} entries`);
           autoSave();
-          showAlert('success', `Schedule imported successfully`);
-
-          // Clear the file input so same file can be re-imported if needed
-          document.getElementById('schedule-csv').value = '';
-        };
-
-        reader.readAsText(file);
+          showAlert('success', 'Schedule imported successfully');
+          if (feedback) {
+            feedback.textContent = `Import complete. ${imported} entries added, ${skipped} skipped.`;
+          }
+        } catch (error) {
+          console.error('Schedule import error:', error);
+          if (feedback) feedback.textContent = 'Import failed.';
+        } finally {
+          if (input) input.value = '';
+        }
       }
 
-      function handleQuantitiesCSV(event) {
-        const file = event.target.files[0];
-        if (!file) return;
+      async function handleOrderQuantitiesCsvImport() {
+        const input = document.getElementById('order-quantities-import-file');
+        const feedback = document.getElementById('order-quantities-import-feedback');
+        const file = input?.files?.[0];
+        if (!file) {
+          alert('Select order_quantities_confirmed.csv first.');
+          return;
+        }
 
-        const reader = new FileReader();
-        reader.onload = function (e) {
-          const csv = e.target.result;
-          const lines = csv.split('\n');
+        try {
+          const csv = await file.text();
+          const lines = csv.split(/\r?\n/).filter((line) => line.trim());
+          if (lines.length <= 1) {
+            if (feedback) feedback.textContent = 'No quantity records found in file.';
+            return;
+          }
+
           const headers = lines[0].split(',').map((h) => h.trim());
-
           let count = 0;
-          for (let i = 1; i < lines.length; i++) {
-            if (lines[i].trim() === '') continue;
 
+          for (let i = 1; i < lines.length; i++) {
             const values = lines[i].split(',');
             const quantity = {};
 
@@ -9359,7 +9433,6 @@
               quantity[header] = values[index]?.trim();
             });
 
-            // Add to state
             APP_STATE.quantities.push({
               ...quantity,
               id: 'qty_' + Date.now() + '_' + i,
@@ -9374,9 +9447,13 @@
           logActivity('Imported quantities', `${count} records`);
           showAlert('success', `Loaded ${count} quantity records`);
           autoSave();
-        };
-
-        reader.readAsText(file);
+          if (feedback) feedback.textContent = `Import complete. Loaded ${count} quantity records.`;
+        } catch (error) {
+          console.error('Order quantities import error:', error);
+          if (feedback) feedback.textContent = 'Import failed.';
+        } finally {
+          if (input) input.value = '';
+        }
       }
 
       function updateQuantitiesTable() {
@@ -9698,20 +9775,27 @@
         closeQuantityModal();
       }
 
-      function handleHistoricalQuantitiesCSV(event) {
-        const file = event.target.files[0];
-        if (!file) return;
+      async function handleHistoricalQuantitiesCsvImport() {
+        const input = document.getElementById('historical-quantities-import-file');
+        const feedback = document.getElementById('historical-quantities-import-feedback');
+        const file = input?.files?.[0];
+        if (!file) {
+          alert('Select order_quantities_historical.csv first.');
+          return;
+        }
 
-        const reader = new FileReader();
-        reader.onload = function (e) {
-          const csv = e.target.result;
-          const lines = csv.split('\n');
+        try {
+          const csv = await file.text();
+          const lines = csv.split(/\r?\n/).filter((line) => line.trim());
+          if (lines.length <= 1) {
+            if (feedback) feedback.textContent = 'No historical quantity records found in file.';
+            return;
+          }
+
           const headers = lines[0].split(',').map((h) => h.trim());
-
           let count = 0;
-          for (let i = 1; i < lines.length; i++) {
-            if (lines[i].trim() === '') continue;
 
+          for (let i = 1; i < lines.length; i++) {
             const values = lines[i].split(',');
             const quantity = {};
 
@@ -9732,9 +9816,15 @@
           logActivity('Imported historical quantities', `${count} records`);
           showAlert('success', `Loaded ${count} historical quantity records`);
           autoSave();
-        };
-
-        reader.readAsText(file);
+          if (feedback) {
+            feedback.textContent = `Import complete. Loaded ${count} historical quantity records.`;
+          }
+        } catch (error) {
+          console.error('Historical quantities import error:', error);
+          if (feedback) feedback.textContent = 'Import failed.';
+        } finally {
+          if (input) input.value = '';
+        }
       }
 
       function updateHistoricalQuantitiesTable() {
@@ -12455,13 +12545,35 @@
             </div>`;
         }
 
+        const parseDilution =
+          window.__parseDilution ||
+          function (t) {
+            if (!t) return null;
+            const value = String(t).trim();
+            const match = value.match(/^1\s*[:/]\s*(\d+)$/i);
+            if (match) {
+              const parsed = Number(match[1]);
+              return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+            }
+            const numeric = Number(value);
+            return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
+          };
+
+        const fmtPrice = (n) => (n == null || !Number.isFinite(n) ? '—' : `$${n.toFixed(4)}`);
+
         const rows = specificity.inventory
           .map((lot) => {
-            const pricePerMl = formatPricePerMl(lot.purchasePrice, lot.purchaseQuantity);
-            const dilutionFactor = parseDilutionValue(lot.optimalDilutionSerum);
-            const optimalPrice = dilutionFactor
-              ? formatPricePerMl(lot.purchasePrice, lot.purchaseQuantity, dilutionFactor)
-              : '—';
+            const purchasePrice = Number(lot.purchasePrice);
+            const purchaseQuantity = Number(lot.purchaseQuantity);
+            const basePrice =
+              Number.isFinite(purchasePrice) && purchaseQuantity > 0
+                ? purchasePrice / purchaseQuantity
+                : null;
+            const dilSerum = parseDilution(lot.optimalDilutionSerum);
+            const dilDAT = parseDilution(lot.optimalDilutionDAT);
+            const dilutionFactor = dilSerum || dilDAT || null;
+            const optimalPrice =
+              basePrice != null && dilutionFactor ? basePrice / dilutionFactor : null;
             const requalification = lot.requalificationDate
               ? escapeHtml(lot.requalificationDate)
               : 'N/A';
@@ -12477,8 +12589,8 @@
                 <td>${manufacturer}</td>
                 <td>${currentVolume} mL</td>
                 <td>${requalification}</td>
-                <td>${pricePerMl}</td>
-                <td>${optimalPrice}</td>
+                <td>${fmtPrice(basePrice)}</td>
+                <td>${fmtPrice(optimalPrice)}</td>
                 <td>
                   <div class="lot-actions">
                     <button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); openLotModal('${
