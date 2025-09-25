@@ -3700,6 +3700,43 @@
         </div>
       </div>
     </div>
+    <!-- Future Spec Edit Modal -->
+    <div id="future-spec-edit-modal" class="modal">
+      <div class="modal-content" style="max-width: 1600px; width: 95%;">
+        <div class="modal-header" style="align-items: flex-start; gap: 1rem;">
+          <div>
+            <h3 class="modal-title" id="future-spec-edit-title">Future Specification</h3>
+            <div class="modal-metadata" style="margin-top: 0.5rem; font-size: 0.875rem; color: var(--gray);">
+              <span>Status: <strong id="future-spec-edit-status">-</strong></span>
+              <span style="margin-left: 1rem;">Version: <strong id="future-spec-edit-version">-</strong></span>
+            </div>
+          </div>
+          <button class="close-btn" onclick="closeFutureSpecModal()">×</button>
+        </div>
+        <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+          <div class="table-container">
+            <table id="future-spec-edit-table">
+              <thead>
+                <tr>
+                  <th>Sample ID</th>
+                  <th>Sample Type</th>
+                  <th>ABO</th>
+                  <th>Rh</th>
+                  <th style="min-width: 250px;">Antigens</th>
+                  <th style="min-width: 220px;">Antibodies</th>
+                  <th>DAT Status</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline" onclick="closeFutureSpecModal()">Cancel</button>
+          <button class="btn btn-primary" onclick="saveFutureSpecEdits()">Save Changes</button>
+        </div>
+      </div>
+    </div>
     <script>
       // ===============================
       // Application State Management
@@ -11345,11 +11382,11 @@
           }
 
           html += `<div class="btn-group mt-2">
-            <button class="btn btn-primary btn-sm" onclick="optimizeFutureSpec('${key}')">
-              Optimize
-            </button>
-            <button class="btn btn-outline btn-sm" onclick="viewFutureSpec('${key}')">
+            <button class="btn btn-primary btn-sm" onclick="viewFutureSpec('${key}')">
               View/Edit
+            </button>
+            <button class="btn btn-outline btn-sm" onclick="cloneFutureSpec('${key}')">
+              Clone
             </button>
             <button class="btn btn-outline btn-sm" onclick="approveFutureSpec('${key}')">
               ${metadata.status === 'approved' ? 'Unapprove' : 'Approve'}
@@ -11745,114 +11782,6 @@
         autoSave();
       }
 
-      function optimizeFutureSpec(specKey) {
-        const [customer, event, year] = specKey.split('_');
-        const specs = APP_STATE.futureSpecs.entries.filter(
-          (s) => s.customer === customer && s.event === event && s.year == year
-        );
-
-        if (specs.length === 0) {
-          showAlert('error', 'No samples found for this specification');
-          return;
-        }
-
-        // Show optimization results
-        const resultsCard = document.getElementById('optimization-results');
-        const contentDiv = document.getElementById('optimization-content');
-
-        // Find available blood in sharing window
-        const available = findAvailableBlood(customer, event, year);
-
-        // Run optimization algorithm
-        const optimized = runOptimization(specs, available);
-
-        // Display results
-        let html = `
-    <h4>Optimization for ${customer} ${event} ${year}</h4>
-    <div class="alert alert-info">
-      <strong>Sharing Window:</strong> ${available.window.start} to ${available.window.end}<br>
-      <strong>Available Sources:</strong> ${available.sources.length} opportunities found
-    </div>
-    
-    <h5>Optimization Results:</h5>
-    <div class="table-container">
-      <table>
-        <thead>
-          <tr>
-            <th>Sample ID</th>
-            <th>Type</th>
-            <th>Volume Needed</th>
-            <th>Current</th>
-            <th>Optimized</th>
-            <th>Source</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-  `;
-
-        optimized.assignments.forEach((assignment, idx) => {
-          html += `
-      <tr>
-        <td>${assignment.sample_id}</td>
-        <td>${assignment.sample_type_id}</td>
-        <td>${assignment.volumeNeeded.toFixed(1)}mL</td>
-        <td>${assignment.currentAbo} ${assignment.currentRh}</td>
-        <td>
-          <select id="opt-abo-${idx}" class="form-select" style="width: 80px; display: inline;">
-            <option value="TBD">TBD</option>
-            <option value="O" ${assignment.suggestedAbo === 'O' ? 'selected' : ''}>O</option>
-            <option value="A" ${assignment.suggestedAbo === 'A' ? 'selected' : ''}>A</option>
-            <option value="B" ${assignment.suggestedAbo === 'B' ? 'selected' : ''}>B</option>
-            <option value="AB" ${assignment.suggestedAbo === 'AB' ? 'selected' : ''}>AB</option>
-          </select>
-          <select id="opt-rh-${idx}" class="form-select" style="width: 80px; display: inline;">
-            <option value="TBD">TBD</option>
-            <option value="Pos" ${assignment.suggestedRh === 'Pos' ? 'selected' : ''}>Pos</option>
-            <option value="Neg" ${assignment.suggestedRh === 'Neg' ? 'selected' : ''}>Neg</option>
-          </select>
-        </td>
-        <td>${assignment.source}</td>
-        <td>
-          <button class="btn btn-success btn-sm" onclick="acceptOptimization('${specKey}', ${idx})">
-            Accept
-          </button>
-        </td>
-      </tr>
-    `;
-        });
-
-        html += `
-        </tbody>
-      </table>
-    </div>
-    
-    <div class="mt-3">
-      <h5>Summary:</h5>
-      <p><strong>Units to order:</strong> ${optimized.unitsToOrder} (without sharing: ${
-          optimized.unitsWithoutSharing
-        })</p>
-      <p><strong>Savings:</strong> $${optimized.savings}</p>
-      <p><strong>Sharing sources used:</strong> ${optimized.sourcesUsed.join(', ')}</p>
-    </div>
-    
-    <div class="btn-group mt-3">
-      <button class="btn btn-primary" onclick="acceptAllOptimizations('${specKey}')">
-        Accept All Suggestions
-      </button>
-      <button class="btn btn-outline" onclick="saveVersion('${specKey}')">
-        Save as New Version
-      </button>
-    </div>
-  `;
-
-        contentDiv.innerHTML = html;
-        resultsCard.style.display = 'block';
-
-        // Store optimization results for later use
-        APP_STATE.lastOptimization = optimized;
-      }
-
       function findAvailableBlood(customer, event, year) {
         // This is a simplified version - you'd expand this with real calendar data
         const scheduleEntry = APP_STATE.manufacturingCalendar.find(
@@ -12020,158 +11949,222 @@
       }
 
       function viewFutureSpec(specKey) {
+        if (!specKey) {
+          showAlert('error', 'Unable to load this specification');
+          return;
+        }
+
+        migrateFutureSpecsFormat();
+
         const [customer, event, year] = specKey.split('_');
-        let specs = APP_STATE.futureSpecs.entries.filter(
-          (s) => s.customer === customer && s.event === event && s.year == year
-        );
+        const specs = APP_STATE.futureSpecs.entries
+          .filter((s) => s.customer === customer && s.event === event && s.year == year)
+          .slice();
 
         if (specs.length === 0) {
           showAlert('error', 'No samples found for this specification');
           return;
         }
 
-        // Migrate data if needed
-        migrateFutureSpecsFormat();
+        const modal = document.getElementById('future-spec-edit-modal');
+        const tbody = document.querySelector('#future-spec-edit-table tbody');
+        if (!modal || !tbody) {
+          console.error('Future spec edit modal structure missing');
+          return;
+        }
 
-        // Re-fetch after migration
-        specs = APP_STATE.futureSpecs.entries.filter(
-          (s) => s.customer === customer && s.event === event && s.year == year
+        const metadata = APP_STATE.futureSpecs.metadata[specKey] || {};
+        const titleEl = document.getElementById('future-spec-edit-title');
+        const statusEl = document.getElementById('future-spec-edit-status');
+        const versionEl = document.getElementById('future-spec-edit-version');
+
+        if (titleEl) {
+          titleEl.textContent = `Edit Future Specification: ${customer} ${event} ${year}`;
+        }
+        if (statusEl) {
+          statusEl.textContent = metadata.status || 'draft';
+        }
+        if (versionEl) {
+          versionEl.textContent = `v${metadata.currentVersion || 1}`;
+        }
+
+        modal.dataset.specKey = specKey;
+
+        const sanitizeForId = (value) => (value || 'item').toString().replace(/[^a-zA-Z0-9_-]/g, '_');
+
+        tbody.innerHTML = '';
+
+        const sortedSpecs = specs.sort((a, b) => {
+          const aId = (a.sample_id || '').toString();
+          const bId = (b.sample_id || '').toString();
+          return aId.localeCompare(bId, undefined, { numeric: true, sensitivity: 'base' });
+        });
+
+        sortedSpecs.forEach((spec, idx) => {
+          const row = document.createElement('tr');
+          const rowKey = `spec_${idx}_${sanitizeForId(spec.sample_id)}`;
+          const antigenContainerId = `antigens-${rowKey}`;
+          const antibodyContainerId = `antibodies-${rowKey}`;
+
+          row.dataset.sampleId = spec.sample_id || '';
+          row.dataset.antigenContainerId = antigenContainerId;
+          row.dataset.antibodyContainerId = antibodyContainerId;
+
+          let antigenHTML = `<div class="antigen-container" id="${antigenContainerId}">`;
+          if (Array.isArray(spec.antigens) && spec.antigens.length > 0) {
+            spec.antigens.forEach((antigenObj) => {
+              const elemId = generateElementId();
+              antigenHTML += `
+                <div class="antigen-row" id="${elemId}" style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+                  <select class="form-select" style="width: 100px;" onchange="validateAntigenDuplicates('${antigenContainerId}')">
+                    ${ANTIGEN_ORDER.map(
+                      (a) => `<option value="${a}" ${a === antigenObj.antigen ? 'selected' : ''}>${a}</option>`
+                    ).join('')}
+                  </select>
+                  <select class="form-select" style="width: 100px;">
+                    <option value="Positive" ${antigenObj.status === 'Positive' ? 'selected' : ''}>Positive</option>
+                    <option value="Negative" ${antigenObj.status === 'Negative' ? 'selected' : ''}>Negative</option>
+                  </select>
+                  <button class="btn btn-danger btn-sm" onclick="removeAntigenRow('${elemId}')">×</button>
+                </div>
+              `;
+            });
+          }
+          antigenHTML += '</div>';
+          antigenHTML += `<button class="btn btn-outline btn-sm" onclick="addAntigenRow('${antigenContainerId}')">+ Add Antigen</button>`;
+
+          let antibodyHTML = `<div class="antibody-container" id="${antibodyContainerId}">`;
+          if (Array.isArray(spec.antibodies) && spec.antibodies.length > 0) {
+            spec.antibodies.forEach((antibody) => {
+              const elemId = generateElementId();
+              antibodyHTML += `
+                <div class="antibody-row" id="${elemId}" style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+                  <select class="form-select" style="width: 150px;" onchange="validateAntibodyDuplicates('${antibodyContainerId}')">
+                    ${AVAILABLE_ANTIBODIES.map(
+                      (a) => `<option value="${a}" ${a === antibody ? 'selected' : ''}>${a}</option>`
+                    ).join('')}
+                  </select>
+                  <button class="btn btn-danger btn-sm" onclick="removeAntibodyRow('${elemId}')">×</button>
+                </div>
+              `;
+            });
+          }
+          antibodyHTML += '</div>';
+          antibodyHTML += `<button class="btn btn-outline btn-sm" onclick="addAntibodyRow('${antibodyContainerId}')">+ Add Antibody</button>`;
+
+          row.innerHTML = `
+            <td>${escapeHtml(spec.sample_id || '')}</td>
+            <td>${escapeHtml(spec.sample_type_id || '')}</td>
+            <td>
+              <select class="form-select edit-abo" style="width: 90px;">
+                <option value="TBD" ${spec.abo === 'TBD' ? 'selected' : ''}>TBD</option>
+                <option value="O" ${spec.abo === 'O' ? 'selected' : ''}>O</option>
+                <option value="A" ${spec.abo === 'A' ? 'selected' : ''}>A</option>
+                <option value="B" ${spec.abo === 'B' ? 'selected' : ''}>B</option>
+                <option value="AB" ${spec.abo === 'AB' ? 'selected' : ''}>AB</option>
+              </select>
+            </td>
+            <td>
+              <select class="form-select edit-rh" style="width: 90px;">
+                <option value="TBD" ${spec.rh === 'TBD' ? 'selected' : ''}>TBD</option>
+                <option value="Pos" ${spec.rh === 'Pos' ? 'selected' : ''}>Pos</option>
+                <option value="Neg" ${spec.rh === 'Neg' ? 'selected' : ''}>Neg</option>
+              </select>
+            </td>
+            <td style="min-width: 250px;">${antigenHTML}</td>
+            <td style="min-width: 220px;">${antibodyHTML}</td>
+            <td>
+              <select class="form-select edit-dat" style="width: 120px;">
+                <option value="Negative" ${spec.dat_status !== 'Positive' ? 'selected' : ''}>Negative</option>
+                <option value="Positive" ${spec.dat_status === 'Positive' ? 'selected' : ''}>Positive</option>
+              </select>
+            </td>
+          `;
+
+          tbody.appendChild(row);
+        });
+
+        modal.classList.add('active');
+      }
+
+      function cloneFutureSpec(specKey) {
+        if (!specKey) {
+          showAlert('error', 'Unable to clone this specification');
+          return;
+        }
+
+        const [sourceCustomer = '', sourceEvent = '', sourceYear = ''] = specKey.split('_');
+
+        const customerInput = prompt('New Customer', sourceCustomer);
+        if (customerInput === null) return;
+        const customer = customerInput.trim();
+        if (!customer) {
+          showAlert('error', 'Customer is required to clone a specification');
+          return;
+        }
+
+        const eventInput = prompt('New Event', sourceEvent);
+        if (eventInput === null) return;
+        const event = eventInput.trim();
+        if (!event) {
+          showAlert('error', 'Event is required to clone a specification');
+          return;
+        }
+
+        const yearInput = prompt('New Year', sourceYear);
+        if (yearInput === null) return;
+        const year = yearInput.trim();
+        if (!year || !/^\d{4}$/.test(year)) {
+          showAlert('error', 'Please provide a valid 4-digit year');
+          return;
+        }
+
+        const normalizedYear = parseInt(year, 10);
+        const newSpecKey = `${customer}_${event}_${year}`;
+
+        if (APP_STATE.futureSpecs.metadata[newSpecKey]) {
+          showAlert('error', 'A specification with that customer, event, and year already exists');
+          return;
+        }
+
+        const sourceSpecs = APP_STATE.futureSpecs.entries.filter(
+          (s) => s.customer === sourceCustomer && s.event === sourceEvent && s.year == sourceYear
         );
 
-        const modal = document.createElement('div');
-        modal.className = 'modal active';
-        modal.id = 'future-spec-edit-modal';
+        if (sourceSpecs.length === 0) {
+          showAlert('error', 'No samples found to clone');
+          return;
+        }
 
-        window.currentEditingSpecs = specs;
+        const clonedSamples = sourceSpecs.map((spec) => {
+          const cloned = JSON.parse(JSON.stringify(spec));
+          cloned.customer = customer;
+          cloned.event = event;
+          cloned.year = Number.isNaN(normalizedYear) ? year : normalizedYear;
+          return cloned;
+        });
 
-        let tableRows = specs
-          .map((spec, idx) => {
-            const specId = `spec_${idx}`;
+        const now = new Date().toISOString();
+        APP_STATE.futureSpecs.entries.push(...clonedSamples);
 
-            // Generate antigen rows
-            let antigenHTML = '<div class="antigen-container" id="antigens-' + specId + '">';
-            if (spec.antigens && spec.antigens.length > 0) {
-              spec.antigens.forEach((antigenObj, antIdx) => {
-                const elemId = generateElementId();
-                antigenHTML += `
-          <div class="antigen-row" id="${elemId}" style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
-            <select class="form-select" style="width: 100px;">
-              ${ANTIGEN_ORDER.map(
-                (a) =>
-                  `<option value="${a}" ${a === antigenObj.antigen ? 'selected' : ''}>${a}</option>`
-              ).join('')}
-            </select>
-            <select class="form-select" style="width: 100px;">
-              <option value="Positive" ${
-                antigenObj.status === 'Positive' ? 'selected' : ''
-              }>Positive</option>
-              <option value="Negative" ${
-                antigenObj.status === 'Negative' ? 'selected' : ''
-              }>Negative</option>
-            </select>
-            <button class="btn btn-danger btn-sm" onclick="removeAntigenRow('${elemId}')">×</button>
-          </div>
-        `;
-              });
-            }
-            antigenHTML += '</div>';
-            antigenHTML += `<button class="btn btn-outline btn-sm" onclick="addAntigenRow('antigens-${specId}')">+ Add Antigen</button>`;
+        const sourceMetadata = APP_STATE.futureSpecs.metadata[specKey] || {};
+        APP_STATE.futureSpecs.metadata[newSpecKey] = {
+          status: 'draft',
+          created: now,
+          lastModified: now,
+          currentVersion: 1,
+          quantity: sourceMetadata.quantity || clonedSamples.length,
+        };
 
-            // Generate antibody rows
-            let antibodyHTML = '<div class="antibody-container" id="antibodies-' + specId + '">';
-            if (spec.antibodies && spec.antibodies.length > 0) {
-              spec.antibodies.forEach((antibody, abIdx) => {
-                const elemId = generateElementId();
-                antibodyHTML += `
-          <div class="antibody-row" id="${elemId}" style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
-            <select class="form-select" style="width: 150px;">
-              ${AVAILABLE_ANTIBODIES.map(
-                (a) => `<option value="${a}" ${a === antibody ? 'selected' : ''}>${a}</option>`
-              ).join('')}
-            </select>
-            <button class="btn btn-danger btn-sm" onclick="removeAntibodyRow('${elemId}')">×</button>
-          </div>
-        `;
-              });
-            }
-            antibodyHTML += '</div>';
-            antibodyHTML += `<button class="btn btn-outline btn-sm" onclick="addAntibodyRow('antibodies-${specId}')">+ Add Antibody</button>`;
+        APP_STATE.futureSpecs.versions[`${newSpecKey}_v1`] = {
+          timestamp: now,
+          samples: JSON.parse(JSON.stringify(clonedSamples)),
+        };
 
-            return `
-      <tr>
-        <td>${spec.sample_id}</td>
-        <td>${spec.sample_type_id}</td>
-        <td>
-          <select class="form-select" id="edit-abo-${idx}" style="width: 80px;">
-            <option value="TBD" ${spec.abo === 'TBD' ? 'selected' : ''}>TBD</option>
-            <option value="O" ${spec.abo === 'O' ? 'selected' : ''}>O</option>
-            <option value="A" ${spec.abo === 'A' ? 'selected' : ''}>A</option>
-            <option value="B" ${spec.abo === 'B' ? 'selected' : ''}>B</option>
-            <option value="AB" ${spec.abo === 'AB' ? 'selected' : ''}>AB</option>
-          </select>
-        </td>
-        <td>
-          <select class="form-select" id="edit-rh-${idx}" style="width: 80px;">
-            <option value="TBD" ${spec.rh === 'TBD' ? 'selected' : ''}>TBD</option>
-            <option value="Pos" ${spec.rh === 'Pos' ? 'selected' : ''}>Pos</option>
-            <option value="Neg" ${spec.rh === 'Neg' ? 'selected' : ''}>Neg</option>
-          </select>
-        </td>
-        <td style="min-width: 250px;">
-          ${antigenHTML}
-        </td>
-        <td style="min-width: 200px;">
-          ${antibodyHTML}
-        </td>
-        <td>
-          <select class="form-select" id="edit-dat-${idx}" style="width: 100px;">
-            <option value="Negative" ${
-              spec.dat_status !== 'Positive' ? 'selected' : ''
-            }>Negative</option>
-            <option value="Positive" ${
-              spec.dat_status === 'Positive' ? 'selected' : ''
-            }>Positive</option>
-          </select>
-        </td>
-      </tr>
-    `;
-          })
-          .join('');
-
-        modal.innerHTML = `
-    <div class="modal-content" style="max-width: 95%; width: 1400px;">
-      <div class="modal-header">
-        <h3 class="modal-title">Edit Future Specification: ${customer} ${event} ${year}</h3>
-        <button class="close-btn" onclick="closeFutureSpecModal()">×</button>
-      </div>
-      <div class="modal-body" style="max-height: 600px; overflow-y: auto;">
-        <div class="table-container">
-          <table>
-            <thead>
-              <tr>
-                <th>Sample ID</th>
-                <th>Type</th>
-                <th>ABO</th>
-                <th>Rh</th>
-                <th>Antigens</th>
-                <th>Antibodies</th>
-                <th>DAT</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${tableRows}
-            </tbody>
-          </table>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-outline" onclick="closeFutureSpecModal()">Cancel</button>
-        <button class="btn btn-primary" onclick="saveFutureSpecEdits('${specKey}', ${specs.length})">Save Changes</button>
-      </div>
-    </div>
-  `;
-
-        document.body.appendChild(modal);
+        updateFutureSpecsList();
+        logActivity('Cloned future specification', `${customer} ${event} ${year}`);
+        autoSave();
+        showAlert('success', `Cloned specification to ${customer} ${event} ${year}`);
       }
 
       function addAntigenRow(containerId) {
@@ -12300,68 +12293,143 @@
 
       function closeFutureSpecModal() {
         const modal = document.getElementById('future-spec-edit-modal');
-        if (modal) modal.remove();
-        window.currentEditingSpecs = null;
+        if (!modal) {
+          return;
+        }
+
+        modal.classList.remove('active');
+        delete modal.dataset.specKey;
+
+        const tbody = modal.querySelector('#future-spec-edit-table tbody');
+        if (tbody) {
+          tbody.innerHTML = '';
+        }
+
+        const titleEl = document.getElementById('future-spec-edit-title');
+        if (titleEl) {
+          titleEl.textContent = 'Future Specification';
+        }
+
+        const statusEl = document.getElementById('future-spec-edit-status');
+        if (statusEl) {
+          statusEl.textContent = '-';
+        }
+
+        const versionEl = document.getElementById('future-spec-edit-version');
+        if (versionEl) {
+          versionEl.textContent = '-';
+        }
       }
 
-      function saveFutureSpecEdits(specKey, specCount) {
-        const [customer, event, year] = specKey.split('_');
+      function saveFutureSpecEdits(specKey) {
+        const modal = document.getElementById('future-spec-edit-modal');
+        const tbody = document.querySelector('#future-spec-edit-table tbody');
+        if (!modal || !tbody) {
+          showAlert('error', 'Edit interface is unavailable');
+          return;
+        }
+
+        const effectiveKey = specKey || modal.dataset.specKey;
+        if (!effectiveKey) {
+          showAlert('error', 'Unable to determine which specification to save');
+          return;
+        }
+
+        const [customer, event, year] = effectiveKey.split('_');
         const specs = APP_STATE.futureSpecs.entries.filter(
           (s) => s.customer === customer && s.event === event && s.year == year
         );
 
-        // Update each spec with edited values
-        specs.forEach((spec, idx) => {
-          spec.abo = document.getElementById(`edit-abo-${idx}`).value;
-          spec.rh = document.getElementById(`edit-rh-${idx}`).value;
-          spec.dat_status = document.getElementById(`edit-dat-${idx}`).value;
+        if (specs.length === 0) {
+          showAlert('error', 'No samples found for this specification');
+          return;
+        }
 
-          // Collect antigens
+        const specMap = new Map();
+        specs.forEach((spec) => {
+          specMap.set(spec.sample_id, spec);
+        });
+
+        tbody.querySelectorAll('tr').forEach((row) => {
+          const sampleId = row.dataset.sampleId;
+          const spec = specMap.get(sampleId);
+          if (!spec) {
+            return;
+          }
+
+          const aboSelect = row.querySelector('.edit-abo');
+          const rhSelect = row.querySelector('.edit-rh');
+          const datSelect = row.querySelector('.edit-dat');
+
+          if (aboSelect) spec.abo = aboSelect.value;
+          if (rhSelect) spec.rh = rhSelect.value;
+          if (datSelect) spec.dat_status = datSelect.value;
+
           spec.antigens = [];
-          const antigenContainer = document.getElementById(`antigens-spec_${idx}`);
+          const antigenContainerId = row.dataset.antigenContainerId;
+          const antigenContainer = antigenContainerId
+            ? document.getElementById(antigenContainerId)
+            : null;
           if (antigenContainer) {
-            antigenContainer.querySelectorAll('.antigen-row').forEach((row) => {
-              const antigenSelect = row.querySelector('select:first-child');
-              const statusSelect = row.querySelector('select:last-child');
-              if (antigenSelect && statusSelect) {
-                spec.antigens.push({
-                  antigen: antigenSelect.value,
-                  status: statusSelect.value,
-                });
+            antigenContainer.querySelectorAll('.antigen-row').forEach((antigenRow) => {
+              const selects = antigenRow.querySelectorAll('select');
+              if (selects.length >= 2) {
+                const [antigenSelect, statusSelect] = selects;
+                if (antigenSelect && antigenSelect.value) {
+                  spec.antigens.push({
+                    antigen: antigenSelect.value,
+                    status: statusSelect ? statusSelect.value : 'Positive',
+                  });
+                }
               }
             });
           }
 
-          // Collect antibodies
           spec.antibodies = [];
-          const antibodyContainer = document.getElementById(`antibodies-spec_${idx}`);
+          const antibodyContainerId = row.dataset.antibodyContainerId;
+          const antibodyContainer = antibodyContainerId
+            ? document.getElementById(antibodyContainerId)
+            : null;
           if (antibodyContainer) {
             antibodyContainer.querySelectorAll('.antibody-row select').forEach((sel) => {
-              spec.antibodies.push(sel.value);
+              if (sel && sel.value) {
+                spec.antibodies.push(sel.value);
+              }
             });
           }
         });
 
-        // Update metadata
-        const metadata = APP_STATE.futureSpecs.metadata[specKey];
-        metadata.lastModified = new Date().toISOString();
-        metadata.currentVersion++;
+        const metadata = APP_STATE.futureSpecs.metadata[effectiveKey] || {};
+        const now = new Date().toISOString();
+        metadata.lastModified = now;
+        metadata.currentVersion = (metadata.currentVersion || 0) + 1;
+        if (!metadata.created) {
+          metadata.created = now;
+        }
+        if (metadata.status === undefined) {
+          metadata.status = 'draft';
+        }
+        if (metadata.quantity === undefined) {
+          metadata.quantity = specs.length;
+        }
+        APP_STATE.futureSpecs.metadata[effectiveKey] = metadata;
 
-        // Save new version
-        APP_STATE.futureSpecs.versions[`${specKey}_v${metadata.currentVersion}`] = {
-          timestamp: new Date().toISOString(),
+        APP_STATE.futureSpecs.versions[`${effectiveKey}_v${metadata.currentVersion}`] = {
+          timestamp: now,
           samples: JSON.parse(JSON.stringify(specs)),
         };
 
-        // Close modal
         closeFutureSpecModal();
-
+        updateFutureSpecsList();
+        logActivity(
+          'Updated future specification',
+          `${customer} ${event} ${year} (v${metadata.currentVersion})`
+        );
+        autoSave();
         showAlert(
           'success',
           `Saved changes to ${customer} ${event} ${year} (Version ${metadata.currentVersion})`
         );
-        updateFutureSpecsList();
-        autoSave();
       }
 
       function approveFutureSpec(specKey) {
