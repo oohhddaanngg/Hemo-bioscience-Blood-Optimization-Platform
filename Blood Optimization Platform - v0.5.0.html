@@ -1063,6 +1063,54 @@
         background: var(--light);
       }
 
+      .optimization-popover {
+        position: absolute;
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        box-shadow: var(--shadow-lg);
+        padding: 1rem;
+        width: 350px;
+        z-index: 1100;
+        display: none;
+      }
+
+      .optimization-suggestion {
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 0.75rem;
+        margin-bottom: 0.75rem;
+      }
+
+      .optimization-suggestion:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+      }
+
+      .suggestion-header {
+        font-weight: 600;
+        color: var(--hemo-blue);
+      }
+
+      .suggestion-details {
+        font-size: 0.875rem;
+        color: var(--gray);
+        margin: 0.25rem 0;
+      }
+
+      .row-flash-success {
+        animation: rowFlashSuccess 1.5s ease forwards;
+      }
+
+      @keyframes rowFlashSuccess {
+        0% {
+          background: rgba(22, 163, 74, 0.2);
+        }
+
+        100% {
+          background: transparent;
+        }
+      }
+
       .close-btn {
         background: none;
         border: none;
@@ -3725,6 +3773,7 @@
                   <th style="min-width: 250px;">Antigens</th>
                   <th style="min-width: 220px;">Antibodies</th>
                   <th>DAT Status</th>
+                  <th>Optimization</th>
                 </tr>
               </thead>
               <tbody></tbody>
@@ -4015,6 +4064,10 @@
         'WAA',
         'Daratumumab',
       ];
+
+      const optimizationSuggestionStore = {};
+      let currentOptimizationPopover = null;
+      let optimizationPopoverListener = null;
 
       // Helper functions
       function formatAntigensDisplay(antigens) {
@@ -11098,6 +11151,496 @@
         return { cost: 300, description: 'Cross-event sharing' };
       }
 
+      function closeOptimizationPopover() {
+        if (currentOptimizationPopover) {
+          const suggestionIdsAttr = currentOptimizationPopover.getAttribute('data-suggestion-ids');
+          if (suggestionIdsAttr) {
+            suggestionIdsAttr.split(',').forEach((id) => {
+              if (id) delete optimizationSuggestionStore[id];
+            });
+          }
+          if (currentOptimizationPopover.parentNode) {
+            currentOptimizationPopover.parentNode.removeChild(currentOptimizationPopover);
+          }
+        }
+        currentOptimizationPopover = null;
+        if (optimizationPopoverListener) {
+          document.removeEventListener('click', optimizationPopoverListener);
+          optimizationPopoverListener = null;
+        }
+      }
+
+      function normalizeAboValue(value) {
+        if (value === undefined || value === null) return null;
+        const normalized = value.toString().toUpperCase();
+        if (!normalized || normalized === 'TBD') return null;
+        if (normalized === 'ASUBB') return 'AB';
+        if (normalized === 'A1') return 'A';
+        if (normalized === 'A1B') return 'AB';
+        if (normalized === 'FFS') return 'O';
+        if (['O', 'A', 'B', 'AB'].includes(normalized)) return normalized;
+        return null;
+      }
+
+      function normalizeRhValue(value) {
+        if (value === undefined || value === null) return null;
+        const str = value.toString();
+        if (!str || str === 'TBD') return null;
+        if (/^pos/i.test(str)) return 'Pos';
+        if (/^neg/i.test(str)) return 'Neg';
+        return null;
+      }
+
+      function parseStandingOrderUnit(unit) {
+        if (!unit || !unit.type) return null;
+        let normalized = unit.type
+          .replace(/₁/g, '1')
+          .replace(/₀/g, '0')
+          .replace(/₊/g, '+')
+          .replace(/₋/g, '-')
+          .trim();
+        const parts = normalized.split(/\s+/).filter(Boolean);
+        if (parts.length === 0) return null;
+
+        const abo = normalizeAboValue(parts[0]);
+        if (!abo) return null;
+
+        let rh = 'Pos';
+        for (const part of parts) {
+          const lower = part.toLowerCase();
+          if (lower.includes('either')) {
+            rh = 'Either';
+            break;
+          }
+          if (lower.includes('neg')) {
+            rh = 'Neg';
+            break;
+          }
+          if (lower.includes('pos')) {
+            rh = 'Pos';
+          }
+        }
+
+        const antigens = [];
+        const lowerType = normalized.toLowerCase();
+        if (lowerType.includes('fya')) {
+          antigens.push({
+            antigen: 'Fya',
+            status: lowerType.includes('fya neg') || lowerType.includes('fya-') ? 'Negative' : 'Positive',
+          });
+        }
+        if (lowerType.includes('k pos') || lowerType.includes('k+')) {
+          antigens.push({ antigen: 'K', status: 'Positive' });
+        } else if (lowerType.includes('k neg') || lowerType.includes('k-')) {
+          antigens.push({ antigen: 'K', status: 'Negative' });
+        }
+
+        return { abo, rh, antigens, label: normalized };
+      }
+
+      function hasStandingOrderWithinWindow(productName, window) {
+        if (!productName || !window) return false;
+        if (!APP_STATE.manufacturingCalendar || APP_STATE.manufacturingCalendar.length === 0) {
+          return true;
+        }
+
+        const lowerProduct = productName.toLowerCase();
+        const keywords = [lowerProduct];
+        if (lowerProduct.includes('hemo-qc')) keywords.push('hqc');
+        if (lowerProduct.includes('korea') || lowerProduct.includes('mirrscitech')) {
+          keywords.push('mirrscitech');
+          keywords.push('korea');
+        }
+        if (lowerProduct.includes('mqc')) keywords.push('mqc');
+        if (lowerProduct.includes('c3')) keywords.push('c3');
+
+        return APP_STATE.manufacturingCalendar.some((entry) => {
+          if (!entry || !entry.date) return false;
+          const description = (entry.description || '').toLowerCase();
+          const matchesKeyword = keywords.some((kw) => kw && description.includes(kw));
+          if (!matchesKeyword) return false;
+          return isDateInWindow(entry.date, window);
+        });
+      }
+
+      function findBestSuggestionForSample(spec) {
+        if (!spec) return [];
+
+        const fulfillmentWindow = calculateSpecFulfillmentWindow(spec);
+        if (!fulfillmentWindow) return [];
+
+        const baseAntigens = Array.isArray(spec.antigens)
+          ? spec.antigens.map((antigen) => ({ antigen: antigen.antigen, status: antigen.status }))
+          : [];
+
+        const suggestions = [];
+        const usedSources = new Set();
+
+        const pushSuggestion = (suggestion) => {
+          if (!suggestion) return;
+          const normalizedAbo = normalizeAboValue(suggestion.abo);
+          const normalizedRh = normalizeRhValue(suggestion.rh);
+          if (!normalizedAbo || !normalizedRh) return;
+
+          const key = `${suggestion.sourceDescription || ''}_${normalizedAbo}_${normalizedRh}`;
+          if (usedSources.has(key)) return;
+          usedSources.add(key);
+
+          const antigenSuggestion = Array.isArray(suggestion.antigens) && suggestion.antigens.length > 0
+            ? suggestion.antigens.map((antigen) => ({ antigen: antigen.antigen, status: antigen.status }))
+            : baseAntigens.map((antigen) => ({ antigen: antigen.antigen, status: antigen.status }));
+
+          suggestions.push({
+            ...suggestion,
+            abo: normalizedAbo,
+            rh: normalizedRh,
+            antigens: antigenSuggestion,
+          });
+        };
+
+        const specAbo = normalizeAboValue(spec.abo);
+        const specRh = normalizeRhValue(spec.rh);
+
+        const hqcCompatibility = checkHQCCompatibility(spec);
+        if (hqcCompatibility && hqcCompatibility.compatible) {
+          const savings = calculateStandingOrderSavings() || {};
+          const hqcAboMap = { 1: 'AB', 2: 'O', 3: 'A' };
+          const hqcRhMap = { 1: 'Pos', 2: 'Pos', 3: 'Neg' };
+          const proposedAbo = specAbo || hqcAboMap[hqcCompatibility.cellId] || 'O';
+          const proposedRh = specRh || hqcRhMap[hqcCompatibility.cellId] || 'Pos';
+
+          pushSuggestion({
+            title: `Assign ${proposedAbo} ${proposedRh === 'Neg' ? 'Negative' : 'Positive'}`,
+            details: `Source: HQC Standing Order Overage. ${savings.description || 'Leverages existing supply.'}`,
+            abo: proposedAbo,
+            rh: proposedRh,
+            antigens: baseAntigens,
+            sourceDescription: `HQC ${hqcCompatibility.description}`,
+            savingsDetails:
+              savings.description || 'Uses HQC standing order overage to reduce new purchases.',
+          });
+        }
+
+        (STANDING_ORDERS || [])
+          .filter((order) => order.product && order.product !== 'Hemo-QC')
+          .forEach((order) => {
+            if (!order.units || order.units.length === 0) return;
+            if (!hasStandingOrderWithinWindow(order.product, fulfillmentWindow)) return;
+
+            order.units.forEach((unit) => {
+              const parsed = parseStandingOrderUnit(unit);
+              if (!parsed) return;
+
+              const parsedAbo = normalizeAboValue(parsed.abo);
+              const parsedRh = parsed.rh === 'Either' ? null : normalizeRhValue(parsed.rh);
+              const targetAbo = specAbo || parsedAbo;
+              const targetRh = specRh || parsedRh || 'Pos';
+
+              if (!targetAbo || !targetRh) return;
+
+              const compatibleUnit = {
+                abo: parsedAbo || targetAbo,
+                rh: parsed.rh === 'Either' ? targetRh : parsedRh || targetRh,
+              };
+
+              if (!isBloodUnitCompatible({ abo: targetAbo, rh: targetRh }, compatibleUnit)) {
+                return;
+              }
+
+              const savings = calculateStandingOrderSavings() || {};
+              const antigenSuggestion =
+                parsed.antigens && parsed.antigens.length > 0 ? parsed.antigens : baseAntigens;
+
+              pushSuggestion({
+                title: `Assign ${targetAbo} ${targetRh === 'Neg' ? 'Negative' : 'Positive'} from ${order.product}`,
+                details: `Source: ${order.product} Standing Order. ${
+                  savings.description || 'Leverages existing supply.'
+                }`,
+                abo: targetAbo,
+                rh: targetRh,
+                antigens: antigenSuggestion,
+                sourceDescription: `${order.product} Standing Order`,
+                savingsDetails:
+                  savings.description || 'Uses standing order overage to offset purchases.',
+              });
+            });
+          });
+
+        const ptSavings = calculatePTSharingSavings() || {};
+        const considerForSharing = (candidate, label) => {
+          if (!candidate) return;
+          if (candidate === spec) return;
+          if (!candidate.event || !candidate.year) return;
+
+          const candidateAbo = normalizeAboValue(candidate.abo);
+          const candidateRh = normalizeRhValue(candidate.rh);
+          if (!candidateAbo || !candidateRh) return;
+
+          const otherWindow = calculateSpecFulfillmentWindow(candidate);
+          if (!otherWindow) return;
+          if (!isWindowOverlapping(fulfillmentWindow, otherWindow)) return;
+
+          const requiredAbo = specAbo || candidateAbo;
+          const requiredRh = specRh || candidateRh;
+          if (!requiredAbo || !requiredRh) return;
+
+          const donorSpec = { abo: candidateAbo, rh: candidateRh };
+          if (!isSpecCompatible({ abo: requiredAbo, rh: requiredRh }, donorSpec)) return;
+
+          const antigenSuggestion =
+            baseAntigens.length > 0
+              ? baseAntigens
+              : Array.isArray(candidate.antigens)
+              ? candidate.antigens
+              : [];
+
+          pushSuggestion({
+            title: `Share ${requiredAbo} ${requiredRh === 'Neg' ? 'Negative' : 'Positive'} from ${label}`,
+            details: `Source: ${label}. ${ptSavings.description || 'Shares inventory between events.'}`,
+            abo: requiredAbo,
+            rh: requiredRh,
+            antigens: antigenSuggestion,
+            sourceDescription: `${label}`,
+            savingsDetails:
+              ptSavings.description || 'Cross-event sharing reduces new unit purchases.',
+          });
+        };
+
+        (APP_STATE.futureSpecs.entries || []).forEach((candidate) => {
+          if (
+            candidate.customer === spec.customer &&
+            candidate.event === spec.event &&
+            candidate.year == spec.year &&
+            candidate.sample_id === spec.sample_id
+          ) {
+            return;
+          }
+          const label = `${candidate.customer || 'Future'} ${candidate.event || ''} ${
+            candidate.year || ''
+          }`.trim();
+          considerForSharing(candidate, label);
+        });
+
+        (APP_STATE.customerSpecs || []).forEach((candidate) => {
+          if (!candidate || !candidate.year || !spec.year) return;
+          if (Math.abs(candidate.year - spec.year) > 1) return;
+          const label = `${candidate.customer || 'Historical'} ${candidate.event || ''} ${
+            candidate.year || ''
+          }`.trim();
+          considerForSharing(candidate, label);
+        });
+
+        return suggestions;
+      }
+
+      function showOptimizationSuggestions(event, specKey, rowIndex) {
+        if (event) event.stopPropagation();
+        closeOptimizationPopover();
+
+        if (!specKey) return;
+
+        const button = event ? event.currentTarget : null;
+        if (!button) return;
+
+        migrateFutureSpecsFormat();
+
+        const [customer, eventName, year] = specKey.split('_');
+        const relevantSpecs = APP_STATE.futureSpecs.entries
+          .filter((s) => s.customer === customer && s.event === eventName && s.year == year)
+          .slice()
+          .sort((a, b) => {
+            const aId = (a.sample_id || '').toString();
+            const bId = (b.sample_id || '').toString();
+            return aId.localeCompare(bId, undefined, { numeric: true, sensitivity: 'base' });
+          });
+
+        const spec = relevantSpecs[rowIndex];
+        const popover = document.createElement('div');
+        popover.className = 'optimization-popover';
+
+        const suggestionIds = [];
+
+        if (!spec) {
+          popover.innerHTML = '<p style="margin: 0;">Unable to locate sample details.</p>';
+        } else {
+          const suggestions = findBestSuggestionForSample(spec);
+          if (!suggestions || suggestions.length === 0) {
+            popover.innerHTML = '<p style="margin: 0;">No optimization opportunities found.</p>';
+          } else {
+            let html = '';
+            suggestions.forEach((suggestion) => {
+              const suggestionId = generateElementId();
+              optimizationSuggestionStore[suggestionId] = suggestion;
+              suggestionIds.push(suggestionId);
+
+              const headerText =
+                suggestion.title || `${suggestion.abo || ''} ${suggestion.rh || ''}`.trim() || 'Optimization Suggestion';
+
+              const detailSegments = [];
+              if (suggestion.sourceDescription) {
+                detailSegments.push(`Source: ${suggestion.sourceDescription}`);
+              }
+              if (suggestion.savingsDetails) {
+                detailSegments.push(suggestion.savingsDetails);
+              }
+              if (suggestion.antigens && suggestion.antigens.length > 0) {
+                detailSegments.push(`Phenotype: ${formatAntigensDisplay(suggestion.antigens)}`);
+              }
+
+              const detailsText = detailSegments.join(' ');
+
+              html += `
+                <div class="optimization-suggestion">
+                  <div class="suggestion-header">${escapeHtml(headerText)}</div>
+                  <div class="suggestion-details">${escapeHtml(
+                    detailsText || 'Aligned with fulfillment window and compatibility rules.'
+                  )}</div>
+                  <button class="btn btn-success btn-sm" onclick="acceptSuggestion(event, '${specKey}', ${rowIndex}, '${suggestionId}')">Accept</button>
+                </div>
+              `;
+            });
+            popover.innerHTML = html;
+          }
+        }
+
+        if (suggestionIds.length > 0) {
+          popover.setAttribute('data-suggestion-ids', suggestionIds.join(','));
+        }
+
+        document.body.appendChild(popover);
+        popover.style.display = 'block';
+
+        const rect = button.getBoundingClientRect();
+        const popoverWidth = popover.offsetWidth;
+        const popoverHeight = popover.offsetHeight;
+
+        let top = window.scrollY + rect.bottom + 8;
+        let left = window.scrollX + rect.left;
+
+        if (left + popoverWidth > window.scrollX + window.innerWidth - 16) {
+          left = window.scrollX + window.innerWidth - popoverWidth - 16;
+        }
+        if (left < window.scrollX + 16) {
+          left = window.scrollX + 16;
+        }
+
+        if (top + popoverHeight > window.scrollY + window.innerHeight - 16) {
+          top = window.scrollY + rect.top - popoverHeight - 8;
+        }
+        if (top < window.scrollY + 16) {
+          top = window.scrollY + 16;
+        }
+
+        popover.style.top = `${top}px`;
+        popover.style.left = `${left}px`;
+
+        popover.addEventListener('click', (evt) => evt.stopPropagation());
+
+        currentOptimizationPopover = popover;
+
+        optimizationPopoverListener = function (evt) {
+          if (currentOptimizationPopover && !currentOptimizationPopover.contains(evt.target)) {
+            closeOptimizationPopover();
+          }
+        };
+
+        setTimeout(() => {
+          if (optimizationPopoverListener) {
+            document.addEventListener('click', optimizationPopoverListener);
+          }
+        }, 0);
+      }
+
+      function acceptSuggestion(event, specKey, rowIndex, suggestionId) {
+        if (event) event.stopPropagation();
+
+        const suggestion = optimizationSuggestionStore[suggestionId];
+        if (!suggestion) {
+          closeOptimizationPopover();
+          return;
+        }
+
+        const modal = document.getElementById('future-spec-edit-modal');
+        if (!modal) return;
+        const tbody = modal.querySelector('#future-spec-edit-table tbody');
+        if (!tbody) return;
+        const row = tbody.children[rowIndex];
+        if (!row) return;
+
+        const aboSelect = row.querySelector('.edit-abo');
+        if (aboSelect && suggestion.abo) {
+          const optionExists = Array.from(aboSelect.options).some((opt) => opt.value === suggestion.abo);
+          if (optionExists) {
+            aboSelect.value = suggestion.abo;
+          }
+        }
+
+        const rhSelect = row.querySelector('.edit-rh');
+        if (rhSelect && suggestion.rh) {
+          const optionExists = Array.from(rhSelect.options).some((opt) => opt.value === suggestion.rh);
+          if (optionExists) {
+            rhSelect.value = suggestion.rh;
+          }
+        }
+
+        if (Array.isArray(suggestion.antigens)) {
+          const containerId = row.dataset.antigenContainerId;
+          const container = containerId ? document.getElementById(containerId) : null;
+          if (container) {
+            container.innerHTML = '';
+            suggestion.antigens.forEach((antigenObj) => {
+              if (!antigenObj || !antigenObj.antigen) return;
+              const antigenRowId = generateElementId();
+              const antigenRow = document.createElement('div');
+              antigenRow.className = 'antigen-row';
+              antigenRow.id = antigenRowId;
+              antigenRow.style.display = 'flex';
+              antigenRow.style.gap = '0.5rem';
+              antigenRow.style.marginBottom = '0.5rem';
+
+              const antigenOptions = ANTIGEN_ORDER.map(
+                (a) => `<option value="${a}" ${a === antigenObj.antigen ? 'selected' : ''}>${a}</option>`
+              ).join('');
+              const statusOptions = `
+                <option value="Positive" ${antigenObj.status !== 'Negative' ? 'selected' : ''}>Positive</option>
+                <option value="Negative" ${antigenObj.status === 'Negative' ? 'selected' : ''}>Negative</option>
+              `;
+
+              antigenRow.innerHTML = `
+                <select class="form-select" style="width: 100px;" onchange="validateAntigenDuplicates('${containerId}')">
+                  ${antigenOptions}
+                </select>
+                <select class="form-select" style="width: 100px;">
+                  ${statusOptions}
+                </select>
+                <button class="btn btn-danger btn-sm" onclick="removeAntigenRow('${antigenRowId}')">×</button>
+              `;
+              container.appendChild(antigenRow);
+            });
+
+            validateAntigenDuplicates(containerId);
+          }
+        }
+
+        delete optimizationSuggestionStore[suggestionId];
+        if (currentOptimizationPopover && currentOptimizationPopover.hasAttribute('data-suggestion-ids')) {
+          const remainingIds = currentOptimizationPopover
+            .getAttribute('data-suggestion-ids')
+            .split(',')
+            .filter((id) => id && id !== suggestionId);
+          currentOptimizationPopover.setAttribute('data-suggestion-ids', remainingIds.join(','));
+        }
+
+        closeOptimizationPopover();
+
+        row.classList.remove('row-flash-success');
+        void row.offsetWidth;
+        row.classList.add('row-flash-success');
+        setTimeout(() => {
+          row.classList.remove('row-flash-success');
+        }, 1600);
+      }
+
       // ===============================
       // Future Specifications Functions
       // ===============================
@@ -11956,6 +12499,8 @@
 
         migrateFutureSpecsFormat();
 
+        closeOptimizationPopover();
+
         const [customer, event, year] = specKey.split('_');
         const specs = APP_STATE.futureSpecs.entries
           .filter((s) => s.customer === customer && s.event === event && s.year == year)
@@ -12078,6 +12623,14 @@
                 <option value="Negative" ${spec.dat_status !== 'Positive' ? 'selected' : ''}>Negative</option>
                 <option value="Positive" ${spec.dat_status === 'Positive' ? 'selected' : ''}>Positive</option>
               </select>
+            </td>
+            <td>
+              <button
+                class="btn btn-outline btn-sm"
+                onclick="showOptimizationSuggestions(event, '${specKey}', ${idx})"
+              >
+                💡 Suggestions
+              </button>
             </td>
           `;
 
@@ -12296,6 +12849,8 @@
         if (!modal) {
           return;
         }
+
+        closeOptimizationPopover();
 
         modal.classList.remove('active');
         delete modal.dataset.specKey;
