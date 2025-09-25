@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Blood Optimization Platform v0.4.9 - Megedition | Hemo bioscience</title>
+    <title>Blood Optimization Platform v0.6.2 | Hemo bioscience</title>
     <style>
       * {
         margin: 0;
@@ -1853,7 +1853,7 @@
       <!-- Header Bar -->
       <header class="header-bar">
         <div class="header-left">
-          <div class="version-badge">v0.4.9 - Megedition</div>
+          <div class="version-badge">v0.6.2</div>
           <div class="active-users" id="active-users" style="display: none">
             <span>👤 Active:</span>
             <span id="active-user-list">-</span>
@@ -3486,6 +3486,78 @@
       </div>
     </div>
 
+    <!-- Log Purchase Modal -->
+    <div id="log-purchase-modal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 class="modal-title" id="log-purchase-modal-title">Log Purchase</h3>
+          <button class="close-btn" onclick="closeLogPurchaseModal()">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label" for="purchase-description">Description <span class="required">*</span></label>
+            <input
+              type="text"
+              class="form-input"
+              id="purchase-description"
+              placeholder="e.g., 5L Buffer Solution"
+            />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="purchase-date">Date</label>
+            <input type="date" class="form-input" id="purchase-date" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="purchase-cost">Cost ($) <span class="required">*</span></label>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              class="form-input"
+              id="purchase-cost"
+              placeholder="e.g., 245.50"
+            />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline" onclick="closeLogPurchaseModal()">Cancel</button>
+          <button class="btn btn-primary" onclick="savePurchase()">Save Purchase</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- View Purchases Modal -->
+    <div id="view-purchases-modal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 class="modal-title" id="view-purchases-modal-title">Purchase History</h3>
+          <button class="close-btn" onclick="closeViewPurchasesModal()">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="table-container">
+            <table class="data-table" id="purchase-history-table">
+              <thead>
+                <tr>
+                  <th>Description</th>
+                  <th>Date</th>
+                  <th>Cost</th>
+                  <th style="width: 120px;">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td colspan="4" style="text-align: center; color: var(--gray);">No purchases logged yet.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline" onclick="closeViewPurchasesModal()">Close</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Blood Supplier Modal -->
     <div id="blood-supplier-modal" class="modal">
       <div class="modal-content">
@@ -3998,7 +4070,7 @@
       // ===============================
 
       const APP_STATE = {
-        version: '0.5.0',
+        version: '0.6.2',
         customers: [],
         sampleDefinitions: [],
         customerSpecs: [],
@@ -4550,6 +4622,25 @@
           updateUserDisplay();
           await checkFileAccess();
           await loadData();
+
+          (function ensureVendorPurchasesArray() {
+            if (!Array.isArray(APP_STATE.vendors)) {
+              APP_STATE.vendors = [];
+              return;
+            }
+
+            let updated = false;
+            APP_STATE.vendors.forEach((vendor) => {
+              if (vendor && !Array.isArray(vendor.purchases)) {
+                vendor.purchases = [];
+                updated = true;
+              }
+            });
+
+            if (updated) {
+              console.info('[Vendors] purchases array migration applied');
+            }
+          })();
 
           const needsAntibodyMigration =
             Array.isArray(APP_STATE.antibodies) &&
@@ -6711,6 +6802,12 @@
                                                             ? `<div class="customer-info" style="font-style: italic;">📝 ${vendor.notes}</div>`
                                                             : ''
                                                         }
+                                                        <div class="customer-info" style="margin-top: 0.75rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                                                            <button class="btn btn-primary btn-sm" onclick="openLogPurchaseModal('${vendor.id}')" ${
+                                                              !APP_STATE.writeAccess ? 'disabled' : ''
+                                                            }>Log Purchase</button>
+                                                            <button class="btn btn-outline btn-sm" onclick="openViewPurchasesModal('${vendor.id}')">View Purchases</button>
+                                                        </div>
                                                     </div>
                                                 `
           )
@@ -6789,6 +6886,7 @@
             name,
             category,
             notes,
+            purchases: [],
             createdAt: new Date().toISOString(),
             createdBy: APP_STATE.currentUser,
           };
@@ -6815,6 +6913,209 @@
           logActivity('Deleted vendor', vendor.name);
           showAlert('success', 'Vendor deleted');
         }
+      }
+
+      function openLogPurchaseModal(vendorId) {
+        if (!APP_STATE.writeAccess) {
+          showAlert('warning', 'Please complete setup to manage vendor purchases');
+          return;
+        }
+
+        const vendor = APP_STATE.vendors.find((v) => v.id === vendorId);
+        if (!vendor) {
+          showAlert('error', 'Vendor not found');
+          return;
+        }
+
+        const title = document.getElementById('log-purchase-modal-title');
+        if (title) {
+          title.textContent = `Log Purchase for ${vendor.name}`;
+        }
+
+        const descriptionInput = document.getElementById('purchase-description');
+        const dateInput = document.getElementById('purchase-date');
+        const costInput = document.getElementById('purchase-cost');
+        if (descriptionInput) descriptionInput.value = '';
+        if (dateInput) dateInput.value = '';
+        if (costInput) costInput.value = '';
+
+        editingVendorId = vendorId;
+
+        const modal = document.getElementById('log-purchase-modal');
+        if (modal) {
+          modal.classList.add('active');
+        }
+      }
+
+      function closeLogPurchaseModal() {
+        const modal = document.getElementById('log-purchase-modal');
+        if (modal) {
+          modal.classList.remove('active');
+        }
+
+        const descriptionInput = document.getElementById('purchase-description');
+        const dateInput = document.getElementById('purchase-date');
+        const costInput = document.getElementById('purchase-cost');
+        if (descriptionInput) descriptionInput.value = '';
+        if (dateInput) dateInput.value = '';
+        if (costInput) costInput.value = '';
+
+        editingVendorId = null;
+      }
+
+      function savePurchase() {
+        if (!APP_STATE.writeAccess) return;
+
+        const descriptionInput = document.getElementById('purchase-description');
+        const dateInput = document.getElementById('purchase-date');
+        const costInput = document.getElementById('purchase-cost');
+
+        const description = descriptionInput ? descriptionInput.value.trim() : '';
+        const purchaseDate = dateInput ? dateInput.value : '';
+        const costRaw = costInput ? costInput.value.trim() : '';
+
+        if (!description) {
+          showAlert('error', 'Purchase description is required');
+          return;
+        }
+
+        if (!costRaw) {
+          showAlert('error', 'Purchase cost is required');
+          return;
+        }
+
+        const costValue = Number(costRaw);
+        if (!Number.isFinite(costValue)) {
+          showAlert('error', 'Purchase cost must be a valid number');
+          return;
+        }
+
+        const vendor = APP_STATE.vendors.find((v) => v.id === editingVendorId);
+        if (!vendor) {
+          showAlert('error', 'Unable to find vendor for purchase');
+          return;
+        }
+
+        if (!Array.isArray(vendor.purchases)) {
+          vendor.purchases = [];
+        }
+
+        const purchase = {
+          purchaseId: 'purch_' + Date.now(),
+          description,
+          date: purchaseDate,
+          cost: costValue,
+          createdAt: new Date().toISOString(),
+          createdBy: APP_STATE.currentUser,
+        };
+
+        vendor.purchases.push(purchase);
+
+        autoSave();
+        logActivity('Logged vendor purchase', `${vendor.name} - ${description}`);
+        showAlert('success', 'Purchase saved successfully');
+
+        closeLogPurchaseModal();
+      }
+
+      function openViewPurchasesModal(vendorId) {
+        const vendor = APP_STATE.vendors.find((v) => v.id === vendorId);
+        if (!vendor) {
+          showAlert('error', 'Vendor not found');
+          return;
+        }
+
+        if (!Array.isArray(vendor.purchases)) {
+          vendor.purchases = [];
+        }
+
+        const title = document.getElementById('view-purchases-modal-title');
+        if (title) {
+          title.textContent = `Purchase History for ${vendor.name}`;
+        }
+
+        const table = document.getElementById('purchase-history-table');
+        if (table) {
+          let tbody = table.querySelector('tbody');
+          if (!tbody) {
+            tbody = document.createElement('tbody');
+            table.appendChild(tbody);
+          }
+
+          const formatter = new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD',
+          });
+
+          if (vendor.purchases.length === 0) {
+            tbody.innerHTML = `
+              <tr>
+                <td colspan="4" style="text-align: center; color: var(--gray);">No purchases logged yet.</td>
+              </tr>
+            `;
+          } else {
+            tbody.innerHTML = vendor.purchases
+              .map((purchase) => {
+                const numericCost = Number(purchase.cost);
+                const formattedCost = Number.isFinite(numericCost)
+                  ? formatter.format(numericCost)
+                  : String(purchase.cost || '');
+                const purchaseDate = purchase.date ? purchase.date : '—';
+                const deleteDisabled = !APP_STATE.writeAccess ? 'disabled' : '';
+                return `
+                  <tr>
+                    <td>${purchase.description}</td>
+                    <td>${purchaseDate}</td>
+                    <td>${formattedCost}</td>
+                    <td style="text-align: right;">
+                      <button class="btn btn-outline btn-sm" onclick="deletePurchase('${vendor.id}', '${purchase.purchaseId}')" ${deleteDisabled}>Delete</button>
+                    </td>
+                  </tr>
+                `;
+              })
+              .join('');
+          }
+        }
+
+        const modal = document.getElementById('view-purchases-modal');
+        if (modal) {
+          modal.classList.add('active');
+        }
+      }
+
+      function closeViewPurchasesModal() {
+        const modal = document.getElementById('view-purchases-modal');
+        if (modal) {
+          modal.classList.remove('active');
+        }
+      }
+
+      function deletePurchase(vendorId, purchaseId) {
+        if (!APP_STATE.writeAccess) {
+          showAlert('warning', 'Please complete setup to manage vendor purchases');
+          return;
+        }
+
+        const vendor = APP_STATE.vendors.find((v) => v.id === vendorId);
+        if (!vendor || !Array.isArray(vendor.purchases)) {
+          showAlert('error', 'Unable to locate purchase record');
+          return;
+        }
+
+        const purchaseIndex = vendor.purchases.findIndex((p) => p.purchaseId === purchaseId);
+        if (purchaseIndex === -1) {
+          showAlert('error', 'Purchase not found');
+          return;
+        }
+
+        const [removed] = vendor.purchases.splice(purchaseIndex, 1);
+        const detail = removed && removed.description ? `${vendor.name} - ${removed.description}` : vendor.name;
+
+        autoSave();
+        logActivity('Deleted vendor purchase', detail);
+        showAlert('success', 'Purchase deleted');
+
+        openViewPurchasesModal(vendorId);
       }
 
       // ===============================
