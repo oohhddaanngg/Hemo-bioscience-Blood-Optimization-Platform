@@ -1806,6 +1806,10 @@
               <span class="nav-icon">🔄</span>
               <span>Sharing Opportunities</span>
             </button>
+            <button class="nav-item" onclick="switchPanel('reporting', event)">
+              <span class="nav-icon">📈</span>
+              <span>Reporting</span>
+            </button>
           </div>
 
           <div class="nav-section">
@@ -2966,6 +2970,49 @@
               <div id="sharing-analysis-results" style="margin-top: 2rem">
                 <!-- Results will appear here -->
               </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Reporting Panel -->
+        <div id="reporting-panel" class="panel">
+          <div class="content-header">
+            <h1 class="content-title">Reporting</h1>
+            <p class="content-subtitle">Generate and view analytical reports.</p>
+          </div>
+
+          <div class="content-body">
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">Report Generator</h3>
+              </div>
+              <div class="form-grid" style="padding: 1.5rem;">
+                <div class="form-group">
+                  <label for="report-type-select" class="form-label">Report Type</label>
+                  <select id="report-type-select" class="form-select"></select>
+                </div>
+                <div class="form-group" id="report-year-filter">
+                  <label for="report-year-select" class="form-label">Select Year</label>
+                  <select id="report-year-select" class="form-select"></select>
+                </div>
+                <div class="form-group" id="report-date-range-filter" style="display: none;">
+                  <label class="form-label">Select Date Range</label>
+                  <div class="flex gap-2">
+                    <input type="date" id="report-start-date" class="form-input" />
+                    <input type="date" id="report-end-date" class="form-input" />
+                  </div>
+                </div>
+                <div class="form-group" style="align-self: end;">
+                  <button id="generate-report-btn" class="btn btn-primary" type="button">Generate Report</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="card mt-3" id="report-output-card" style="display: none;">
+              <div class="card-header">
+                <h3 class="card-title" id="report-output-title">Report Results</h3>
+              </div>
+              <div id="report-output-content" style="padding: 1.5rem;"></div>
             </div>
           </div>
         </div>
@@ -4526,6 +4573,11 @@
           APP_STATE.currentMonth = new Date().getMonth();
           APP_STATE.currentYear = new Date().getFullYear();
           renderCalendar();
+          initializeReportingPanel();
+        }
+
+        if (!document.getElementById('report-type-select')?.dataset.reportingInitialized) {
+          initializeReportingPanel();
         }
 
         updateVendorList();
@@ -9713,6 +9765,136 @@
 
         document.getElementById('sharing-analysis-results').innerHTML =
           html || '<p>No PT events found in range</p>';
+      }
+
+      // ===============================
+      // Reporting Panel
+      // ===============================
+
+      function initializeReportingPanel() {
+        const typeSelect = document.getElementById('report-type-select');
+        const yearSelect = document.getElementById('report-year-select');
+        if (!typeSelect) {
+          return;
+        }
+
+        const reportTypes = [
+          { value: 'annual-cost', label: 'Annual Cost Analysis' },
+          { value: 'overage-utilization', label: 'Overage Utilization Report' },
+          { value: 'supplier-performance', label: 'Supplier Performance Review' },
+        ];
+
+        typeSelect.innerHTML = reportTypes
+          .map((type) => `<option value="${type.value}">${type.label}</option>`)
+          .join('');
+
+        if (yearSelect) {
+          const yearSet = new Set();
+          const collectYears = (records) => {
+            if (!Array.isArray(records)) return;
+            records.forEach((record) => {
+              const rawYear = record?.year;
+              if (rawYear === undefined || rawYear === null) return;
+              const trimmed = String(rawYear).trim();
+              if (!trimmed) return;
+              yearSet.add(trimmed);
+            });
+          };
+
+          collectYears(APP_STATE.historicalQuantities);
+          collectYears(APP_STATE.quantities);
+
+          const sortedYears = Array.from(yearSet).sort((a, b) => {
+            const numA = Number(a);
+            const numB = Number(b);
+            const aIsNum = Number.isFinite(numA);
+            const bIsNum = Number.isFinite(numB);
+            if (aIsNum && bIsNum) {
+              return numB - numA;
+            }
+            if (aIsNum) return -1;
+            if (bIsNum) return 1;
+            return String(b).localeCompare(String(a));
+          });
+
+          yearSelect.innerHTML = sortedYears.length
+            ? sortedYears
+                .map((year) => `<option value="${year}">${year}</option>`)
+                .join('')
+            : '<option value="">No years available</option>';
+        }
+
+        if (!typeSelect.dataset.reportingInitialized) {
+          typeSelect.addEventListener('change', handleReportTypeChange);
+          const generateBtn = document.getElementById('generate-report-btn');
+          if (generateBtn) {
+            generateBtn.addEventListener('click', generateReport);
+          }
+          typeSelect.dataset.reportingInitialized = 'true';
+        }
+
+        handleReportTypeChange();
+      }
+
+      function handleReportTypeChange() {
+        const typeSelect = document.getElementById('report-type-select');
+        const yearFilter = document.getElementById('report-year-filter');
+        const dateRangeFilter = document.getElementById('report-date-range-filter');
+
+        if (!typeSelect || !yearFilter || !dateRangeFilter) {
+          return;
+        }
+
+        if (typeSelect.value === 'annual-cost') {
+          yearFilter.style.display = '';
+          dateRangeFilter.style.display = 'none';
+        } else {
+          yearFilter.style.display = 'none';
+          dateRangeFilter.style.display = '';
+        }
+      }
+
+      function generateReport(event) {
+        event?.preventDefault();
+
+        const typeSelect = document.getElementById('report-type-select');
+        const yearSelect = document.getElementById('report-year-select');
+        const startDateInput = document.getElementById('report-start-date');
+        const endDateInput = document.getElementById('report-end-date');
+        const outputCard = document.getElementById('report-output-card');
+        const outputTitle = document.getElementById('report-output-title');
+        const outputContent = document.getElementById('report-output-content');
+
+        if (!typeSelect || !outputCard || !outputTitle || !outputContent) {
+          return;
+        }
+
+        const reportLookup = {
+          'annual-cost': 'Annual Cost Analysis',
+          'overage-utilization': 'Overage Utilization Report',
+          'supplier-performance': 'Supplier Performance Review',
+        };
+
+        const selectedType = typeSelect.value;
+        const reportName = reportLookup[selectedType] || 'Report Results';
+        let context = '';
+
+        if (selectedType === 'annual-cost') {
+          const year = yearSelect?.value;
+          context = year ? `for ${year}` : 'without a selected year';
+        } else {
+          const startDate = startDateInput?.value;
+          const endDate = endDateInput?.value;
+          if (startDate || endDate) {
+            context = `from ${startDate || 'unspecified start'} to ${endDate || 'unspecified end'}`;
+          } else {
+            context = 'without a selected date range';
+          }
+        }
+
+        outputTitle.textContent = reportName;
+        outputContent.textContent = `Generating '${reportName}' ${context}... (Full report logic will be implemented in the next task.)`;
+        outputCard.style.display = 'block';
       }
 
       // ===============================
