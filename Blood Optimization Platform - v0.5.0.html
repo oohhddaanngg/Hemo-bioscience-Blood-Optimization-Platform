@@ -678,6 +678,117 @@
         margin-top: 0.5rem;
       }
 
+      #top-antibodies-list {
+        margin: 0;
+      }
+
+      #top-antibodies-list ol {
+        margin: 0;
+        padding-left: 1.25rem;
+        display: grid;
+        gap: 0.5rem;
+      }
+
+      .case-study-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .case-study-list.empty {
+        margin-bottom: 0.5rem;
+      }
+
+      .case-study-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 0.75rem 1rem;
+        border-radius: 10px;
+        background: var(--hemo-blue-lighter);
+        border: 1px solid var(--border);
+        transition: border-color 0.2s ease, background 0.2s ease;
+      }
+
+      .case-study-item.completed {
+        background: var(--light);
+        border-color: rgba(99, 102, 241, 0.15);
+      }
+
+      .case-study-item.overdue:not(.completed) {
+        border-color: var(--danger);
+      }
+
+      .case-study-main {
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+        flex: 1;
+      }
+
+      .case-study-label {
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+        font-weight: 600;
+      }
+
+      .case-study-description {
+        display: inline-block;
+      }
+
+      .case-study-item.completed .case-study-description {
+        text-decoration: line-through;
+        color: var(--gray);
+      }
+
+      .case-study-item.overdue:not(.completed) .case-study-description {
+        color: var(--danger);
+      }
+
+      .case-study-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        font-size: 0.85rem;
+        color: var(--gray);
+      }
+
+      .case-study-status {
+        font-weight: 600;
+      }
+
+      .case-study-item.completed .case-study-status {
+        color: var(--success);
+      }
+
+      .case-study-item.overdue:not(.completed) .case-study-status,
+      .case-study-item.overdue:not(.completed) .case-study-date {
+        color: var(--danger);
+      }
+
+      .case-study-form {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        align-items: flex-end;
+      }
+
+      .case-study-form .form-group {
+        flex: 1 1 220px;
+        margin-bottom: 0;
+      }
+
+      .case-study-description-group {
+        flex: 2 1 280px;
+      }
+
+      .case-study-form button {
+        white-space: nowrap;
+      }
+
       .metric-change.positive {
         color: var(--success);
       }
@@ -1776,20 +1887,68 @@
           <div class="content-body">
             <div class="metrics-grid">
               <div class="metric-card">
-                <div class="metric-value" id="total-customers">0</div>
-                <div class="metric-label">Active Customers</div>
+                <div class="metric-value" id="blood-cost-last-year">$0</div>
+                <div class="metric-label">Last Year's Blood Cost</div>
               </div>
               <div class="metric-card">
-                <div class="metric-value" id="total-specs">0</div>
-                <div class="metric-label">Total Specifications</div>
+                <div class="metric-value" id="blood-cost-ytd">$0</div>
+                <div class="metric-label">YTD Blood Cost (2025)</div>
               </div>
               <div class="metric-card">
-                <div class="metric-value" id="total-antibodies">0</div>
-                <div class="metric-label">Antibodies Tracked</div>
+                <div class="metric-value" id="blood-cost-forecast">$0</div>
+                <div class="metric-label">Forecasted Blood Cost (2025)</div>
               </div>
               <div class="metric-card">
-                <div class="metric-value" id="low-stock-count">0</div>
-                <div class="metric-label">Low Stock Alerts</div>
+                <div class="metric-value" id="antibody-cost-last-year">$0</div>
+                <div class="metric-label">Last Year's Antibody Cost</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-value" id="antibody-cost-ytd">$0</div>
+                <div class="metric-label">YTD Antibody Cost (2025)</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-value" id="antibody-cost-forecast">$0</div>
+                <div class="metric-label">Forecasted Antibody Cost (2025)</div>
+              </div>
+            </div>
+
+            <div class="card" id="top-antibodies-card">
+              <div class="card-header">
+                <h3 class="card-title">Top 3 Most Used Antibodies</h3>
+              </div>
+              <div class="card-body">
+                <div id="top-antibodies-list" class="text-muted">No usage data logged yet.</div>
+              </div>
+            </div>
+
+            <div class="card" id="case-study-tracker-card">
+              <div class="card-header">
+                <h3 class="card-title">Case Study Tracker</h3>
+              </div>
+              <div class="card-body">
+                <div id="case-study-list" class="case-study-list empty">
+                  <p class="text-muted">No case studies tracked yet.</p>
+                </div>
+                <form class="case-study-form" onsubmit="addCaseStudy(event)">
+                  <div class="form-group case-study-description-group">
+                    <label class="form-label" for="case-study-description">Description</label>
+                    <input
+                      id="case-study-description"
+                      type="text"
+                      class="form-input"
+                      placeholder="e.g., Draft June case study"
+                      required
+                    />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="case-study-due-date">Due Date</label>
+                    <input id="case-study-due-date" type="date" class="form-input" required />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" style="opacity: 0">Add Case</label>
+                    <button type="submit" class="btn btn-primary">Add Case</button>
+                  </div>
+                </form>
               </div>
             </div>
 
@@ -3807,6 +3966,7 @@
         manufacturingCalendar: [],
         activityLog: [],
         decisions: [],
+        caseStudies: [],
 
         // ADD THIS NEW STRUCTURE:
         futureSpecs: {
@@ -4791,6 +4951,7 @@
             manufacturingCalendar: APP_STATE.manufacturingCalendar,
             activityLog: APP_STATE.activityLog,
             decisions: APP_STATE.decisions,
+            caseStudies: APP_STATE.caseStudies,
             futureSpecs: APP_STATE.futureSpecs, // ADD THIS LINE
           };
 
@@ -4845,6 +5006,7 @@
             manufacturingCalendar: APP_STATE.manufacturingCalendar,
             activityLog: APP_STATE.activityLog,
             decisions: APP_STATE.decisions,
+            caseStudies: APP_STATE.caseStudies,
             futureSpecs: APP_STATE.futureSpecs, // ADD THIS LINE
           };
 
@@ -5129,6 +5291,7 @@
 
         console.log('Data format migration completed');
         data.vendors = data.vendors || [];
+        data.caseStudies = data.caseStudies || [];
         return data;
       }
 
@@ -5172,6 +5335,7 @@
           // Generate standing orders for current month after data load
           APP_STATE.activityLog = migratedData.activityLog || [];
           APP_STATE.decisions = migratedData.decisions || [];
+          APP_STATE.caseStudies = migratedData.caseStudies || [];
           APP_STATE.activeUsers = migratedData.activeUsers || [];
           APP_STATE.futureSpecs = migratedData.futureSpecs || {
             entries: [],
@@ -5953,6 +6117,7 @@
         }
 
         updateBloodSupplierList();
+        updateDashboard();
         autoSave();
         closeBloodSupplierModal();
       }
@@ -5966,6 +6131,7 @@
         if (confirm(`Are you sure you want to delete ${supplier.name}? This cannot be undone.`)) {
           APP_STATE.bloodSuppliers = APP_STATE.bloodSuppliers.filter((s) => s.id !== supplierId);
           updateBloodSupplierList();
+          updateDashboard();
           autoSave();
           logActivity('Deleted blood supplier', supplier.name);
           showAlert('success', 'Blood supplier deleted');
@@ -6610,21 +6776,291 @@
       // ===============================
 
       function updateDashboard() {
-        document.getElementById('total-customers').textContent = APP_STATE.customers.length;
-        document.getElementById('total-specs').textContent = APP_STATE.customerSpecs.length;
-        document.getElementById('total-antibodies').textContent = APP_STATE.antibodies.length;
+        calculateAndDisplayCosts();
+        calculateAndDisplayTopAntibodies();
+        renderCaseStudies();
+      }
 
-        const lowStockCount = APP_STATE.antibodies.reduce((count, specificity) => {
-          const inventory = Array.isArray(specificity.inventory) ? specificity.inventory : [];
-          return (
-            count +
-            inventory.filter((lot) => {
-              const threshold = getLotLowStockThreshold(lot);
-              return threshold && lot.currentQuantity <= threshold;
-            }).length
-          );
-        }, 0);
-        document.getElementById('low-stock-count').textContent = String(lowStockCount);
+      function formatCurrency(value) {
+        if (!formatCurrency.formatter) {
+          formatCurrency.formatter = new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
+          });
+        }
+
+        const numeric = Number(value);
+        if (!Number.isFinite(numeric) || numeric <= 0) {
+          return formatCurrency.formatter.format(0);
+        }
+        return formatCurrency.formatter.format(numeric);
+      }
+
+      function setMetricText(elementId, value) {
+        const el = document.getElementById(elementId);
+        if (!el) return;
+        el.textContent = formatCurrency(value);
+      }
+
+      function getYearFromDate(value) {
+        if (value == null || value === '') return null;
+
+        if (typeof value === 'number') {
+          return Number.isFinite(value) ? value : null;
+        }
+
+        if (typeof value === 'string') {
+          const trimmed = value.trim();
+          if (trimmed.length === 4 && /^\d{4}$/.test(trimmed)) {
+            return Number(trimmed);
+          }
+        }
+
+        const date = new Date(value);
+        return Number.isNaN(date.getTime()) ? null : date.getFullYear();
+      }
+
+      function calculateAndDisplayCosts() {
+        const metricsAvailable = document.getElementById('blood-cost-last-year');
+        if (!metricsAvailable) return;
+
+        const fallbackUnitPrice = 500;
+        const supplier = (APP_STATE.bloodSuppliers || []).find(
+          (entry) => entry && entry.pricing && Number.isFinite(Number(entry.pricing.baseUnit))
+        );
+        const candidatePrice = supplier ? Number(supplier.pricing.baseUnit) : NaN;
+        const unitPrice =
+          Number.isFinite(candidatePrice) && candidatePrice > 0 ? candidatePrice : fallbackUnitPrice;
+
+        const parseQuantity = (value) => {
+          const numeric = Number(value);
+          return Number.isFinite(numeric) ? numeric : 0;
+        };
+
+        const countUnitsForYear = (collection, year) =>
+          (Array.isArray(collection) ? collection : []).reduce((total, record) => {
+            if (Number(record?.year) === year) {
+              return total + parseQuantity(record.quantity);
+            }
+            return total;
+          }, 0);
+
+        const lastYearUnits = countUnitsForYear(APP_STATE.historicalQuantities, 2024);
+        const ytdUnits = countUnitsForYear(APP_STATE.quantities, 2025);
+
+        const lastYearCost = lastYearUnits * unitPrice;
+        const ytdCost = ytdUnits * unitPrice;
+
+        const today = new Date();
+        let monthsElapsed = 12;
+        if (today.getFullYear() === 2025) {
+          monthsElapsed = Math.max(1, today.getMonth() + 1);
+        }
+        const forecastCost = monthsElapsed ? ytdCost * (12 / monthsElapsed) : ytdCost;
+
+        setMetricText('blood-cost-last-year', lastYearCost);
+        setMetricText('blood-cost-ytd', ytdCost);
+        setMetricText('blood-cost-forecast', forecastCost);
+
+        const lots = (APP_STATE.antibodies || []).reduce((acc, specificity) => {
+          if (specificity && Array.isArray(specificity.inventory)) {
+            acc.push(...specificity.inventory);
+          }
+          return acc;
+        }, []);
+
+        const sumLotCostsForYear = (year) =>
+          lots.reduce((sum, lot) => {
+            const lotYear = getYearFromDate(lot?.qualificationDate);
+            if (lotYear !== year) return sum;
+            const price = Number(lot?.purchasePrice);
+            return Number.isFinite(price) ? sum + price : sum;
+          }, 0);
+
+        const antibodyLastYear = sumLotCostsForYear(2024);
+        const antibodyYtd = sumLotCostsForYear(2025);
+
+        setMetricText('antibody-cost-last-year', antibodyLastYear);
+        setMetricText('antibody-cost-ytd', antibodyYtd);
+        setMetricText('antibody-cost-forecast', antibodyYtd);
+      }
+
+      function calculateAndDisplayTopAntibodies() {
+        const container = document.getElementById('top-antibodies-list');
+        if (!container) return;
+
+        const usageMap = new Map();
+
+        (APP_STATE.antibodies || []).forEach((specificity) => {
+          const lots = Array.isArray(specificity?.inventory) ? specificity.inventory : [];
+          const usageCount = lots.reduce((count, lot) => {
+            const history = Array.isArray(lot?.history) ? lot.history : [];
+            return count + history.length;
+          }, 0);
+
+          if (usageCount > 0) {
+            const name = specificity?.specificity || 'Unnamed Specificity';
+            usageMap.set(name, (usageMap.get(name) || 0) + usageCount);
+          }
+        });
+
+        if (usageMap.size === 0) {
+          container.innerHTML = '<p class="text-muted">No usage data logged yet.</p>';
+          return;
+        }
+
+        const topEntries = Array.from(usageMap.entries())
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 3);
+
+        const listItems = topEntries
+          .map(
+            ([name, count]) =>
+              `<li><strong>${escapeHtml(name)}</strong> — ${count} usage${count === 1 ? '' : 's'}</li>`
+          )
+          .join('');
+
+        container.innerHTML = `<ol>${listItems}</ol>`;
+      }
+
+      function renderCaseStudies() {
+        const listEl = document.getElementById('case-study-list');
+        if (!listEl) return;
+
+        const studies = Array.isArray(APP_STATE.caseStudies)
+          ? [...APP_STATE.caseStudies]
+          : [];
+
+        if (studies.length === 0) {
+          listEl.classList.add('empty');
+          listEl.innerHTML = '<p class="text-muted">No case studies tracked yet.</p>';
+          return;
+        }
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        studies.sort((a, b) => {
+          const aTime = Date.parse(a?.dueDate);
+          const bTime = Date.parse(b?.dueDate);
+          if (Number.isNaN(aTime) && Number.isNaN(bTime)) return 0;
+          if (Number.isNaN(aTime)) return 1;
+          if (Number.isNaN(bTime)) return -1;
+          return aTime - bTime;
+        });
+
+        const items = studies
+          .map((study) => {
+            const dueDate = study?.dueDate ? new Date(study.dueDate) : null;
+            const dueValid = dueDate && !Number.isNaN(dueDate.getTime());
+            const dueLabel = dueValid ? dueDate.toLocaleDateString() : 'No due date';
+            const isOverdue = dueValid && !study.completed && dueDate < today;
+
+            const classes = ['case-study-item'];
+            if (study.completed) classes.push('completed');
+            if (isOverdue) classes.push('overdue');
+
+            return `
+            <div class="${classes.join(' ')}">
+              <div class="case-study-main">
+                <label class="case-study-label">
+                  <input type="checkbox" class="case-study-checkbox" ${
+                    study.completed ? 'checked' : ''
+                  } onchange="toggleCaseStudy('${study.id}')" />
+                  <span class="case-study-description">${escapeHtml(
+                    study.description || 'Case Study'
+                  )}</span>
+                </label>
+                <div class="case-study-meta">
+                  <span class="case-study-date">Due ${escapeHtml(dueLabel)}</span>
+                  <span class="case-study-status">${
+                    study.completed ? 'Completed' : isOverdue ? 'Overdue' : 'In progress'
+                  }</span>
+                </div>
+              </div>
+              <button class="btn btn-outline btn-sm" onclick="deleteCaseStudy('${
+                study.id
+              }')">Delete</button>
+            </div>`;
+          })
+          .join('');
+
+        listEl.classList.remove('empty');
+        listEl.innerHTML = items;
+      }
+
+      function addCaseStudy(event) {
+        if (event) event.preventDefault();
+        if (!APP_STATE.writeAccess) {
+          showAlert('warning', 'Please complete setup to manage case studies');
+          return false;
+        }
+
+        const descriptionInput = document.getElementById('case-study-description');
+        const dueDateInput = document.getElementById('case-study-due-date');
+        if (!descriptionInput || !dueDateInput) return false;
+
+        const description = descriptionInput.value.trim();
+        const dueDate = dueDateInput.value;
+
+        if (!description || !dueDate) {
+          showAlert('error', 'Description and due date are required for a case study');
+          return false;
+        }
+
+        APP_STATE.caseStudies = Array.isArray(APP_STATE.caseStudies)
+          ? APP_STATE.caseStudies
+          : [];
+
+        APP_STATE.caseStudies.push({
+          id: createId('case'),
+          description,
+          dueDate,
+          completed: false,
+          createdAt: new Date().toISOString(),
+        });
+
+        descriptionInput.value = '';
+        dueDateInput.value = '';
+
+        renderCaseStudies();
+        autoSave();
+        showAlert('success', 'Case study added');
+        return false;
+      }
+
+      function toggleCaseStudy(caseId) {
+        if (!APP_STATE.writeAccess) {
+          showAlert('warning', 'Please complete setup to manage case studies');
+          renderCaseStudies();
+          return;
+        }
+
+        const study = (APP_STATE.caseStudies || []).find((item) => item.id === caseId);
+        if (!study) return;
+
+        study.completed = !study.completed;
+        study.completedAt = study.completed ? new Date().toISOString() : null;
+
+        renderCaseStudies();
+        autoSave();
+      }
+
+      function deleteCaseStudy(caseId) {
+        if (!APP_STATE.writeAccess) {
+          showAlert('warning', 'Please complete setup to manage case studies');
+          return;
+        }
+
+        APP_STATE.caseStudies = (APP_STATE.caseStudies || []).filter(
+          (item) => item.id !== caseId
+        );
+
+        renderCaseStudies();
+        autoSave();
+        showAlert('success', 'Case study removed');
       }
 
       function displayStandingOrders() {
@@ -9534,6 +9970,7 @@
           updateQuantitiesTable();
           populateQuantityFilters();
           populateQuantityMigrationOptions();
+          updateDashboard();
           logActivity('Imported quantities', `${count} records`);
           showAlert('success', `Loaded ${count} quantity records`);
           autoSave();
@@ -9714,6 +10151,7 @@
           updateQuantitiesTable();
           populateQuantityFilters();
           populateQuantityMigrationOptions();
+          updateDashboard();
           logActivity('Deleted all quantities', `${count} records deleted`);
           autoSave();
           showAlert('success', `Deleted ${count} quantity records`);
@@ -9744,6 +10182,7 @@
           populateQuantityFilters();
           updateQuantitiesTable();
           populateQuantityMigrationOptions();
+          updateDashboard();
           logActivity('Deleted filtered quantities', `${count} records deleted`);
           autoSave();
           showAlert('success', `Deleted ${count} quantity records`);
@@ -9757,6 +10196,7 @@
         updateQuantitiesTable();
         populateQuantityFilters();
         populateQuantityMigrationOptions();
+        updateDashboard();
         logActivity('Deleted quantity record');
         autoSave();
       }
@@ -9861,6 +10301,7 @@
         updateQuantitiesTable();
         populateQuantityFilters();
         populateQuantityMigrationOptions();
+        updateDashboard();
         autoSave();
         closeQuantityModal();
       }
@@ -9903,6 +10344,7 @@
 
           updateHistoricalQuantitiesTable();
           populateHistoricalQuantityFilters();
+          updateDashboard();
           logActivity('Imported historical quantities', `${count} records`);
           showAlert('success', `Loaded ${count} historical quantity records`);
           autoSave();
@@ -10098,6 +10540,7 @@
           APP_STATE.historicalQuantities = [];
           updateHistoricalQuantitiesTable();
           populateHistoricalQuantityFilters();
+          updateDashboard();
           logActivity('Deleted all historical quantities', `${count} records deleted`);
           autoSave();
           showAlert('success', `Deleted ${count} historical quantity records`);
@@ -10128,6 +10571,7 @@
           clearHistoricalQuantityFilters();
           populateHistoricalQuantityFilters();
           updateHistoricalQuantitiesTable();
+          updateDashboard();
           logActivity('Deleted filtered historical quantities', `${count} records deleted`);
           autoSave();
           showAlert('success', `Deleted ${count} historical quantity records`);
@@ -10140,6 +10584,7 @@
         APP_STATE.historicalQuantities = APP_STATE.historicalQuantities.filter((q) => q.id !== id);
         updateHistoricalQuantitiesTable();
         populateHistoricalQuantityFilters();
+        updateDashboard();
         logActivity('Deleted historical quantity record');
         autoSave();
       }
@@ -10240,6 +10685,7 @@
 
         updateHistoricalQuantitiesTable();
         populateHistoricalQuantityFilters();
+        updateDashboard();
         autoSave();
         closeHistoricalQuantityModal();
       }
@@ -13699,7 +14145,10 @@
 
         if (!APP_STATE.antibodies || APP_STATE.antibodies.length === 0) {
           alertsDiv.innerHTML = '<div class="alert alert-info">No antibody alerts at this time</div>';
-          document.getElementById('low-stock-count').textContent = '0';
+          const lowStockEl = document.getElementById('low-stock-count');
+          if (lowStockEl) {
+            lowStockEl.textContent = '0';
+          }
           return;
         }
 
@@ -13736,7 +14185,10 @@
           });
         });
 
-        document.getElementById('low-stock-count').textContent = String(lowStockCount);
+        const lowStockEl = document.getElementById('low-stock-count');
+        if (lowStockEl) {
+          lowStockEl.textContent = String(lowStockCount);
+        }
 
         if (alerts.length === 0) {
           alertsDiv.innerHTML = '<div class="alert alert-info">No antibody alerts at this time</div>';
