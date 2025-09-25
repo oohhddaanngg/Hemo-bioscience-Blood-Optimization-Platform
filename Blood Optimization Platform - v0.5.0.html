@@ -1063,6 +1063,54 @@
         background: var(--light);
       }
 
+      .optimization-popover {
+        position: absolute;
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        box-shadow: var(--shadow-lg);
+        padding: 1rem;
+        width: 350px;
+        z-index: 1100;
+        display: none;
+      }
+
+      .optimization-suggestion {
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 0.75rem;
+        margin-bottom: 0.75rem;
+      }
+
+      .optimization-suggestion:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+      }
+
+      .suggestion-header {
+        font-weight: 600;
+        color: var(--hemo-blue);
+      }
+
+      .suggestion-details {
+        font-size: 0.875rem;
+        color: var(--gray);
+        margin: 0.25rem 0;
+      }
+
+      .suggestion-applied {
+        animation: suggestionFlash 1.5s ease;
+      }
+
+      @keyframes suggestionFlash {
+        0% {
+          background: rgba(22, 163, 74, 0.25);
+        }
+
+        100% {
+          background: transparent;
+        }
+      }
+
       .close-btn {
         background: none;
         border: none;
@@ -3725,6 +3773,7 @@
                   <th style="min-width: 250px;">Antigens</th>
                   <th style="min-width: 220px;">Antibodies</th>
                   <th>DAT Status</th>
+                  <th>Optimization</th>
                 </tr>
               </thead>
               <tbody></tbody>
@@ -3832,6 +3881,10 @@
       let antibodyMigrationChecked = false;
 
       let editingCalendarEntryId = null;
+
+      let activeOptimizationPopover = null;
+      let optimizationPopoverHandler = null;
+      const optimizationSuggestionCache = new Map();
 
       // Constants
       const RBC_UNIT_ML = 180.0;
@@ -11948,6 +12001,24 @@
         document.getElementById('optimization-results').style.display = 'none';
       }
 
+      function filterFutureSpecsByKey(specKey) {
+        if (!specKey) return [];
+        const [customer, event, year] = specKey.split('_');
+        return APP_STATE.futureSpecs.entries.filter(
+          (s) => s.customer === customer && s.event === event && s.year == year
+        );
+      }
+
+      function sortFutureSpecs(specs = []) {
+        return specs
+          .slice()
+          .sort((a, b) => {
+            const aId = (a.sample_id || '').toString();
+            const bId = (b.sample_id || '').toString();
+            return aId.localeCompare(bId, undefined, { numeric: true, sensitivity: 'base' });
+          });
+      }
+
       function viewFutureSpec(specKey) {
         if (!specKey) {
           showAlert('error', 'Unable to load this specification');
@@ -11957,9 +12028,7 @@
         migrateFutureSpecsFormat();
 
         const [customer, event, year] = specKey.split('_');
-        const specs = APP_STATE.futureSpecs.entries
-          .filter((s) => s.customer === customer && s.event === event && s.year == year)
-          .slice();
+        const specs = filterFutureSpecsByKey(specKey);
 
         if (specs.length === 0) {
           showAlert('error', 'No samples found for this specification');
@@ -11994,11 +12063,7 @@
 
         tbody.innerHTML = '';
 
-        const sortedSpecs = specs.sort((a, b) => {
-          const aId = (a.sample_id || '').toString();
-          const bId = (b.sample_id || '').toString();
-          return aId.localeCompare(bId, undefined, { numeric: true, sensitivity: 'base' });
-        });
+        const sortedSpecs = sortFutureSpecs(specs);
 
         sortedSpecs.forEach((spec, idx) => {
           const row = document.createElement('tr');
@@ -12009,6 +12074,7 @@
           row.dataset.sampleId = spec.sample_id || '';
           row.dataset.antigenContainerId = antigenContainerId;
           row.dataset.antibodyContainerId = antibodyContainerId;
+          row.dataset.rowIndex = idx;
 
           let antigenHTML = `<div class="antigen-container" id="${antigenContainerId}">`;
           if (Array.isArray(spec.antigens) && spec.antigens.length > 0) {
@@ -12079,12 +12145,463 @@
                 <option value="Positive" ${spec.dat_status === 'Positive' ? 'selected' : ''}>Positive</option>
               </select>
             </td>
+            <td>
+              <button class="btn btn-outline btn-sm" onclick="showOptimizationSuggestions(event, '${specKey}', ${idx})">
+                💡 Suggestions
+              </button>
+            </td>
           `;
 
           tbody.appendChild(row);
         });
 
         modal.classList.add('active');
+      }
+
+      function showOptimizationSuggestions(event, specKey, rowIndex) {
+        if (event) {
+          event.stopPropagation();
+        }
+
+        closeOptimizationPopover();
+
+        const button = event?.currentTarget;
+        if (!button) {
+          return;
+        }
+
+        const sortedSpecs = sortFutureSpecs(filterFutureSpecsByKey(specKey));
+        const spec = sortedSpecs[rowIndex];
+        if (!spec) {
+          showAlert('warning', 'Unable to locate this sample for optimization.');
+          return;
+        }
+
+        const suggestions = findBestSuggestionForSample(spec);
+        const cacheKey = `${specKey}_${rowIndex}`;
+        optimizationSuggestionCache.set(cacheKey, suggestions);
+
+        const popover = document.createElement('div');
+        popover.className = 'optimization-popover';
+
+        if (!suggestions || suggestions.length === 0) {
+          popover.innerHTML = '<p class="suggestion-details">No optimization opportunities found.</p>';
+        } else {
+          popover.innerHTML = suggestions
+            .map((suggestion, idx) => {
+              const headerText =
+                suggestion.title ||
+                `Assign ${suggestion.abo || 'Suggested'} ${formatRhDisplay(suggestion.rh)}`.trim();
+              const detailParts = [];
+              if (suggestion.sourceDescription) {
+                detailParts.push(`Source: ${escapeHtml(suggestion.sourceDescription)}`);
+              }
+              if (suggestion.savingsDetails) {
+                detailParts.push(escapeHtml(suggestion.savingsDetails));
+              }
+              const phenotype = formatAntigensDisplay(suggestion.antigens);
+              if (phenotype) {
+                detailParts.push(`Phenotype: ${escapeHtml(phenotype)}`);
+              }
+              return `
+                <div class="optimization-suggestion">
+                  <div class="suggestion-header">${escapeHtml(headerText)}</div>
+                  <div class="suggestion-details">${detailParts.join('<br />')}</div>
+                  <button class="btn btn-success btn-sm" onclick="acceptSuggestion(event, '${specKey}', ${rowIndex}, ${idx})">Accept</button>
+                </div>
+              `;
+            })
+            .join('');
+        }
+
+        document.body.appendChild(popover);
+        popover.addEventListener('click', (evt) => evt.stopPropagation());
+
+        const rect = button.getBoundingClientRect();
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
+        const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft || document.body.scrollLeft || 0;
+        let left = rect.left + scrollLeft - 20;
+        if (left < 16) left = 16;
+        const maxLeft = scrollLeft + window.innerWidth - 370;
+        if (left > maxLeft) left = maxLeft;
+
+        popover.style.top = `${rect.bottom + scrollTop + 8}px`;
+        popover.style.left = `${left}px`;
+        popover.style.display = 'block';
+
+        optimizationPopoverHandler = function (evt) {
+          if (activeOptimizationPopover && !activeOptimizationPopover.contains(evt.target)) {
+            closeOptimizationPopover();
+          }
+        };
+
+        document.addEventListener('click', optimizationPopoverHandler);
+        activeOptimizationPopover = popover;
+      }
+
+      function closeOptimizationPopover() {
+        if (activeOptimizationPopover && activeOptimizationPopover.parentNode) {
+          activeOptimizationPopover.parentNode.removeChild(activeOptimizationPopover);
+        }
+        activeOptimizationPopover = null;
+        if (optimizationPopoverHandler) {
+          document.removeEventListener('click', optimizationPopoverHandler);
+          optimizationPopoverHandler = null;
+        }
+      }
+
+      function findBestSuggestionForSample(spec) {
+        if (!spec) return [];
+
+        const fulfillmentWindow = calculateSpecFulfillmentWindow(spec);
+        if (!fulfillmentWindow) return [];
+
+        const suggestions = [];
+        const normalizedSpec = {
+          abo: normalizeAboValue(spec.abo),
+          rh: normalizeRhValue(spec.rh),
+          antigens: cloneAntigens(spec.antigens),
+        };
+
+        const hasHqcWindow = hasStandingOrderWithinWindow(/HQC/i, fulfillmentWindow);
+        if (hasHqcWindow) {
+          const hqcCandidates = [
+            {
+              title: 'Assign AB Positive',
+              abo: 'AB',
+              rh: 'Pos',
+              antigens: [],
+              sourceDescription: 'HQC-1 AsubB reserve',
+              savingsDetails: 'Source: HQC standing order overage. Saves 1 unit purchase.',
+            },
+            {
+              title: 'Assign O Positive',
+              abo: 'O',
+              rh: 'Pos',
+              antigens: [
+                { antigen: 'C', status: 'Positive' },
+                { antigen: 'E', status: 'Negative' },
+                { antigen: 'c', status: 'Positive' },
+                { antigen: 'e', status: 'Positive' },
+                { antigen: 'Fya', status: 'Negative' },
+              ],
+              sourceDescription: 'HQC-2 (O Pos R1r Fya−)',
+              savingsDetails: 'Source: HQC standing order overage. Saves 1 unit purchase.',
+            },
+            {
+              title: 'Assign A Negative',
+              abo: 'A',
+              rh: 'Neg',
+              antigens: [
+                { antigen: 'C', status: 'Negative' },
+                { antigen: 'E', status: 'Negative' },
+                { antigen: 'c', status: 'Positive' },
+                { antigen: 'e', status: 'Positive' },
+              ],
+              sourceDescription: 'HQC-3 (A1 Neg rr)',
+              savingsDetails: 'Source: HQC standing order overage. Saves 1 unit purchase.',
+            },
+          ];
+
+          hqcCandidates.forEach((candidate) => {
+            if (isSuggestionCompatible(normalizedSpec, candidate)) {
+              pushSuggestionIfUnique(suggestions, candidate);
+            }
+          });
+        }
+
+        const hasC3Window = hasStandingOrderWithinWindow(/C3/i, fulfillmentWindow);
+        if (hasC3Window) {
+          const preferredRh = normalizedSpec.rh === 'Neg' ? 'Neg' : 'Pos';
+          const c3Candidate = {
+            title: `Assign O ${formatRhDisplay(preferredRh)}`,
+            abo: 'O',
+            rh: preferredRh,
+            antigens: [],
+            sourceDescription: 'C3 Standing Order Overage',
+            savingsDetails: 'Source: C3 control standing order. Saves 1 unit purchase.',
+          };
+
+          if (isSuggestionCompatible(normalizedSpec, c3Candidate)) {
+            pushSuggestionIfUnique(suggestions, c3Candidate);
+          }
+        }
+
+        const hasKoreaWindow = hasStandingOrderWithinWindow(/Korea|Mirrscitech/i, fulfillmentWindow);
+        if (hasKoreaWindow) {
+          const koreaCandidates = [
+            {
+              title: 'Assign A Positive',
+              abo: 'A',
+              rh: 'Pos',
+              antigens: [
+                { antigen: 'C', status: 'Positive' },
+                { antigen: 'E', status: 'Negative' },
+                { antigen: 'c', status: 'Negative' },
+                { antigen: 'e', status: 'Positive' },
+              ],
+              sourceDescription: 'Korea/Mirrscitech standing order (R1R1)',
+              savingsDetails: 'Source: Korea partnership standing order. Saves 1 unit purchase.',
+            },
+            {
+              title: 'Assign B Positive',
+              abo: 'B',
+              rh: 'Pos',
+              antigens: [
+                { antigen: 'C', status: 'Negative' },
+                { antigen: 'E', status: 'Positive' },
+                { antigen: 'c', status: 'Positive' },
+                { antigen: 'e', status: 'Negative' },
+              ],
+              sourceDescription: 'Korea/Mirrscitech standing order (R2R2)',
+              savingsDetails: 'Source: Korea partnership standing order. Saves 1 unit purchase.',
+            },
+            {
+              title: 'Assign O Negative',
+              abo: 'O',
+              rh: 'Neg',
+              antigens: [
+                { antigen: 'C', status: 'Negative' },
+                { antigen: 'E', status: 'Negative' },
+                { antigen: 'c', status: 'Positive' },
+                { antigen: 'e', status: 'Positive' },
+              ],
+              sourceDescription: 'Korea/Mirrscitech standing order (rr)',
+              savingsDetails: 'Source: Korea partnership standing order. Saves 1 unit purchase.',
+            },
+          ];
+
+          koreaCandidates.forEach((candidate) => {
+            if (isSuggestionCompatible(normalizedSpec, candidate)) {
+              pushSuggestionIfUnique(suggestions, candidate);
+            }
+          });
+        }
+
+        const otherSpecs = APP_STATE.futureSpecs.entries || [];
+        otherSpecs.forEach((otherSpec) => {
+          if (otherSpec === spec) return;
+          if (!otherSpec.customer || !otherSpec.event || !otherSpec.year) return;
+
+          const otherWindow = calculateSpecFulfillmentWindow(otherSpec);
+          if (!otherWindow || !isWindowOverlapping(fulfillmentWindow, otherWindow)) {
+            return;
+          }
+
+          const candidate = {
+            abo: normalizeAboValue(otherSpec.abo),
+            rh: normalizeRhValue(otherSpec.rh),
+            antigens: cloneAntigens(otherSpec.antigens),
+          };
+
+          if (!candidate.abo || candidate.abo === 'TBD') return;
+          if (!candidate.rh || candidate.rh === 'TBD' || candidate.rh === 'Any') return;
+
+          if (!isSuggestionCompatible(normalizedSpec, candidate)) return;
+
+          const sourceDescription = `${otherSpec.customer} ${otherSpec.event} ${otherSpec.year}`;
+          const suggestion = {
+            title: `Share ${candidate.abo} ${formatRhDisplay(candidate.rh)} from ${otherSpec.customer}`,
+            abo: candidate.abo,
+            rh: candidate.rh,
+            antigens: candidate.antigens,
+            sourceDescription,
+            savingsDetails: 'Source: PT event sharing opportunity. Saves cross-event unit.',
+          };
+
+          pushSuggestionIfUnique(suggestions, suggestion);
+        });
+
+        return suggestions;
+      }
+
+      function acceptSuggestion(event, specKey, rowIndex, suggestionIndex) {
+        if (event) {
+          event.stopPropagation();
+        }
+
+        const cacheKey = `${specKey}_${rowIndex}`;
+        const suggestions = optimizationSuggestionCache.get(cacheKey) || [];
+        const suggestion = suggestions[suggestionIndex];
+        if (!suggestion) {
+          return;
+        }
+
+        const table = document.getElementById('future-spec-edit-table');
+        if (!table) return;
+
+        const rows = table.querySelectorAll('tbody tr');
+        const row = rows[rowIndex];
+        if (!row) return;
+
+        const aboSelect = row.querySelector('.edit-abo');
+        const rhSelect = row.querySelector('.edit-rh');
+
+        if (aboSelect && suggestion.abo) {
+          aboSelect.value = suggestion.abo;
+          if (aboSelect.value !== suggestion.abo) {
+            const fallback = normalizeAboValue(suggestion.abo);
+            if (fallback && fallback !== suggestion.abo) {
+              aboSelect.value = fallback;
+            }
+          }
+        }
+
+        if (rhSelect && suggestion.rh) {
+          const normalizedRh = normalizeRhValue(suggestion.rh);
+          rhSelect.value = normalizedRh;
+          if (rhSelect.value !== normalizedRh) {
+            rhSelect.value = normalizedRh === 'Pos' ? 'Pos' : normalizedRh === 'Neg' ? 'Neg' : rhSelect.value;
+          }
+        }
+
+        const antigenContainerId = row.dataset.antigenContainerId;
+        if (antigenContainerId) {
+          const container = document.getElementById(antigenContainerId);
+          if (container) {
+            container.innerHTML = '';
+            if (Array.isArray(suggestion.antigens) && suggestion.antigens.length > 0) {
+              suggestion.antigens.forEach((antigenObj) => {
+                const elemId = generateElementId();
+                const antigenRow = document.createElement('div');
+                antigenRow.className = 'antigen-row';
+                antigenRow.id = elemId;
+                antigenRow.style = 'display: flex; gap: 0.5rem; margin-bottom: 0.5rem;';
+                antigenRow.innerHTML = `
+    <select class="form-select" style="width: 100px;" onchange="validateAntigenDuplicates('${antigenContainerId}')">
+      ${ANTIGEN_ORDER.map(
+        (a) => `<option value="${a}" ${a === antigenObj.antigen ? 'selected' : ''}>${a}</option>`
+      ).join('')}
+    </select>
+    <select class="form-select" style="width: 100px;">
+      <option value="Positive" ${antigenObj.status === 'Positive' ? 'selected' : ''}>Positive</option>
+      <option value="Negative" ${antigenObj.status === 'Negative' ? 'selected' : ''}>Negative</option>
+    </select>
+    <button class="btn btn-danger btn-sm" onclick="removeAntigenRow('${elemId}')">×</button>
+  `;
+                container.appendChild(antigenRow);
+              });
+            }
+          }
+        }
+
+        closeOptimizationPopover();
+
+        row.classList.add('suggestion-applied');
+        setTimeout(() => {
+          row.classList.remove('suggestion-applied');
+        }, 1600);
+      }
+
+      function normalizeRhValue(value) {
+        if (value === undefined || value === null) return '';
+        const cleaned = value.toString().trim().toUpperCase();
+        if (!cleaned) return '';
+        if (['POS', 'POSITIVE', 'RH+', 'RH POSITIVE', 'D+', 'RH POS', 'POSITIVE RH', 'RH D+'].includes(cleaned)) {
+          return 'Pos';
+        }
+        if (['NEG', 'NEGATIVE', 'RH-', 'RH NEGATIVE', 'D-', 'RH NEG', 'NEGATIVE RH', 'RH D-'].includes(cleaned)) {
+          return 'Neg';
+        }
+        if (cleaned === 'TBD') return 'TBD';
+        if (cleaned === 'ANY') return 'Any';
+        return value.toString();
+      }
+
+      function normalizeAboValue(value) {
+        if (value === undefined || value === null) return '';
+        const cleaned = value.toString().trim().toUpperCase();
+        if (!cleaned) return '';
+        if (['O', 'A', 'B', 'AB', 'TBD'].includes(cleaned)) return cleaned;
+        if (cleaned === 'ANY') return '';
+        if (cleaned.includes('AB')) return 'AB';
+        if (cleaned.startsWith('A')) return 'A';
+        if (cleaned.startsWith('B')) return 'B';
+        if (cleaned.startsWith('O')) return 'O';
+        return '';
+      }
+
+      function matchesAntigenRequirements(specAntigens, candidateAntigens) {
+        const requirements = Array.isArray(specAntigens) ? specAntigens : [];
+        if (requirements.length === 0) return true;
+        const candidateList = Array.isArray(candidateAntigens) ? candidateAntigens : [];
+
+        return requirements.every((requirement) => {
+          if (!requirement || !requirement.antigen) return true;
+          const status = (requirement.status || '').toString().toLowerCase();
+          if (!status || status.includes('measure')) return true;
+          const candidateMatch = candidateList.find((item) => item.antigen === requirement.antigen);
+          if (!candidateMatch) return false;
+          return (candidateMatch.status || '').toString().toLowerCase() === status;
+        });
+      }
+
+      function isSuggestionCompatible(spec, candidate) {
+        if (!candidate) return false;
+        const specAbo = normalizeAboValue(spec.abo);
+        const specRh = normalizeRhValue(spec.rh);
+        const candidateAbo = normalizeAboValue(candidate.abo);
+        const candidateRh = normalizeRhValue(candidate.rh);
+
+        if (!candidateAbo) return false;
+
+        const aboFlexible = !specAbo || specAbo === 'TBD' || specAbo === 'Any';
+        const rhFlexible = !specRh || specRh === 'TBD' || specRh === 'Any';
+
+        const aboMatches =
+          aboFlexible ||
+          specAbo === candidateAbo ||
+          specAbo === 'AB' ||
+          (specAbo === 'A' && candidateAbo === 'O') ||
+          (specAbo === 'B' && candidateAbo === 'O');
+
+        const rhMatches =
+          rhFlexible ||
+          specRh === candidateRh ||
+          (specRh === 'Pos' && candidateRh === 'Neg');
+
+        if (!aboMatches || !rhMatches) {
+          return false;
+        }
+
+        return matchesAntigenRequirements(spec.antigens, candidate.antigens);
+      }
+
+      function cloneAntigens(list) {
+        if (!Array.isArray(list)) return [];
+        return list.map((item) => ({ antigen: item.antigen, status: item.status }));
+      }
+
+      function pushSuggestionIfUnique(collection, suggestion) {
+        if (!suggestion) return;
+        const exists = collection.some(
+          (item) =>
+            item.abo === suggestion.abo &&
+            normalizeRhValue(item.rh) === normalizeRhValue(suggestion.rh) &&
+            item.sourceDescription === suggestion.sourceDescription
+        );
+        if (!exists) {
+          const copy = { ...suggestion };
+          copy.antigens = cloneAntigens(suggestion.antigens);
+          collection.push(copy);
+        }
+      }
+
+      function hasStandingOrderWithinWindow(keywordRegex, window) {
+        if (!keywordRegex || !window) return false;
+        return (APP_STATE.manufacturingCalendar || []).some((entry) => {
+          if (!entry || !entry.date) return false;
+          const description = `${entry.description || ''} ${entry.type || ''}`;
+          return keywordRegex.test(description) && isDateInWindow(entry.date, window);
+        });
+      }
+
+      function formatRhDisplay(rh) {
+        const normalized = normalizeRhValue(rh);
+        if (normalized === 'Pos') return 'Positive';
+        if (normalized === 'Neg') return 'Negative';
+        if (normalized === 'Any') return 'Any';
+        return normalized || '';
       }
 
       function cloneFutureSpec(specKey) {
@@ -12292,6 +12809,7 @@
       }
 
       function closeFutureSpecModal() {
+        closeOptimizationPopover();
         const modal = document.getElementById('future-spec-edit-modal');
         if (!modal) {
           return;
