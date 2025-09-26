@@ -1,24 +1,24 @@
-Version: 0.6.3
-Date: 2025-09-25
+Version: 0.6.4
+Date: 2025-09-26
 
-Current Task: Plan Historical Specifications Bug Fix & Enhancements
+Current Task: Plan Forecasting Logic Overhaul
 Phase: 1 (Planning)
 
-Goal: Address a critical bug in the "Delete All Filtered Specifications" functionality and add a new "Delete All Specifications" button to improve data management capabilities.
+Goal: Redesign the forecasting algorithm for Future Specifications to accurately identify year-over-year trends, even when sample_ids contain the year.
 
 Key Objectives (this phase):
 
-Diagnose the root cause of the partial deletion bug.
+Define a new sample_id normalization strategy to group related samples across different years.
 
-Formulate a robust technical plan to fix the bug.
+Specify the trend analysis method (e.g., weighted average, linear regression) to be used on the grouped historical data.
 
-Define the behavior and placement of the new "Delete All Specifications" button.
+Ensure the new logic correctly predicts quantities based on observed trends (e.g., growth or decline).
 
 Project Roadmap & Status
 Priority 0: Critical Fixes & Foundational Changes
 Task	Status	Version	Notes
 Add "Earliest Bleed Date" to Calendar UI	Completed	v0.6.3	Added a new manual event type to the calendar modal for critical date planning.
-Fix "Delete All Filtered" Bug & Add "Delete All" Button	Not Started	v0.6.4	Correct the logic that causes partial deletion and add a new button to delete all specifications regardless of filtering.
+Fix "Delete All Filtered" Bug & Add "Delete All" Button	Completed	v0.6.4	Corrected the partial deletion bug and added a button to delete all specifications.
 Overhaul Forecasting Logic for Future Specs	Not Started	v0.6.5	Refactor the calculateForecastedQuantity function to correctly parse sample_ids and identify year-over-year trends.
 
 Priority 4: Dashboard & Analytics
@@ -26,6 +26,6 @@ Task	Status	Version	Notes
 Implement Dynamic Dashboard & Tracker Widgets	Completed	v0.6.0	Overhauled dashboard with dynamic widgets for cost tracking, antibody usage, and a new personal Case Study Tracker.
 Build Core Reporting Module	Completed	v0.6.1	Created the new Reporting panel, sidebar link, and UI controls for report generation.
 Enhance 'Vendors' Module for Cost Tracking	Completed	v0.6.2	Added functionality to log and view purchases for each vendor to track 'Other Raw Materials' costs.
-Develop Annual Cost Analysis Report	On Hold	v0.6.4	Generate a detailed breakdown of all costs within a selected year. (On hold pending critical fixes).
+Develop Annual Cost Analysis Report	On Hold	v0.6.5	Generate a detailed breakdown of all costs within a selected year. (On hold pending critical fixes).
 
 COMPLETED - Project Roadmap (v0.4.x - v0.5.x)
