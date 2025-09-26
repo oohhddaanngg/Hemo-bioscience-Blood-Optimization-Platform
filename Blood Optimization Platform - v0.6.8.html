@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Blood Optimization Platform v0.6.7 | Hemo bioscience</title>
+    <title>Blood Optimization Platform v0.6.8 | Hemo bioscience</title>
     <style>
       * {
         margin: 0;
@@ -1853,7 +1853,7 @@
       <!-- Header Bar -->
       <header class="header-bar">
         <div class="header-left">
-      <div class="version-badge">v0.6.7</div>
+        <div class="version-badge">v0.6.8</div>
           <div class="active-users" id="active-users" style="display: none">
             <span>👤 Active:</span>
             <span id="active-user-list">-</span>
@@ -7231,6 +7231,40 @@
         return formatCurrency.formatter.format(numeric);
       }
 
+      function extractNumericValue(value) {
+        if (value === null || value === undefined || value === '') {
+          return 0;
+        }
+
+        if (typeof value === 'number') {
+          return Number.isFinite(value) ? value : 0;
+        }
+
+        if (typeof value === 'string') {
+          const direct = Number(value);
+          if (Number.isFinite(direct)) {
+            return direct;
+          }
+
+          const cleaned = Number(value.replace(/[^0-9.-]+/g, ''));
+          return Number.isFinite(cleaned) ? cleaned : 0;
+        }
+
+        if (typeof value === 'object') {
+          const candidateKeys = ['netSavings', 'amount', 'value', 'estimated', 'total', 'estimatedSavings'];
+          for (const key of candidateKeys) {
+            if (Object.prototype.hasOwnProperty.call(value, key)) {
+              const nested = extractNumericValue(value[key]);
+              if (Number.isFinite(nested)) {
+                return nested;
+              }
+            }
+          }
+        }
+
+        return 0;
+      }
+
       function setMetricText(elementId, value) {
         const el = document.getElementById(elementId);
         if (!el) return;
@@ -10291,8 +10325,15 @@
           const collectYears = (records) => {
             if (!Array.isArray(records)) return;
             records.forEach((record) => {
-              const rawYear = record?.year;
-              if (rawYear === undefined || rawYear === null) return;
+              let rawYear = record?.year;
+              if (rawYear === undefined || rawYear === null || rawYear === '') {
+                const derivedYear = getYearFromDate(record?.date || record?.timestamp);
+                if (derivedYear != null) {
+                  rawYear = derivedYear;
+                }
+              }
+
+              if (rawYear === undefined || rawYear === null || rawYear === '') return;
               const trimmed = String(rawYear).trim();
               if (!trimmed) return;
               yearSet.add(trimmed);
@@ -10301,6 +10342,7 @@
 
           collectYears(APP_STATE.historicalQuantities);
           collectYears(APP_STATE.quantities);
+          collectYears(APP_STATE.optimizationDecisions);
 
           const sortedYears = Array.from(yearSet).sort((a, b) => {
             const numA = Number(a);
@@ -10343,7 +10385,7 @@
           return;
         }
 
-        if (typeSelect.value === 'annual-cost') {
+        if (typeSelect.value === 'annual-cost' || typeSelect.value === 'overage-utilization') {
           yearFilter.style.display = '';
           dateRangeFilter.style.display = 'none';
         } else {
@@ -10365,6 +10407,10 @@
           return;
         }
 
+        if (!generateReport.baseTemplate && outputContent.innerHTML != null) {
+          generateReport.baseTemplate = outputContent.innerHTML;
+        }
+
         const reportLookup = {
           'annual-cost': 'Annual Cost Analysis',
           'overage-utilization': 'Overage Utilization Report',
@@ -10382,8 +10428,28 @@
             return;
           }
 
+          if (generateReport.baseTemplate) {
+            outputContent.innerHTML = generateReport.baseTemplate;
+          }
           const reportData = getAnnualCostData(selectedYear);
           renderAnnualCostReport(reportData, selectedYear);
+          outputCard.style.display = 'block';
+          return;
+        }
+
+        if (selectedType === 'overage-utilization') {
+          const rawYear = yearSelect?.value;
+          const selectedYear = rawYear ? Number(rawYear) : NaN;
+          if (!rawYear || !Number.isFinite(selectedYear)) {
+            showAlert(
+              'warning',
+              'Please select a year to generate the overage utilization report.'
+            );
+            return;
+          }
+
+          const reportData = getOverageUtilizationData(selectedYear);
+          renderOverageUtilizationReport(reportData, selectedYear);
           outputCard.style.display = 'block';
           return;
         }
@@ -10473,6 +10539,240 @@
         });
 
         return allCosts;
+      }
+
+      function getOverageUtilizationData(year) {
+        if (!Number.isFinite(year)) {
+          return { accepted: [], missed: [] };
+        }
+
+        const targetYear = Number(year);
+        const decisions = Array.isArray(APP_STATE.optimizationDecisions)
+          ? APP_STATE.optimizationDecisions
+          : [];
+
+        const decisionsForYear = decisions.filter((entry) => {
+          if (!entry) return false;
+          let entryYear = entry.year;
+          if (entryYear === undefined || entryYear === null || entryYear === '') {
+            entryYear = getYearFromDate(entry.date || entry.timestamp);
+          }
+
+          const numericYear = Number(entryYear);
+          return Number.isFinite(numericYear) && numericYear === targetYear;
+        });
+
+        const acceptedDecisions = [];
+        const missedOpportunities = [];
+
+        decisionsForYear.forEach((decision) => {
+          const normalizedOutcome = (decision?.outcome || decision?.decision || decision?.status || '')
+            .toString()
+            .toLowerCase();
+
+          const isAccepted =
+            decision?.accepted === true ||
+            normalizedOutcome === 'accepted' ||
+            normalizedOutcome === 'realized' ||
+            normalizedOutcome === 'utilized';
+
+          const isMissed =
+            decision?.missed === true ||
+            decision?.manualEntryMade === true ||
+            normalizedOutcome === 'missed' ||
+            normalizedOutcome === 'missed opportunity' ||
+            normalizedOutcome === 'allocation skipped' ||
+            normalizedOutcome === 'manual entry';
+
+          if (isAccepted) {
+            acceptedDecisions.push(decision);
+            return;
+          }
+
+          if (isMissed) {
+            missedOpportunities.push(decision);
+            return;
+          }
+
+          const estimatedSavings = extractNumericValue(decision?.estimatedSavings);
+          const potentialSavings = extractNumericValue(decision?.potentialSavings);
+
+          if (estimatedSavings > 0) {
+            acceptedDecisions.push(decision);
+          } else if (potentialSavings > 0) {
+            missedOpportunities.push(decision);
+          } else {
+            missedOpportunities.push(decision);
+          }
+        });
+
+        return { accepted: acceptedDecisions, missed: missedOpportunities };
+      }
+
+      function renderOverageUtilizationReport(reportData, year) {
+        const outputContent = document.getElementById('report-output-content');
+        if (!outputContent) {
+          return;
+        }
+
+        const accepted = Array.isArray(reportData?.accepted) ? reportData.accepted : [];
+        const missed = Array.isArray(reportData?.missed) ? reportData.missed : [];
+
+        const realizedSavings = accepted.reduce((sum, decision) => {
+          return sum + extractNumericValue(decision?.estimatedSavings);
+        }, 0);
+
+        const potentialSavings = missed.reduce((sum, decision) => {
+          return sum + extractNumericValue(decision?.potentialSavings);
+        }, 0);
+
+        const decisionCount = accepted.length + missed.length;
+        const optimizationRate = decisionCount > 0 ? (accepted.length / decisionCount) * 100 : 0;
+
+        const percentFormatter = new Intl.NumberFormat('en-US', {
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 1,
+        });
+
+        const summaryHtml = `
+          <div class="metrics-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 2rem;">
+            <div class="metric-card">
+              <div class="metric-label">Realized Savings</div>
+              <div class="metric-value">${formatCurrency(realizedSavings)}</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">Potential Savings Missed</div>
+              <div class="metric-value">${formatCurrency(potentialSavings)}</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">Optimization Adoption Rate</div>
+              <div class="metric-value">${percentFormatter.format(optimizationRate)}%</div>
+            </div>
+          </div>
+        `;
+
+        const tablesHtml = `
+          <div class="mt-4">
+            <h4>Realized Savings</h4>
+            <div class="table-container mt-2">
+              <table id="realized-savings-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Recipient Event</th>
+                    <th>Source</th>
+                    <th>Savings</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="mt-4">
+            <h4>Missed Opportunities</h4>
+            <div class="table-container mt-2">
+              <table id="missed-opportunities-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Recipient Event</th>
+                    <th>Manual Entry Made</th>
+                    <th>Missed Overage Source</th>
+                    <th>Potential Savings Lost</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        `;
+
+        outputContent.innerHTML = summaryHtml + tablesHtml;
+
+        const formatDateLabel = (value) => {
+          if (!value) {
+            return '';
+          }
+
+          const parsed = new Date(value);
+          if (!Number.isNaN(parsed.getTime())) {
+            return parsed.toLocaleDateString('en-US', {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+            });
+          }
+
+          return String(value);
+        };
+
+        const getEventLabel = (decision) => {
+          const customer = decision?.customer || decision?.recipient || decision?.recipientCustomer;
+          const eventName = decision?.event || decision?.recipientEvent || decision?.eventName;
+          if (customer && eventName) {
+            return `${customer} ${eventName}`;
+          }
+          return eventName || customer || '';
+        };
+
+        const getSourceLabel = (decision) => {
+          return (
+            decision?.source ||
+            decision?.sourceType ||
+            decision?.sourceKey ||
+            decision?.overageSource ||
+            ''
+          );
+        };
+
+        const realizedBody = outputContent.querySelector('#realized-savings-table tbody');
+        const missedBody = outputContent.querySelector('#missed-opportunities-table tbody');
+
+        if (realizedBody) {
+          realizedBody.innerHTML =
+            accepted.length > 0
+              ? accepted
+                  .map((decision) => {
+                    const savings = formatCurrency(extractNumericValue(decision?.estimatedSavings));
+                    return `
+                      <tr>
+                        <td>${formatDateLabel(decision?.date || decision?.timestamp)}</td>
+                        <td>${getEventLabel(decision)}</td>
+                        <td>${getSourceLabel(decision)}</td>
+                        <td>${savings}</td>
+                      </tr>
+                    `;
+                  })
+                  .join('')
+              : `<tr><td colspan="4" class="text-muted">No realized savings recorded for ${year}.</td></tr>`;
+        }
+
+        if (missedBody) {
+          missedBody.innerHTML =
+            missed.length > 0
+              ? missed
+                  .map((decision) => {
+                    const manualEntry =
+                      decision?.manualEntryMade === true ||
+                      (decision?.decision || '').toString().toLowerCase() === 'manual entry'
+                        ? 'Yes'
+                        : 'No';
+                    const potential = formatCurrency(
+                      extractNumericValue(decision?.potentialSavings)
+                    );
+                    return `
+                      <tr>
+                        <td>${formatDateLabel(decision?.date || decision?.timestamp)}</td>
+                        <td>${getEventLabel(decision)}</td>
+                        <td>${manualEntry}</td>
+                        <td>${getSourceLabel(decision)}</td>
+                        <td>${potential}</td>
+                      </tr>
+                    `;
+                  })
+                  .join('')
+              : `<tr><td colspan="5" class="text-muted">No missed opportunities recorded for ${year}.</td></tr>`;
+        }
       }
 
       function renderAnnualCostReport(data, year) {
