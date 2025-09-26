@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Blood Optimization Platform v0.6.4 | Hemo bioscience</title>
+    <title>Blood Optimization Platform v0.6.5 | Hemo bioscience</title>
     <style>
       * {
         margin: 0;
@@ -1853,7 +1853,7 @@
       <!-- Header Bar -->
       <header class="header-bar">
         <div class="header-left">
-          <div class="version-badge">v0.6.4</div>
+          <div class="version-badge">v0.6.5</div>
           <div class="active-users" id="active-users" style="display: none">
             <span>👤 Active:</span>
             <span id="active-user-list">-</span>
@@ -2333,12 +2333,12 @@
                 </div>
 
                 <div class="form-group">
-                  <label class="form-label">Forecasted Quantity</label>
+                  <label class="form-label">Override Forecasted Quantity (Optional)</label>
                   <input
                     type="number"
                     class="form-input"
                     id="future-spec-quantity"
-                    placeholder="Auto-calculate from history"
+                    placeholder="Optional: Override forecasted quantities"
                   />
                 </div>
               </div>
@@ -12679,41 +12679,109 @@
           copySelect.innerHTML += `<option value="${optionValue}">${optionText}</option>`;
         });
 
-        // Auto-calculate forecasted quantity
-        calculateForecastedQuantity(customer);
       }
 
-      function calculateForecastedQuantity(customer) {
-        // Get historical quantities for trend analysis
-        const historicalQty = [
-          ...(APP_STATE.historicalQuantities || []),
-          ...(APP_STATE.quantities || []),
-        ]
-          .filter((q) => q.customer === customer)
-          .sort((a, b) => b.year - a.year);
+      function calculateForecastedQuantity(customer, sampleIdToForecast) {
+        const DEFAULT_FORECAST = 100;
 
-        if (historicalQty.length === 0) {
-          document.getElementById('future-spec-quantity').placeholder = 'No historical data';
-          return;
+        if (!customer || !sampleIdToForecast) {
+          return DEFAULT_FORECAST;
         }
 
-        // Simple trend analysis (can be made more sophisticated)
-        if (historicalQty.length >= 3) {
-          const recent = historicalQty.slice(0, 3).map((q) => parseInt(q.quantity));
-          const avg = Math.round(recent.reduce((a, b) => a + b, 0) / recent.length);
+        const normalizeSampleId = (sampleId) => {
+          if (!sampleId || typeof sampleId !== 'string') {
+            return '';
+          }
 
-          // Check for trend
-          const trend = recent[0] - recent[2]; // Most recent minus oldest
-          const forecast = avg + Math.round(trend / 2); // Apply half the trend
+          let normalized = sampleId.replace(/\b\d{4}\b/g, '');
+          normalized = normalized.replace(/\s*-\s*/g, '-');
+          normalized = normalized.replace(/-{2,}/g, '-');
+          normalized = normalized.replace(/\s{2,}/g, ' ');
+          normalized = normalized.replace(/^-+/, '').replace(/-+$/, '');
+          return normalized.trim();
+        };
 
-          document.getElementById('future-spec-quantity').value = forecast;
-        } else {
-          // Use simple average if less than 3 years
-          const avg = Math.round(
-            historicalQty.reduce((sum, q) => sum + parseInt(q.quantity), 0) / historicalQty.length
-          );
-          document.getElementById('future-spec-quantity').value = avg;
+        const normalizeQuantityEntry = (entry) => {
+          if (!entry) return null;
+          const normalizedId = normalizeSampleId(entry.sample_id || entry.sampleId || '');
+          if (!normalizedId) return null;
+
+          const quantity = Number(entry.quantity);
+          if (!Number.isFinite(quantity)) return null;
+
+          const explicitYear = Number(entry.year);
+          let year = Number.isFinite(explicitYear) ? explicitYear : null;
+
+          if (year === null) {
+            const idYearMatch = (entry.sample_id || entry.sampleId || '').match(/\b\d{4}\b/);
+            if (idYearMatch) {
+              const parsedYear = Number(idYearMatch[0]);
+              if (Number.isFinite(parsedYear)) {
+                year = parsedYear;
+              }
+            }
+          }
+
+          if (year === null) {
+            return null;
+          }
+
+          return {
+            year,
+            quantity,
+            normalizedId,
+          };
+        };
+
+        const normalizedTargetId = normalizeSampleId(sampleIdToForecast);
+        if (!normalizedTargetId) {
+          return DEFAULT_FORECAST;
         }
+
+        const combinedQuantities = [];
+        if (Array.isArray(APP_STATE.quantities)) {
+          combinedQuantities.push(...APP_STATE.quantities);
+        }
+        if (Array.isArray(APP_STATE.historicalQuantities)) {
+          combinedQuantities.push(...APP_STATE.historicalQuantities);
+        }
+
+        if (combinedQuantities.length === 0) {
+          return DEFAULT_FORECAST;
+        }
+
+        const matchingEntries = combinedQuantities
+          .filter((entry) => entry && entry.customer === customer)
+          .map((entry) => normalizeQuantityEntry(entry))
+          .filter((entry) => entry && entry.normalizedId === normalizedTargetId);
+
+        if (matchingEntries.length === 0) {
+          return DEFAULT_FORECAST;
+        }
+
+        if (matchingEntries.length === 1) {
+          return Math.round(matchingEntries[0].quantity);
+        }
+
+        const sortedByYear = matchingEntries.sort((a, b) => a.year - b.year);
+        const totalIntervals = sortedByYear.length - 1;
+        let totalChange = 0;
+
+        for (let i = 1; i < sortedByYear.length; i++) {
+          const current = sortedByYear[i];
+          const previous = sortedByYear[i - 1];
+          totalChange += current.quantity - previous.quantity;
+        }
+
+        const averageTrend = totalIntervals > 0 ? totalChange / totalIntervals : 0;
+        const mostRecentQuantity = sortedByYear[sortedByYear.length - 1].quantity;
+        const forecast = Math.round(mostRecentQuantity + averageTrend);
+
+        if (!Number.isFinite(forecast)) {
+          return DEFAULT_FORECAST;
+        }
+
+        return forecast;
       }
 
       function createFutureSpec() {
@@ -12721,7 +12789,8 @@
         const event = document.getElementById('future-spec-event').value;
         const year = document.getElementById('future-spec-year').value;
         const copyFrom = document.getElementById('future-spec-copy-from').value;
-        const quantity = document.getElementById('future-spec-quantity').value || 100;
+        const quantityInput = document.getElementById('future-spec-quantity');
+        const overrideQuantityValue = quantityInput && quantityInput.value !== '' ? Number(quantityInput.value) : null;
 
         if (!customer || !event || !year) {
           showAlert('error', 'Please fill in all required fields');
@@ -12796,25 +12865,45 @@
             samples = [];
           } else {
             // Create new samples with updated year and TBD blood types
-            samples = sourceSpecs.map((spec) => ({
-              customer: customer,
-              event: event,
-              year: parseInt(year),
-              sample_id: spec.sample_id.replace(copyYear, year), // Update year in sample ID
-              sample_type_id: spec.sample_type_id,
-              abo: 'TBD',
-              rh: 'TBD',
-              antigens: [], // Changed from empty string to empty array
-              antibodies: [], // Changed from antibody_1/antibody_2 to single array
-              dat_status: 'Negative', // Changed from is_dat_positive to dat_status
-              status: 'draft',
-            }));
+            samples = sourceSpecs.map((spec) => {
+              const forecast = calculateForecastedQuantity(customer, spec.sample_id);
+              const updatedSampleId = spec.sample_id
+                ? spec.sample_id.replace(copyYear, year)
+                : spec.sample_id;
+
+              return {
+                customer: customer,
+                event: event,
+                year: parseInt(year),
+                sample_id: updatedSampleId,
+                sample_type_id: spec.sample_type_id,
+                abo: 'TBD',
+                rh: 'TBD',
+                antigens: [], // Changed from empty string to empty array
+                antibodies: [], // Changed from antibody_1/antibody_2 to single array
+                dat_status: 'Negative', // Changed from is_dat_positive to dat_status
+                status: 'draft',
+                forecasted_quantity: forecast,
+              };
+            });
           }
         } else {
           // Manual entry - create empty structure
           showAlert('info', 'Manual entry mode - add samples individually');
           samples = [];
         }
+
+        const totalForecastQuantity = samples.reduce((sum, sample) => {
+          const qty = Number(sample.forecasted_quantity);
+          return sum + (Number.isFinite(qty) ? qty : 0);
+        }, 0);
+
+        const metadataQuantity =
+          overrideQuantityValue !== null && Number.isFinite(overrideQuantityValue)
+            ? Math.round(overrideQuantityValue)
+            : samples.length > 0
+            ? Math.round(totalForecastQuantity)
+            : 100;
 
         // Add to futureSpecs
         APP_STATE.futureSpecs.entries.push(...samples);
@@ -12823,7 +12912,7 @@
           lastModified: new Date().toISOString(),
           currentVersion: 1,
           status: 'draft',
-          quantity: parseInt(quantity),
+          quantity: metadataQuantity,
         };
 
         // Save initial version
