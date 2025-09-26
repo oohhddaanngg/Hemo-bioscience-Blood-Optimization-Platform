@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Blood Optimization Platform v0.6.5 | Hemo bioscience</title>
+    <title>Blood Optimization Platform v0.6.6 | Hemo bioscience</title>
     <style>
       * {
         margin: 0;
@@ -1853,7 +1853,7 @@
       <!-- Header Bar -->
       <header class="header-bar">
         <div class="header-left">
-          <div class="version-badge">v0.6.5</div>
+          <div class="version-badge">v0.6.6</div>
           <div class="active-users" id="active-users" style="display: none">
             <span>👤 Active:</span>
             <span id="active-user-list">-</span>
@@ -3020,7 +3020,74 @@
               <div class="card-header">
                 <h3 class="card-title" id="report-output-title">Report Results</h3>
               </div>
-              <div id="report-output-content" style="padding: 1.5rem;"></div>
+              <div id="report-output-content" style="padding: 1.5rem;">
+                <div
+                  id="report-summary-cards"
+                  class="metrics-grid"
+                  style="grid-template-columns: repeat(3, 1fr); margin-bottom: 2rem;"
+                ></div>
+
+                <div
+                  id="report-chart-container"
+                  class="card"
+                  style="padding: 1.5rem; margin-bottom: 2rem;"
+                >
+                  <div class="flex justify-between align-center mb-2">
+                    <h4 id="chart-title">Annual Spend Comparison</h4>
+                    <div class="btn-group" id="chart-toggle-buttons">
+                      <button
+                        class="btn btn-outline btn-sm active"
+                        data-view="annual"
+                        onclick="renderSpendChart('annual')"
+                      >
+                        Annual
+                      </button>
+                      <button
+                        class="btn btn-outline btn-sm"
+                        data-view="quarterly"
+                        onclick="renderSpendChart('quarterly')"
+                      >
+                        Quarterly
+                      </button>
+                      <button
+                        class="btn btn-outline btn-sm"
+                        data-view="monthly"
+                        onclick="renderSpendChart('monthly')"
+                      >
+                        Monthly
+                      </button>
+                    </div>
+                  </div>
+                  <div
+                    id="spend-chart"
+                    style="
+                      height: 300px;
+                      display: flex;
+                      align-items: flex-end;
+                      gap: 0.5rem;
+                      border-bottom: 1px solid var(--border);
+                      padding-bottom: 1rem;
+                    "
+                  ></div>
+                </div>
+
+                <div id="report-table-container">
+                  <h4>Detailed Breakdown</h4>
+                  <div class="table-container mt-2">
+                    <table id="report-details-table">
+                      <thead>
+                        <tr>
+                          <th>Category</th>
+                          <th>Item / Supplier</th>
+                          <th>Date</th>
+                          <th>Cost</th>
+                        </tr>
+                      </thead>
+                      <tbody></tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -10205,8 +10272,6 @@
 
         const typeSelect = document.getElementById('report-type-select');
         const yearSelect = document.getElementById('report-year-select');
-        const startDateInput = document.getElementById('report-start-date');
-        const endDateInput = document.getElementById('report-end-date');
         const outputCard = document.getElementById('report-output-card');
         const outputTitle = document.getElementById('report-output-title');
         const outputContent = document.getElementById('report-output-content');
@@ -10222,25 +10287,367 @@
         };
 
         const selectedType = typeSelect.value;
-        const reportName = reportLookup[selectedType] || 'Report Results';
-        let context = '';
+        outputTitle.textContent = reportLookup[selectedType] || 'Report Results';
 
         if (selectedType === 'annual-cost') {
-          const year = yearSelect?.value;
-          context = year ? `for ${year}` : 'without a selected year';
-        } else {
-          const startDate = startDateInput?.value;
-          const endDate = endDateInput?.value;
-          if (startDate || endDate) {
-            context = `from ${startDate || 'unspecified start'} to ${endDate || 'unspecified end'}`;
-          } else {
-            context = 'without a selected date range';
+          const rawYear = yearSelect?.value;
+          const selectedYear = rawYear ? Number(rawYear) : NaN;
+          if (!rawYear || !Number.isFinite(selectedYear)) {
+            showAlert('warning', 'Please select a year to generate the annual cost analysis.');
+            return;
           }
+
+          const reportData = getAnnualCostData(selectedYear);
+          renderAnnualCostReport(reportData, selectedYear);
+          outputCard.style.display = 'block';
+          return;
         }
 
-        outputTitle.textContent = reportName;
-        outputContent.textContent = `Generating '${reportName}' ${context}... (Full report logic will be implemented in the next task.)`;
+        outputContent.innerHTML =
+          '<p class="text-muted">The selected report type has not been implemented yet.</p>';
         outputCard.style.display = 'block';
+      }
+
+      function getAnnualCostData(year) {
+        if (!Number.isFinite(year)) {
+          return [];
+        }
+
+        const allCosts = [];
+        const targetYear = Number(year);
+
+        const collectQuantitiesForYear = (collection) => {
+          if (!Array.isArray(collection)) return [];
+          return collection.filter((entry) => {
+            const entryYear = entry?.year != null ? Number(entry.year) : getYearFromDate(entry?.date);
+            return entryYear === targetYear;
+          });
+        };
+
+        const activeYearQuantities = collectQuantitiesForYear(APP_STATE.quantities);
+        const historicalYearQuantities = collectQuantitiesForYear(APP_STATE.historicalQuantities);
+        const totalUnits = [...activeYearQuantities, ...historicalYearQuantities].reduce((sum, entry) => {
+          const quantity = Number(entry?.quantity);
+          return Number.isFinite(quantity) ? sum + quantity : sum;
+        }, 0);
+
+        const defaultUnitPrice = 500;
+        const bloodSupplier = (APP_STATE.bloodSuppliers || [])[0];
+        const supplierUnitPrice = Number(bloodSupplier?.pricing?.baseUnit);
+        const costPerUnit = Number.isFinite(supplierUnitPrice) && supplierUnitPrice > 0 ? supplierUnitPrice : defaultUnitPrice;
+        const totalBloodCost = totalUnits * costPerUnit;
+
+        allCosts.push({
+          category: 'Blood Purchase',
+          item: 'Bulk RBC Units',
+          date: `${targetYear}-12-31`,
+          cost: totalBloodCost,
+        });
+
+        (APP_STATE.antibodies || []).forEach((specificity) => {
+          const lots = Array.isArray(specificity?.inventory) ? specificity.inventory : [];
+          lots.forEach((lot) => {
+            const lotYear = getYearFromDate(lot?.qualificationDate);
+            if (lotYear !== targetYear) return;
+
+            const purchasePrice = Number(lot?.purchasePrice);
+            if (!Number.isFinite(purchasePrice)) return;
+
+            const specificityName = specificity?.specificity || 'Unnamed Specificity';
+            const lotNumber = lot?.lotNumber || 'N/A';
+
+            allCosts.push({
+              category: 'Antibody Purchase',
+              item: `${specificityName} (Lot: ${lotNumber})`,
+              date: lot?.qualificationDate || `${targetYear}-01-01`,
+              cost: purchasePrice,
+            });
+          });
+        });
+
+        (APP_STATE.vendors || []).forEach((vendor) => {
+          const purchases = Array.isArray(vendor?.purchases) ? vendor.purchases : [];
+          purchases.forEach((purchase) => {
+            const purchaseDate = purchase?.purchaseDate || purchase?.date || null;
+            const purchaseYear = getYearFromDate(purchaseDate);
+            if (purchaseYear !== targetYear) return;
+
+            const purchaseCost = Number(purchase?.cost);
+            if (!Number.isFinite(purchaseCost)) return;
+
+            const description = purchase?.description || 'Purchase';
+            const vendorName = vendor?.name || 'Vendor';
+
+            allCosts.push({
+              category: 'Other Raw Material',
+              item: `${description} (${vendorName})`,
+              date: purchaseDate || `${targetYear}-01-01`,
+              cost: purchaseCost,
+            });
+          });
+        });
+
+        return allCosts;
+      }
+
+      function renderAnnualCostReport(data, year) {
+        const summaryContainer = document.getElementById('report-summary-cards');
+        const tableBody = document.querySelector('#report-details-table tbody');
+        const chartTitle = document.getElementById('chart-title');
+
+        if (!summaryContainer || !tableBody) {
+          return;
+        }
+
+        const totals = {
+          'Blood Purchase': 0,
+          'Antibody Purchase': 0,
+          'Other Raw Material': 0,
+        };
+
+        const sanitizedData = Array.isArray(data) ? data : [];
+
+        sanitizedData.forEach((entry) => {
+          const numericCost = Number(entry?.cost);
+          if (!Number.isFinite(numericCost)) {
+            return;
+          }
+
+          if (Object.prototype.hasOwnProperty.call(totals, entry.category)) {
+            totals[entry.category] += numericCost;
+          }
+        });
+
+        const cardConfig = [
+          { label: 'Blood Purchases', key: 'Blood Purchase' },
+          { label: 'Antibody Purchases', key: 'Antibody Purchase' },
+          { label: 'Other Raw Materials', key: 'Other Raw Material' },
+        ];
+
+        summaryContainer.innerHTML = cardConfig
+          .map(
+            ({ label, key }) => `
+              <div class="metric-card">
+                <div class="metric-label">${label}</div>
+                <div class="metric-value">${formatCurrency(totals[key] || 0)}</div>
+              </div>
+            `
+          )
+          .join('');
+
+        const currencyFormatter = new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: 'USD',
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        });
+
+        const sortedData = [...sanitizedData].sort((a, b) => {
+          const aDate = new Date(a?.date || `${year}-01-01`).getTime();
+          const bDate = new Date(b?.date || `${year}-01-01`).getTime();
+          return aDate - bDate;
+        });
+
+        tableBody.innerHTML = sortedData
+          .map((entry) => {
+            const numericCost = Number(entry?.cost);
+            const formattedCost = Number.isFinite(numericCost)
+              ? currencyFormatter.format(numericCost)
+              : entry?.cost ?? '';
+            const dateLabel = entry?.date || '';
+
+            return `
+              <tr>
+                <td>${entry?.category || ''}</td>
+                <td>${entry?.item || ''}</td>
+                <td>${dateLabel}</td>
+                <td>${formattedCost}</td>
+              </tr>
+            `;
+          })
+          .join('');
+
+        if (chartTitle) {
+          chartTitle.textContent = `Annual Spend Comparison (${year})`;
+        }
+
+        window.currentReportData = { data: sortedData, year };
+        renderSpendChart('annual');
+      }
+
+      function renderSpendChart(viewType) {
+        const chart = document.getElementById('spend-chart');
+        const toggleButtons = document.querySelectorAll('#chart-toggle-buttons .btn');
+        const chartTitle = document.getElementById('chart-title');
+
+        if (!chart) {
+          return;
+        }
+
+        const reportState = window.currentReportData;
+        if (!reportState || !Array.isArray(reportState.data) || !Number.isFinite(reportState.year)) {
+          chart.innerHTML = '<p class="text-muted">Run the annual cost report to view spend trends.</p>';
+          return;
+        }
+
+        const { data, year } = reportState;
+
+        const aggregateAnnual = () => {
+          const years = [];
+          for (let offset = 4; offset >= 0; offset--) {
+            years.push(year - offset);
+          }
+
+          return years.map((yr) => {
+            const yearData = yr === year ? data : getAnnualCostData(yr);
+            const total = yearData.reduce((sum, entry) => {
+              const numeric = Number(entry?.cost);
+              return Number.isFinite(numeric) ? sum + numeric : sum;
+            }, 0);
+            return { label: String(yr), value: total };
+          });
+        };
+
+        const getMonthIndex = (value) => {
+          if (!value) return null;
+          const parsed = new Date(value);
+          if (!Number.isNaN(parsed.getTime())) {
+            return parsed.getMonth();
+          }
+
+          const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value));
+          if (match) {
+            return Number(match[2]) - 1;
+          }
+
+          return null;
+        };
+
+        const aggregateQuarterly = () => {
+          const quarters = [
+            { label: 'Q1', value: 0 },
+            { label: 'Q2', value: 0 },
+            { label: 'Q3', value: 0 },
+            { label: 'Q4', value: 0 },
+          ];
+
+          data.forEach((entry) => {
+            const monthIndex = getMonthIndex(entry?.date);
+            if (monthIndex == null) return;
+
+            const numeric = Number(entry?.cost);
+            if (!Number.isFinite(numeric)) return;
+
+            const quarterIndex = Math.floor(monthIndex / 3);
+            quarters[quarterIndex].value += numeric;
+          });
+
+          return quarters;
+        };
+
+        const aggregateMonthly = () => {
+          const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+          const months = monthNames.map((label) => ({ label, value: 0 }));
+
+          data.forEach((entry) => {
+            const monthIndex = getMonthIndex(entry?.date);
+            if (monthIndex == null) return;
+
+            const numeric = Number(entry?.cost);
+            if (!Number.isFinite(numeric)) return;
+
+            months[monthIndex].value += numeric;
+          });
+
+          return months;
+        };
+
+        let aggregatedData;
+        switch (viewType) {
+          case 'quarterly':
+            aggregatedData = aggregateQuarterly();
+            if (chartTitle) {
+              chartTitle.textContent = `Quarterly Spend Distribution (${year})`;
+            }
+            break;
+          case 'monthly':
+            aggregatedData = aggregateMonthly();
+            if (chartTitle) {
+              chartTitle.textContent = `Monthly Spend Distribution (${year})`;
+            }
+            break;
+          case 'annual':
+          default:
+            aggregatedData = aggregateAnnual();
+            if (chartTitle) {
+              chartTitle.textContent = `Annual Spend Comparison (${year})`;
+            }
+            break;
+        }
+
+        if (!Array.isArray(aggregatedData) || aggregatedData.length === 0) {
+          chart.innerHTML = '<p class="text-muted">No data available for the selected view.</p>';
+          return;
+        }
+
+        const maxValue = aggregatedData.reduce((max, entry) => {
+          return entry.value > max ? entry.value : max;
+        }, 0);
+
+        const valueFormatter = new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: 'USD',
+          maximumFractionDigits: 0,
+        });
+
+        chart.innerHTML = '';
+
+        aggregatedData.forEach((entry) => {
+          const column = document.createElement('div');
+          column.style.flex = '1';
+          column.style.minWidth = '40px';
+          column.style.display = 'flex';
+          column.style.flexDirection = 'column';
+          column.style.alignItems = 'center';
+          column.style.justifyContent = 'flex-end';
+
+          const valueLabel = document.createElement('div');
+          valueLabel.textContent = valueFormatter.format(entry.value || 0);
+          valueLabel.style.fontSize = '0.75rem';
+          valueLabel.style.marginBottom = '0.25rem';
+
+          const bar = document.createElement('div');
+          const heightPercent = maxValue > 0 ? (entry.value / maxValue) * 100 : 0;
+          if (heightPercent <= 0) {
+            bar.style.height = '4px';
+          } else {
+            bar.style.height = `${heightPercent}%`;
+          }
+          bar.style.width = '100%';
+          bar.style.maxWidth = '60px';
+          bar.style.background = 'var(--hemo-blue)';
+          bar.style.borderRadius = '6px 6px 0 0';
+          bar.style.minHeight = '4px';
+
+          const label = document.createElement('div');
+          label.textContent = entry.label;
+          label.style.fontSize = '0.75rem';
+          label.style.marginTop = '0.5rem';
+
+          column.appendChild(valueLabel);
+          column.appendChild(bar);
+          column.appendChild(label);
+          chart.appendChild(column);
+        });
+
+        toggleButtons.forEach((button) => {
+          if (!button) return;
+          if (button.dataset.view === viewType) {
+            button.classList.add('active');
+          } else {
+            button.classList.remove('active');
+          }
+        });
       }
 
       // ===============================
