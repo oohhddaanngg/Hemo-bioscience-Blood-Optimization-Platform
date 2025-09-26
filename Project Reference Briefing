@@ -1,19 +1,13 @@
 Project: Hemo bioscience Blood Optimization Platform
-Version: 0.6.5
-Purpose: A standalone web tool for optimizing RBC inventory, forecasting needs, and reducing procurement costs. It serves as a high-efficiency decision-support tool.
+Version: 0.7.0 (Planning)
+Purpose: A standalone web tool for optimizing RBC inventory, forecasting needs, and reducing procurement costs. It serves as a high-efficiency decision-support tool, not a regulated document control system.
 
 Key Modules & Current Status:
 
-Dashboard: Active. Displays dynamic cost metrics (Blood, Antibody, Other Raw Materials) for last year, YTD, and forecast. Includes a "Top 3 Most Used Antibodies" widget and a personal "Case Study Tracker."
+Dashboard & Reporting: Active. The dashboard displays dynamic cost metrics. The Reporting panel is functional, with an "Annual Cost Analysis" report and an "Overage Utilization Report" implemented.
 
-Manufacturing Calendar: Active. Visualizes all scheduled events. Supports manual entry of key dates, including "Earliest Bleed Date" and multi-day shipment tracking.
+Core Data Modules: Active. All core data modules (Customers, Samples, Quantities, Inventory) are functional. The PT Customers module is the single source of truth for all customer data used throughout the application.
 
-Customers, Samples, Quantities (Historical & Current): Active. Full CRUD and CSV import capabilities.
+Future Specifications: Active (Pending Bug Fixes). This core planning module features cloning, versioning, and intelligent forecasting. The optimization suggestion engine is undergoing a major overhaul to implement stricter, stateful logic based on newly clarified business rules. This is the highest development priority.
 
-Future Specifications: Active & Enhanced. Core planning module. Features a detailed editing modal with versioning, cloning, intelligent forecasting (handles year-in-ID), and integrated, on-demand optimization suggestions.
-
-Analysis (Calculator, BUP, Sharing): Active. Core calculation engines are functional.
-
-Reporting: Active (in development). A new dedicated panel for generating reports. The first report, "Annual Cost Analysis," is the next development priority.
-
-Inventory (Vendors, Suppliers, Antibodies, etc.): Active. All modules are functional. The "Vendors" module now supports logging purchases to track costs for "Other Raw Materials."
+BUP Generator: Active. The BUP Generator is functional and will be updated to use the new stateful allocation logic to ensure its plans are always based on available resources.
