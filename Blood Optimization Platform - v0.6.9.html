@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Blood Optimization Platform v0.6.8 | Hemo bioscience</title>
+    <title>Blood Optimization Platform v0.6.9 | Hemo bioscience</title>
     <style>
       * {
         margin: 0;
@@ -1853,7 +1853,7 @@
       <!-- Header Bar -->
       <header class="header-bar">
         <div class="header-left">
-        <div class="version-badge">v0.6.8</div>
+        <div class="version-badge">v0.6.9</div>
           <div class="active-users" id="active-users" style="display: none">
             <span>👤 Active:</span>
             <span id="active-user-list">-</span>
@@ -2005,7 +2005,7 @@
         <!-- Customers Panel -->
         <div id="customers-panel" class="panel">
           <div class="content-header">
-            <h1 class="content-title">Customer Management</h1>
+            <h1 class="content-title">PT Customers</h1>
             <p class="content-subtitle">Manage customers and their contact information</p>
           </div>
 
@@ -2107,14 +2107,14 @@
                     border-radius: 6px;
                   "
                 >
-                  <input
-                    type="text"
-                    id="spec-search"
-                    class="form-input"
-                    placeholder="Search customer, event..."
+                  <select
+                    id="spec-filter-customer"
+                    class="form-select"
                     style="flex: 1; min-width: 200px"
-                    oninput="filterSpecs()"
-                  />
+                    onchange="filterSpecs()"
+                  >
+                    <option value="">All Customers</option>
+                  </select>
 
                   <select
                     id="spec-filter-year"
@@ -2391,25 +2391,14 @@
               <div class="form-grid">
                 <div class="form-group">
                   <label class="form-label">Customer</label>
-                  <div style="display: flex; gap: 10px; align-items: center">
-                    <select
-                      class="form-select"
-                      id="calc-customer"
-                      onchange="updateYearOptions(); updateEventOptions();"
-                      style="flex: 1"
-                    >
-                      <option value="">Select Customer</option>
-                    </select>
-                    <span>OR</span>
-                    <input
-                      type="text"
-                      class="form-input"
-                      id="calc-customer-manual"
-                      placeholder="Enter customer name manually"
-                      style="flex: 1"
-                      oninput="handleManualCustomerInput()"
-                    />
-                  </div>
+                  <select
+                    class="form-select"
+                    id="calc-customer"
+                    onchange="updateYearOptions(); updateEventOptions();"
+                    style="width: 100%;"
+                  >
+                    <option value="">Select Customer</option>
+                  </select>
                 </div>
                 <div class="form-group">
                   <label class="form-label">Year</label>
@@ -3134,7 +3123,7 @@
         <!-- Blood Suppliers Panel -->
         <div id="blood-suppliers-panel" class="panel">
           <div class="content-header">
-            <h1 class="content-title">Blood Supplier Management</h1>
+            <h1 class="content-title">Blood Suppliers</h1>
             <p class="content-subtitle">Manage RBC suppliers and their pricing rules</p>
           </div>
 
@@ -3155,7 +3144,7 @@
         <!-- Bulk RBCs Panel -->
         <div id="bulk-rbcs-panel" class="panel">
           <div class="content-header">
-            <h1 class="content-title">Bulk RBC Inventory</h1>
+            <h1 class="content-title">Bulk RBCs</h1>
             <p class="content-subtitle">Track individual pRBC units and their remaining volumes.</p>
           </div>
 
@@ -3176,7 +3165,7 @@
         <!-- Bulk Serums Panel -->
         <div id="bulk-serums-panel" class="panel">
           <div class="content-header">
-            <h1 class="content-title">Bulk Serum Inventory</h1>
+            <h1 class="content-title">Bulk Serums</h1>
             <p class="content-subtitle">Log reagent-grade serums and track remaining volumes.</p>
           </div>
 
@@ -3197,7 +3186,7 @@
         <!-- Antibodies Panel -->
         <div id="antibodies-panel" class="panel">
           <div class="content-header">
-            <h1 class="content-title">Antibody Management</h1>
+            <h1 class="content-title">Antibodies</h1>
             <p class="content-subtitle">Track inventory, costs, and usage of antibodies</p>
           </div>
 
@@ -3232,7 +3221,7 @@
         <!-- Vendors Panel -->
         <div id="vendors-panel" class="panel">
           <div class="content-header">
-            <h1 class="content-title">Vendor Management</h1>
+            <h1 class="content-title">Vendors</h1>
             <p class="content-subtitle">Manage suppliers for non-blood materials</p>
           </div>
 
@@ -4195,7 +4184,7 @@
           currentPage: 1,
           pageSize: 100,
           filteredSpecs: [],
-          searchTerm: '',
+          filterCustomer: '',
           filterEvent: '',
           filterYear: '',
           filterSampleId: '',
@@ -4773,6 +4762,8 @@
 
         // Initialize drag and drop
         initializeDragAndDrop();
+
+        populateCustomerDropdowns();
 
         // Auto-save every 30 seconds
         setInterval(autoSave, 30000);
@@ -5599,7 +5590,7 @@
           populateSpecFilters();
 
           // Populate calculator dropdowns after all data is loaded
-          populateCalculatorDropdowns();
+          populateCustomerDropdowns();
         } catch (err) {
           if (err.name !== 'NotFoundError') {
             console.error('Failed to load data:', err);
@@ -6168,6 +6159,7 @@
         }
 
         updateCustomerList();
+        populateCustomerDropdowns();
         updateDashboard();
         autoSave();
         closeCustomerModal();
@@ -6184,6 +6176,7 @@
         if (confirm(`Are you sure you want to delete ${customer.name}? This cannot be undone.`)) {
           APP_STATE.customers = APP_STATE.customers.filter((c) => c.id !== customerId);
           updateCustomerList();
+          populateCustomerDropdowns();
           updateDashboard();
           logActivity('Deleted customer', customer.name);
           autoSave();
@@ -7571,52 +7564,101 @@
       }
 
       // ===============================
-      // Blood Calculator Functions
+      // Customer Dropdown Utilities
       // ===============================
-      // Populate calculator dropdowns after data loads
-      function populateCalculatorDropdowns() {
-        const customerSelect = document.getElementById('calc-customer');
 
-        if (customerSelect && APP_STATE.customerSpecs.length > 0) {
-          // Clear existing options except the first one
-          customerSelect.innerHTML = '<option value="">Select Customer</option>';
+      function populateCustomerDropdowns() {
+        const dropdownConfigs = [
+          { id: 'future-spec-customer', defaultOption: '<option value="">Select Customer</option>' },
+          { id: 'calc-customer', defaultOption: '<option value="">Select Customer</option>' },
+          { id: 'bup-filter-customer', defaultOption: '<option value="">All Customers</option>' },
+          { id: 'qty-filter-customer', defaultOption: '<option value="">All Customers</option>' },
+          { id: 'hqty-filter-customer', defaultOption: '<option value="">All Customers</option>' },
+          { id: 'spec-filter-customer', defaultOption: '<option value="">All Customers</option>' },
+        ];
 
-          // Get unique customers from specs
-          const uniqueCustomers = [
-            ...new Set(APP_STATE.customerSpecs.map((spec) => spec.customer)),
-          ];
-          uniqueCustomers.sort().forEach((customer) => {
-            customerSelect.innerHTML += `<option value="${customer}">${customer}</option>`;
-          });
+        const customerList = Array.isArray(APP_STATE.customers) ? APP_STATE.customers : [];
+        const customerMap = new Map();
+        customerList.forEach((customer) => {
+          if (customer && customer.code) {
+            customerMap.set(customer.code, customer);
+          }
+        });
+
+        const sortedCustomers = Array.from(customerMap.values()).sort((a, b) => {
+          const nameA = (a.name || a.code || '').toLowerCase();
+          const nameB = (b.name || b.code || '').toLowerCase();
+          if (nameA < nameB) return -1;
+          if (nameA > nameB) return 1;
+          return 0;
+        });
+
+        const optionsHtml = sortedCustomers
+          .map((customer) => {
+            const code = customer.code;
+            const name = customer.name || customer.code;
+            return `<option value="${code}">${name}</option>`;
+          })
+          .join('');
+
+        dropdownConfigs.forEach(({ id, defaultOption }) => {
+          const select = document.getElementById(id);
+          if (!select) return;
+          const previousValue = select.value;
+          select.innerHTML = defaultOption + optionsHtml;
+          if (previousValue && customerMap.has(previousValue)) {
+            select.value = previousValue;
+          } else {
+            select.value = '';
+          }
+        });
+
+        if (typeof updateFutureCopyOptions === 'function') {
+          updateFutureCopyOptions();
+        }
+        if (typeof updateYearOptions === 'function') {
+          updateYearOptions();
+        }
+        if (typeof updateEventOptions === 'function') {
+          updateEventOptions();
+        }
+        if (typeof updateSampleOptions === 'function') {
+          updateSampleOptions();
+        }
+        if (typeof filterQuantities === 'function') {
+          filterQuantities();
+        }
+        if (typeof filterHistoricalQuantities === 'function') {
+          filterHistoricalQuantities();
+        }
+        if (typeof filterSpecs === 'function') {
+          filterSpecs();
+        }
+        if (typeof updateBUPEventList === 'function') {
+          updateBUPEventList();
         }
       }
-      function handleManualCustomerInput() {
-        // Clear the dropdown when manual input is used
-        document.getElementById('calc-customer').value = '';
-        // Update year options for the manual customer
-        updateYearOptions();
-        // Clear and update events
-        updateEventOptions();
-      }
+
+      // ===============================
+      // Blood Calculator Functions
+      // ===============================
+
       function updateYearOptions() {
-        const customer = document.getElementById('calc-customer').value;
-        const customerManual = document.getElementById('calc-customer-manual')?.value?.trim() || '';
-        const selectedCustomer = customer || customerManual;
+        const customerCode = document.getElementById('calc-customer')?.value || '';
         const yearSelect = document.getElementById('calc-year');
+        if (!yearSelect) return;
 
         yearSelect.innerHTML = '<option value="">All Years</option>';
 
-        if (selectedCustomer) {
-          // Get unique years for this customer
+        if (customerCode) {
           const years = [
             ...new Set(
               APP_STATE.customerSpecs
-                .filter((spec) => spec.customer === selectedCustomer)
+                .filter((spec) => spec.customer === customerCode)
                 .map((spec) => spec.year)
                 .filter((year) => year)
             ),
-          ] // Remove any undefined/null years
-            .sort((a, b) => b - a); // Sort descending (newest first)
+          ].sort((a, b) => b - a);
 
           years.forEach((year) => {
             yearSelect.innerHTML += `<option value="${year}">${year}</option>`;
@@ -7625,30 +7667,18 @@
       }
 
       function updateEventOptions() {
-        // Clear manual input ONLY if dropdown was used
-        const dropdown = document.getElementById('calc-customer');
-        const manual = document.getElementById('calc-customer-manual');
-
-        // If this was triggered by dropdown selection (not manual input)
-        if (dropdown.value && manual) {
-          manual.value = '';
-        }
-
-        const customer = dropdown.value;
-        const customerManual = manual?.value?.trim() || '';
-        const selectedCustomer = customer || customerManual;
-        const selectedYear = document.getElementById('calc-year')?.value;
+        const customerCode = document.getElementById('calc-customer')?.value || '';
+        const selectedYear = document.getElementById('calc-year')?.value || '';
         const eventSelect = document.getElementById('calc-event');
+        if (!eventSelect) return;
 
         eventSelect.innerHTML = '<option value="">Select Event</option>';
 
-        if (selectedCustomer) {
-          // Filter events for this customer and year
-          let specs = APP_STATE.customerSpecs.filter((spec) => spec.customer === selectedCustomer);
+        if (customerCode) {
+          let specs = APP_STATE.customerSpecs.filter((spec) => spec.customer === customerCode);
 
-          // Apply year filter if selected
           if (selectedYear) {
-            specs = specs.filter((spec) => spec.year == selectedYear);
+            specs = specs.filter((spec) => String(spec.year) === String(selectedYear));
           }
 
           const events = [...new Set(specs.map((spec) => spec.event))];
@@ -7658,29 +7688,25 @@
           });
         }
 
-        // Clear the sample dropdown since event changed
         updateSampleOptions();
       }
 
       function updateSampleOptions() {
-        const customer = document.getElementById('calc-customer').value;
-        const customerManual = document.getElementById('calc-customer-manual')?.value?.trim() || '';
-        const selectedCustomer = customer || customerManual;
-        const selectedYear = document.getElementById('calc-year')?.value;
-        const event = document.getElementById('calc-event').value;
+        const customerCode = document.getElementById('calc-customer')?.value || '';
+        const selectedYear = document.getElementById('calc-year')?.value || '';
+        const event = document.getElementById('calc-event')?.value || '';
         const sampleSelect = document.getElementById('calc-sample');
+        if (!sampleSelect) return;
 
         sampleSelect.innerHTML = '<option value="">Select Sample</option>';
 
-        if (selectedCustomer && event) {
-          // Filter samples for this customer/event/year
+        if (customerCode && event) {
           let specs = APP_STATE.customerSpecs.filter(
-            (spec) => spec.customer === selectedCustomer && spec.event === event
+            (spec) => spec.customer === customerCode && spec.event === event
           );
 
-          // Apply year filter if selected
           if (selectedYear) {
-            specs = specs.filter((spec) => spec.year == selectedYear);
+            specs = specs.filter((spec) => String(spec.year) === String(selectedYear));
           }
 
           const samples = specs.map((spec) => spec.sample_id);
@@ -7692,13 +7718,13 @@
       }
 
       function autoFillSampleDetails() {
-        const customer = document.getElementById('calc-customer').value;
-        const event = document.getElementById('calc-event').value;
-        const sampleId = document.getElementById('calc-sample').value;
+        const customerCode = document.getElementById('calc-customer')?.value || '';
+        const event = document.getElementById('calc-event')?.value || '';
+        const sampleId = document.getElementById('calc-sample')?.value || '';
 
-        if (customer && event && sampleId) {
+        if (customerCode && event && sampleId) {
           const spec = APP_STATE.customerSpecs.find(
-            (s) => s.customer === customer && s.event === event && s.sample_id === sampleId
+            (s) => s.customer === customerCode && s.event === event && s.sample_id === sampleId
           );
 
           if (spec) {
@@ -7731,10 +7757,7 @@
       }
 
       function calculateBloodNeeds() {
-        // Get customer from dropdown or manual input
-        const customerDropdown = document.getElementById('calc-customer').value;
-        const customerManual = document.getElementById('calc-customer-manual')?.value?.trim() || '';
-        const customer = customerDropdown || customerManual;
+        const customer = document.getElementById('calc-customer').value;
         const quantity = parseInt(document.getElementById('calc-quantity').value) || 0;
         const volume = parseFloat(document.getElementById('calc-volume').value) || 0;
         const hematocrit = parseFloat(document.getElementById('calc-hematocrit').value) || 0;
@@ -7854,19 +7877,12 @@
       }
 
       function populateBUPFilters() {
-        // Get unique customers
-        const customers = [...new Set(APP_STATE.customerSpecs.map((s) => s.customer))].sort();
-        const customerSelect = document.getElementById('bup-filter-customer');
-        customerSelect.innerHTML = '<option value="">All Customers</option>';
-        customers.forEach((customer) => {
-          customerSelect.innerHTML += `<option value="${customer}">${customer}</option>`;
-        });
-
         // Get unique years
         const years = [...new Set(APP_STATE.customerSpecs.map((s) => s.year).filter((y) => y))]
           .sort()
           .reverse();
         const yearSelect = document.getElementById('bup-filter-year');
+        if (!yearSelect) return;
         yearSelect.innerHTML = '<option value="">All Years</option>';
         years.forEach((year) => {
           yearSelect.innerHTML += `<option value="${year}">${year}</option>`;
@@ -11127,7 +11143,7 @@
             showAlert('success', `Loaded ${count} specifications from ${file.name}`);
             autoSave();
             updateDashboard();
-            populateCalculatorDropdowns();
+            populateCustomerDropdowns();
           } catch (error) {
             console.error('Specification import error:', error);
           }
@@ -11388,17 +11404,6 @@
       }
 
       function populateQuantityFilters() {
-        // Populate customer filter
-        const customers = [
-          ...new Set(APP_STATE.quantities.map((q) => q.customer).filter((c) => c)),
-        ].sort();
-        const customerSelect = document.getElementById('qty-filter-customer');
-        if (customerSelect) {
-          customerSelect.innerHTML =
-            '<option value="">All Customers</option>' +
-            customers.map((c) => `<option value="${c}">${c}</option>`).join('');
-        }
-
         // Populate event filter
         const events = [
           ...new Set(APP_STATE.quantities.map((q) => q.event).filter((e) => e)),
@@ -11773,16 +11778,6 @@
       }
 
       function populateHistoricalQuantityFilters() {
-        const customers = [
-          ...new Set((APP_STATE.historicalQuantities || []).map((q) => q.customer).filter((c) => c)),
-        ].sort();
-        const customerSelect = document.getElementById('hqty-filter-customer');
-        if (customerSelect) {
-          customerSelect.innerHTML =
-            '<option value="">All Customers</option>' +
-            customers.map((c) => `<option value="${c}">${c}</option>`).join('');
-        }
-
         const events = [
           ...new Set((APP_STATE.historicalQuantities || []).map((q) => q.event).filter((e) => e)),
         ].sort();
@@ -12119,17 +12114,9 @@
         // Apply filters
         let specs = APP_STATE.customerSpecs;
 
-        // Text search
-        if (APP_STATE.specPagination.searchTerm) {
-          const search = APP_STATE.specPagination.searchTerm.toLowerCase();
+        if (APP_STATE.specPagination.filterCustomer) {
           specs = specs.filter(
-            (spec) =>
-              spec.customer?.toLowerCase().includes(search) ||
-              spec.event?.toLowerCase().includes(search) ||
-              spec.sample_id?.toLowerCase().includes(search) ||
-              spec.abo?.toLowerCase().includes(search) ||
-              spec.antibody_1?.toLowerCase().includes(search) ||
-              spec.antibody_2?.toLowerCase().includes(search)
+            (spec) => spec.customer === APP_STATE.specPagination.filterCustomer
           );
         }
 
@@ -12157,6 +12144,13 @@
           );
         }
 
+        const filterActive =
+          APP_STATE.specPagination.filterCustomer ||
+          APP_STATE.specPagination.filterEvent ||
+          APP_STATE.specPagination.filterYear ||
+          APP_STATE.specPagination.filterSampleId ||
+          APP_STATE.specPagination.filterSampleType;
+
         APP_STATE.specPagination.filteredSpecs = specs;
 
         if (specs.length === 0) {
@@ -12164,8 +12158,8 @@
                                                 <tr>
                                                     <td colspan="8" class="text-center" style="color: var(--gray);">
                                                         ${
-                                                          APP_STATE.specPagination.searchTerm
-                                                            ? 'No specifications match your search'
+                                                          filterActive
+                                                            ? 'No specifications match current filters'
                                                             : 'No specifications loaded'
                                                         }
                                                     </td>
@@ -12327,8 +12321,8 @@
         }
 
         const filterDescription = [];
-        if (APP_STATE.specPagination.searchTerm) {
-          filterDescription.push(`search: "${APP_STATE.specPagination.searchTerm}"`);
+        if (APP_STATE.specPagination.filterCustomer) {
+          filterDescription.push(`customer: ${APP_STATE.specPagination.filterCustomer}`);
         }
         if (APP_STATE.specPagination.filterEvent) {
           filterDescription.push(`event: ${APP_STATE.specPagination.filterEvent}`);
@@ -12455,13 +12449,6 @@
         // Update selected count display
         const countEl = document.getElementById('spec-selected-count');
         if (countEl) {
-          const filterActive =
-            APP_STATE.specPagination.searchTerm ||
-            APP_STATE.specPagination.filterEvent ||
-            APP_STATE.specPagination.filterYear ||
-            APP_STATE.specPagination.filterSampleId ||
-            APP_STATE.specPagination.filterSampleType;
-
           if (filterActive) {
             countEl.textContent = `${specs.length} specifications match current filters`;
             countEl.style.color = 'var(--hemo-blue)';
@@ -12473,13 +12460,13 @@
       }
 
       function filterSpecs() {
-        const searchTerm = document.getElementById('spec-search').value;
+        const filterCustomer = document.getElementById('spec-filter-customer')?.value || '';
         const filterEvent = document.getElementById('spec-filter-event').value;
         const filterYear = document.getElementById('spec-filter-year').value;
         const filterSampleId = document.getElementById('spec-filter-sample-id').value;
         const filterSampleType = document.getElementById('spec-filter-sample-type').value;
 
-        APP_STATE.specPagination.searchTerm = searchTerm;
+        APP_STATE.specPagination.filterCustomer = filterCustomer;
         APP_STATE.specPagination.filterEvent = filterEvent;
         APP_STATE.specPagination.filterYear = filterYear;
         APP_STATE.specPagination.filterSampleId = filterSampleId;
@@ -12519,13 +12506,14 @@
       }
 
       function clearSpecFilters() {
-        document.getElementById('spec-search').value = '';
+        const customerFilter = document.getElementById('spec-filter-customer');
+        if (customerFilter) customerFilter.value = '';
         document.getElementById('spec-filter-event').value = '';
         document.getElementById('spec-filter-year').value = '';
         document.getElementById('spec-filter-sample-id').value = '';
         document.getElementById('spec-filter-sample-type').value = '';
 
-        APP_STATE.specPagination.searchTerm = '';
+        APP_STATE.specPagination.filterCustomer = '';
         APP_STATE.specPagination.filterEvent = '';
         APP_STATE.specPagination.filterYear = '';
         APP_STATE.specPagination.filterSampleId = '';
@@ -12624,6 +12612,7 @@
               // Update all views
               updateDashboard();
               updateCustomerList();
+              populateCustomerDropdowns();
               updateVendorList();
               updateBloodSupplierList();
               updateBulkRBCList();
@@ -13668,10 +13657,10 @@
       // ===============================
 
       function updateFutureCopyOptions() {
-        const customer = document.getElementById('future-spec-customer').value;
+        const customerCode = document.getElementById('future-spec-customer').value;
         const copySelect = document.getElementById('future-spec-copy-from');
 
-        if (!customer) {
+        if (!customerCode) {
           copySelect.innerHTML = '<option value="">Manual Entry</option>';
           return;
         }
@@ -13679,7 +13668,7 @@
         // Find all events for this customer from historical specs
         const customerEvents = {};
         APP_STATE.customerSpecs
-          .filter((spec) => spec.customer === customer)
+          .filter((spec) => spec.customer === customerCode)
           .forEach((spec) => {
             const key = `${spec.event} ${spec.year}`;
             if (!customerEvents[key]) {
@@ -13692,6 +13681,9 @@
 
         copySelect.innerHTML = '<option value="">Manual Entry</option>';
 
+        const customerEntry = APP_STATE.customers.find((customer) => customer.code === customerCode);
+        const customerLabel = customerEntry?.name || customerCode;
+
         // Sort by year (descending) then event
         const sortedEvents = Object.values(customerEvents).sort((a, b) => {
           if (b.year !== a.year) return b.year - a.year;
@@ -13699,8 +13691,8 @@
         });
 
         sortedEvents.forEach((item) => {
-          const optionValue = `${customer} ${item.event} ${item.year}`;
-          const optionText = `${customer} ${item.event} ${item.year}`;
+          const optionValue = `${customerCode} ${item.event} ${item.year}`;
+          const optionText = `${customerLabel} ${item.event} ${item.year}`;
           copySelect.innerHTML += `<option value="${optionValue}">${optionText}</option>`;
         });
 
