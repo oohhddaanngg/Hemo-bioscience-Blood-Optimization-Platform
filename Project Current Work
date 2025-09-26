@@ -2,20 +2,18 @@ Hemo bioscience - Project Current Work
 Version: 0.6.6
 Date: 2025-09-26
 
-Current Task: Stress Test Future Specifications Module & Validate Workflows
-Phase: Validation
+Current Task: Plan Overage Utilization Report
+Phase: 1 (Planning)
 
-Goal: Perform end-to-end testing of the newly enhanced Future Specifications module to validate its functionality, accuracy, and alignment with the manual planning process.
+Goal: Define the data points, calculations, and layout for the "Overage Utilization Report," which will quantify the efficiency and cost savings from using standing order overages.
 
 Key Objectives (this phase):
 
-Follow the official SOP to create, edit, optimize, and version several test specifications for 2026.
+Identify the data sources needed to track overage usage (e.g., Future Spec optimization decisions).
 
-Verify that the intelligent forecasting provides accurate, trend-based quantity estimates.
+Finalize the summary metrics to be displayed (e.g., Total Savings, Volume Utilized).
 
-Confirm that optimization suggestions are logical and that the "accept" workflow functions correctly.
-
-Identify any remaining bugs, usability issues, or logic gaps before proceeding.
+Define the columns for the detailed breakdown table.
 
 Project Roadmap & Status
 Priority 0: Critical Fixes & Foundational Changes
