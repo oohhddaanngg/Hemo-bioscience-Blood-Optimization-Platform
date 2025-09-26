@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Blood Optimization Platform v0.6.9 | Hemo bioscience</title>
+    <title>Blood Optimization Platform v0.7.0 | Hemo bioscience</title>
     <style>
       * {
         margin: 0;
@@ -1853,7 +1853,7 @@
       <!-- Header Bar -->
       <header class="header-bar">
         <div class="header-left">
-        <div class="version-badge">v0.6.9</div>
+        <div class="version-badge">v0.7.0</div>
           <div class="active-users" id="active-users" style="display: none">
             <span>👤 Active:</span>
             <span id="active-user-list">-</span>
@@ -2295,10 +2295,6 @@
                     onchange="updateFutureCopyOptions()"
                   >
                     <option value="">Select Customer</option>
-                    <option value="WSLH">WSLH</option>
-                    <option value="ISLA">ISLA</option>
-                    <option value="OneWorld">OneWorld</option>
-                    <option value="Aurevia">Aurevia</option>
                   </select>
                 </div>
 
@@ -4288,7 +4284,7 @@
             { type: 'FFS', count: 4, vendor: 'Tennessee' },
           ],
           frequency: 28,
-          bonus: { type: 'O', volume: 180 },
+          bonus: { type: 'O', rh: 'Any', volume: 180 },
         },
         {
           product: 'Hemo-QC',
@@ -4725,6 +4721,7 @@
 
           updateDashboard();
           updateCustomerList();
+          populateCustomerDropdowns();
           updateAntibodyView();
           updateActivityLog();
           displayStandingOrders();
@@ -5984,6 +5981,52 @@
                                                 `
           )
           .join('');
+      }
+
+      function populateCustomerDropdowns() {
+        const customers = Array.isArray(APP_STATE.customers)
+          ? APP_STATE.customers
+              .filter((customer) => customer && customer.name && customer.code)
+              .slice()
+              .sort((a, b) => a.name.localeCompare(b.name, 'en', { sensitivity: 'base' }))
+          : [];
+
+        const selectConfigs = [
+          { id: 'future-spec-customer', defaultOption: { value: '', label: 'Select Customer' } },
+          { id: 'calc-customer', defaultOption: { value: '', label: 'Select Customer' } },
+          { id: 'qty-filter-customer', defaultOption: { value: '', label: 'All Customers' } },
+          { id: 'hqty-filter-customer', defaultOption: { value: '', label: 'All Customers' } },
+          { id: 'spec-filter-customer', defaultOption: { value: '', label: 'All Customers' } },
+          { id: 'bup-filter-customer', defaultOption: { value: '', label: 'All Customers' } },
+        ];
+
+        selectConfigs.forEach(({ id, defaultOption }) => {
+          const select = document.getElementById(id);
+          if (!select) return;
+
+          const previousValue = select.value;
+          const defaultOptionHtml = defaultOption
+            ? `<option value="${defaultOption.value}">${defaultOption.label}</option>`
+            : '';
+
+          const optionsHtml = customers
+            .map((customer) => `<option value="${customer.code}">${customer.name}</option>`)
+            .join('');
+
+          select.innerHTML = `${defaultOptionHtml}${optionsHtml}`;
+
+          let targetValue = previousValue;
+          const hasPrevious = customers.some((customer) => customer.code === previousValue);
+          if (!hasPrevious) {
+            targetValue = defaultOption ? defaultOption.value : '';
+          }
+
+          select.value = targetValue;
+
+          if (targetValue !== previousValue) {
+            select.dispatchEvent(new Event('change'));
+          }
+        });
       }
 
       function openCustomerModal(customerId = null) {
@@ -12459,8 +12502,9 @@
         }
       }
 
-      function filterSpecs() {
-        const filterCustomer = document.getElementById('spec-filter-customer')?.value || '';
+        function filterSpecs() {
+          const customerFilterEl = document.getElementById('spec-filter-customer');
+          const filterCustomer = customerFilterEl ? customerFilterEl.value : '';
         const filterEvent = document.getElementById('spec-filter-event').value;
         const filterYear = document.getElementById('spec-filter-year').value;
         const filterSampleId = document.getElementById('spec-filter-sample-id').value;
@@ -12896,8 +12940,30 @@
         // In production, this would check C3, Korea, and MQC compatibility
       }
 
+      function isManufacturingCompatible(specA, specB) {
+        if (!specA || !specB) return false;
+
+        const aboA = normalizeAboValue(specA.abo);
+        const rhA = normalizeRhValue(specA.rh);
+        const aboB = normalizeAboValue(specB.abo);
+        const rhB = normalizeRhValue(specB.rh);
+
+        if (!aboA || !rhA || !aboB || !rhB) {
+          return false;
+        }
+
+        return aboA === aboB && rhA === rhB;
+      }
+
+      function formatBloodType(abo, rh) {
+        const normalizedAbo = normalizeAboValue(abo) || '';
+        const normalizedRh = normalizeRhValue(rh);
+        const rhLabel = normalizedRh === 'Pos' ? 'Positive' : normalizedRh === 'Neg' ? 'Negative' : '';
+        return `${normalizedAbo} ${rhLabel}`.trim();
+      }
+
       function isSpecCompatible(spec1, spec2) {
-        return isBloodUnitCompatible(spec1, { abo: spec2.abo, rh: spec2.rh });
+        return isManufacturingCompatible(spec1, spec2);
       }
 
       function isDateInWindow(dateStr, window) {
@@ -13213,220 +13279,223 @@
         const fulfillmentWindow = calculateSpecFulfillmentWindow(spec);
         if (!fulfillmentWindow) return [];
 
-        const baseAntigens = Array.isArray(spec.antigens)
-          ? spec.antigens.map((antigen) => ({ antigen: antigen.antigen, status: antigen.status }))
-          : [];
+        const targetAbo = normalizeAboValue(spec.abo);
+        const targetRh = normalizeRhValue(spec.rh);
 
-        const suggestions = [];
-        const usedSources = new Set();
+        if (!targetAbo || !targetRh) return [];
 
-        const specKey =
-          spec.customer && spec.event && spec.year !== undefined
-            ? `${spec.customer}_${spec.event}_${spec.year}`
-            : null;
-        const exclusionSet = new Set();
-        if (specKey) {
-          exclusionSet.add(specKey);
-        }
         const requiredVolume = estimateSpecAllocationVolume(spec);
+        if (!Number.isFinite(requiredVolume) || requiredVolume <= 0) {
+          return [];
+        }
 
-        const pushSuggestion = (suggestion) => {
-          if (!suggestion) return;
-          const normalizedAbo = normalizeAboValue(suggestion.abo);
-          const normalizedRh = normalizeRhValue(suggestion.rh);
-          if (!normalizedAbo || !normalizedRh) return;
+        const antigens = Array.isArray(spec.antigens) ? spec.antigens : [];
+        const suggestions = [];
+        const usedSourceKeys = new Set();
 
-          const key = `${suggestion.sourceDescription || ''}_${normalizedAbo}_${normalizedRh}`;
-          if (usedSources.has(key)) return;
-          usedSources.add(key);
-
-          const antigenSuggestion = Array.isArray(suggestion.antigens) && suggestion.antigens.length > 0
-            ? suggestion.antigens.map((antigen) => ({ antigen: antigen.antigen, status: antigen.status }))
-            : baseAntigens.map((antigen) => ({ antigen: antigen.antigen, status: antigen.status }));
-
-          suggestions.push({
-            ...suggestion,
-            abo: normalizedAbo,
-            rh: normalizedRh,
-            antigens: antigenSuggestion,
-          });
+        const addSuggestion = (suggestion) => {
+          if (!suggestion || !suggestion.sourceKey) return;
+          if (usedSourceKeys.has(suggestion.sourceKey)) return;
+          suggestions.push(suggestion);
+          usedSourceKeys.add(suggestion.sourceKey);
         };
 
-        const offerStandingOrderSuggestion = (order, baseSuggestion, dateOverride = null) => {
-          if (!order || !baseSuggestion) return;
-          const sourceKey = buildStandingOrderSourceKey(order.product, dateOverride || fulfillmentWindow);
+        const bloodTypeLabel = formatBloodType(targetAbo, targetRh);
+        const standingOrderSavings = calculateStandingOrderSavings() || {};
+
+        (STANDING_ORDERS || []).forEach((order) => {
+          if (!order || !order.product) return;
+          if (!hasStandingOrderWithinWindow(order.product, fulfillmentWindow)) return;
+
+          const sourceKey = buildStandingOrderSourceKey(order.product, fulfillmentWindow);
+          if (!sourceKey) return;
+
           const theoreticalVolume = getStandingOrderTheoreticalVolume(order);
-          const remainingVolume = Math.max(
-            theoreticalVolume - getCommittedVolumeForSource(sourceKey, exclusionSet),
-            0
-          );
-          if (remainingVolume <= 0) return;
+          const committedVolume = getCommittedVolumeForSource(sourceKey);
+          const remainingVolume = Math.max(theoreticalVolume - committedVolume, 0);
 
-          const allocatableVolume = Math.min(requiredVolume, remainingVolume);
-          if (allocatableVolume <= 0) return;
+          if (remainingVolume < requiredVolume) return;
 
-          pushSuggestion({
-            ...baseSuggestion,
+          const units = Array.isArray(order.units) ? order.units : [];
+          const hasCompatibleUnit = units.some((unit) => {
+            const parsed = parseStandingOrderUnit(unit);
+            if (!parsed) return false;
+
+            const unitAbo = parsed.abo ? normalizeAboValue(parsed.abo) : targetAbo;
+            let unitRh = parsed.rh === 'Either' || !parsed.rh ? targetRh : normalizeRhValue(parsed.rh);
+
+            if (!unitAbo) return false;
+            if (!unitRh) unitRh = targetRh;
+
+            return isManufacturingCompatible(
+              { abo: targetAbo, rh: targetRh },
+              { abo: unitAbo, rh: unitRh }
+            );
+          });
+
+          if (!hasCompatibleUnit) return;
+
+          addSuggestion({
+            title: `Use ${bloodTypeLabel} from ${order.product} (${remainingVolume}mL available)`,
+            details: `Source: ${order.product} standing order overage.`,
+            abo: targetAbo,
+            rh: targetRh,
+            antigens,
+            sourceDescription: `${order.product} Standing Order`,
+            savingsDetails: standingOrderSavings.description || '',
             sourceKey,
             sourceType: 'Standing Order',
-            allocatedVolume: allocatableVolume,
+            allocatedVolume: requiredVolume,
             availableVolume: remainingVolume,
             theoreticalVolume,
           });
-        };
+        });
 
-        const specAbo = normalizeAboValue(spec.abo);
-        const specRh = normalizeRhValue(spec.rh);
+        const c3Order = getStandingOrderByProduct('C3 Control Cells');
+        if (c3Order && c3Order.bonus && Number(c3Order.bonus.volume) > 0) {
+          const baseSourceKey = buildStandingOrderSourceKey('C3 Control Cells', fulfillmentWindow);
+          if (baseSourceKey) {
+            const bonusSourceKey = `${baseSourceKey}_Bonus`;
+            const allocations = Array.isArray(APP_STATE.futureAllocations)
+              ? APP_STATE.futureAllocations
+              : [];
+            const bonusAllocations = allocations.filter(
+              (allocation) => allocation && allocation.sourceKey === bonusSourceKey
+            );
+            const legacyAllocations = allocations.filter(
+              (allocation) => allocation && allocation.sourceKey === baseSourceKey
+            );
+            const relevantAllocations =
+              bonusAllocations.length > 0 ? bonusAllocations : legacyAllocations;
 
-        const hqcCompatibility = checkHQCCompatibility(spec);
-        if (hqcCompatibility && hqcCompatibility.compatible) {
-          const savings = calculateStandingOrderSavings() || {};
-          const hqcAboMap = { 1: 'AB', 2: 'O', 3: 'A' };
-          const hqcRhMap = { 1: 'Pos', 2: 'Pos', 3: 'Neg' };
-          const proposedAbo = specAbo || hqcAboMap[hqcCompatibility.cellId] || 'O';
-          const proposedRh = specRh || hqcRhMap[hqcCompatibility.cellId] || 'Pos';
+            const bonusVolume = Number(c3Order.bonus.volume) || 0;
+            const committedVolume = relevantAllocations.reduce((sum, allocation) => {
+              const volume = Number(allocation && allocation.allocatedVolume);
+              return sum + (Number.isFinite(volume) ? volume : 0);
+            }, 0);
+            const remainingVolume = Math.max(bonusVolume - committedVolume, 0);
 
-          const hqcOrder = getStandingOrderByProduct('Hemo-QC');
-          if (hqcOrder) {
-            offerStandingOrderSuggestion(hqcOrder, {
-              title: `Assign ${proposedAbo} ${proposedRh === 'Neg' ? 'Negative' : 'Positive'}`,
-              details: `Source: HQC Standing Order Overage. ${
-                savings.description || 'Leverages existing supply.'
-              }`,
-              abo: proposedAbo,
-              rh: proposedRh,
-              antigens: baseAntigens,
-              sourceDescription: `HQC ${hqcCompatibility.description}`,
-              savingsDetails:
-                savings.description || 'Uses HQC standing order overage to reduce new purchases.',
-            });
+            if (remainingVolume >= requiredVolume) {
+              let lockedRh = null;
+              for (const allocation of relevantAllocations) {
+                if (!allocation) continue;
+                const storedRh = normalizeRhValue(allocation.rh || allocation.targetRh);
+                if (storedRh) {
+                  lockedRh = storedRh;
+                  break;
+                }
+                const detailsText = allocation.details || '';
+                const match = detailsText.match(/O\s+(Positive|Negative)/i);
+                if (match) {
+                  lockedRh = match[1].toLowerCase().startsWith('neg') ? 'Neg' : 'Pos';
+                  break;
+                }
+              }
+
+              const aboMatches = targetAbo === 'O';
+              const effectiveRh = lockedRh || targetRh;
+
+              if (!lockedRh && (!aboMatches || (targetRh !== 'Pos' && targetRh !== 'Neg'))) {
+                // Flexible C3 unit can only satisfy O Positive or O Negative
+              } else if (lockedRh && lockedRh !== targetRh) {
+                // C3 unit already committed to a different Rh type
+              } else if (aboMatches) {
+                const label = formatBloodType(targetAbo, effectiveRh);
+                addSuggestion({
+                  title: `Use ${label} from C3 Control Cells (${remainingVolume}mL available)`,
+                  details: 'Source: C3 Control Cells standing order bonus.',
+                  abo: targetAbo,
+                  rh: effectiveRh,
+                  antigens,
+                  sourceDescription: 'C3 Control Cells Bonus Unit',
+                  savingsDetails: standingOrderSavings.description || '',
+                  sourceKey: bonusSourceKey,
+                  sourceType: 'Standing Order',
+                  allocatedVolume: requiredVolume,
+                  availableVolume: remainingVolume,
+                  theoreticalVolume: bonusVolume,
+                });
+              }
+            }
           }
         }
 
-        (STANDING_ORDERS || [])
-          .filter((order) => order.product && order.product !== 'Hemo-QC')
-          .forEach((order) => {
-            if (!order.units || order.units.length === 0) return;
-            if (!hasStandingOrderWithinWindow(order.product, fulfillmentWindow)) return;
-
-            order.units.forEach((unit) => {
-              const parsed = parseStandingOrderUnit(unit);
-              if (!parsed) return;
-
-              const parsedAbo = normalizeAboValue(parsed.abo);
-              const parsedRh = parsed.rh === 'Either' ? null : normalizeRhValue(parsed.rh);
-              const targetAbo = specAbo || parsedAbo;
-              const targetRh = specRh || parsedRh || 'Pos';
-
-              if (!targetAbo || !targetRh) return;
-
-              const compatibleUnit = {
-                abo: parsedAbo || targetAbo,
-                rh: parsed.rh === 'Either' ? targetRh : parsedRh || targetRh,
-              };
-
-              if (!isBloodUnitCompatible({ abo: targetAbo, rh: targetRh }, compatibleUnit)) {
-                return;
-              }
-
-              const savings = calculateStandingOrderSavings() || {};
-              const antigenSuggestion =
-                parsed.antigens && parsed.antigens.length > 0 ? parsed.antigens : baseAntigens;
-
-              offerStandingOrderSuggestion(order, {
-                title: `Assign ${targetAbo} ${targetRh === 'Neg' ? 'Negative' : 'Positive'} from ${order.product}`,
-                details: `Source: ${order.product} Standing Order. ${
-                  savings.description || 'Leverages existing supply.'
-                }`,
-                abo: targetAbo,
-                rh: targetRh,
-                antigens: antigenSuggestion,
-                sourceDescription: `${order.product} Standing Order`,
-                savingsDetails:
-                  savings.description || 'Uses standing order overage to offset purchases.',
-              });
-            });
-          });
-
         const ptSavings = calculatePTSharingSavings() || {};
-        const considerForSharing = (candidate, label) => {
+        const targetWindow = fulfillmentWindow;
+
+        const considerSharingCandidate = (candidate, label) => {
           if (!candidate) return;
           if (candidate === spec) return;
-          if (!candidate.event || !candidate.year) return;
+          if (candidate.sample_id && spec.sample_id && candidate.sample_id === spec.sample_id) return;
 
           const candidateAbo = normalizeAboValue(candidate.abo);
           const candidateRh = normalizeRhValue(candidate.rh);
           if (!candidateAbo || !candidateRh) return;
 
-          const otherWindow = calculateSpecFulfillmentWindow(candidate);
-          if (!otherWindow) return;
-          if (!isWindowOverlapping(fulfillmentWindow, otherWindow)) return;
+          if (
+            !isManufacturingCompatible(
+              { abo: targetAbo, rh: targetRh },
+              { abo: candidateAbo, rh: candidateRh }
+            )
+          ) {
+            return;
+          }
 
-          const requiredAbo = specAbo || candidateAbo;
-          const requiredRh = specRh || candidateRh;
-          if (!requiredAbo || !requiredRh) return;
-
-          const donorSpec = { abo: candidateAbo, rh: candidateRh };
-          if (!isSpecCompatible({ abo: requiredAbo, rh: requiredRh }, donorSpec)) return;
-
-          const antigenSuggestion =
-            baseAntigens.length > 0
-              ? baseAntigens
-              : Array.isArray(candidate.antigens)
-              ? candidate.antigens
-              : [];
+          const candidateWindow = calculateSpecFulfillmentWindow(candidate);
+          if (!candidateWindow || !isWindowOverlapping(targetWindow, candidateWindow)) return;
 
           const sourceKey = buildPTEventSourceKey(candidate);
+          if (!sourceKey) return;
+
           const theoreticalVolume = estimateSpecAllocationVolume(candidate);
-          const remainingVolume = Math.max(
-            theoreticalVolume - getCommittedVolumeForSource(sourceKey, exclusionSet),
-            0
-          );
-          if (remainingVolume <= 0) return;
+          const committedVolume = getCommittedVolumeForSource(sourceKey);
+          const remainingVolume = Math.max(theoreticalVolume - committedVolume, 0);
 
-          const allocatableVolume = Math.min(requiredVolume, remainingVolume);
-          if (allocatableVolume <= 0) return;
+          if (remainingVolume < requiredVolume) return;
 
-          pushSuggestion({
-            title: `Share ${requiredAbo} ${requiredRh === 'Neg' ? 'Negative' : 'Positive'} from ${label}`,
-            details: `Source: ${label}. ${ptSavings.description || 'Shares inventory between events.'}`,
-            abo: requiredAbo,
-            rh: requiredRh,
-            antigens: antigenSuggestion,
-            sourceDescription: `${label}`,
-            savingsDetails:
-              ptSavings.description || 'Cross-event sharing reduces new unit purchases.',
+          const donorSampleId = candidate.sample_id ? String(candidate.sample_id) : 'Unknown';
+          const bloodType = formatBloodType(targetAbo, targetRh);
+
+          addSuggestion({
+            title: `Share ${bloodType} from sample ${donorSampleId}`,
+            details: `Source: ${label}. ${ptSavings.description || 'Shares manufacturing resources.'}`,
+            abo: targetAbo,
+            rh: targetRh,
+            antigens,
+            sourceDescription: label,
+            savingsDetails: ptSavings.description || '',
             sourceKey,
             sourceType: 'PT Event Sharing',
-            allocatedVolume: allocatableVolume,
+            allocatedVolume: requiredVolume,
             availableVolume: remainingVolume,
             theoreticalVolume,
           });
         };
 
-        (APP_STATE.futureSpecs.entries || []).forEach((candidate) => {
-          if (
-            candidate.customer === spec.customer &&
-            candidate.event === spec.event &&
-            candidate.year == spec.year &&
-            candidate.sample_id === spec.sample_id
-          ) {
-            return;
-          }
-          const label = `${candidate.customer || 'Future'} ${candidate.event || ''} ${
-            candidate.year || ''
-          }`.trim();
-          considerForSharing(candidate, label);
-        });
+        if (APP_STATE.futureSpecs && Array.isArray(APP_STATE.futureSpecs.entries)) {
+          APP_STATE.futureSpecs.entries
+            .filter((entry) => entry && entry.sample_id !== spec.sample_id)
+            .forEach((candidate) => {
+              const label = `${candidate.customer || 'Future'} ${candidate.event || ''} ${
+                candidate.year || ''
+              }`.trim();
+              considerSharingCandidate(candidate, label);
+            });
+        }
 
-        (APP_STATE.customerSpecs || []).forEach((candidate) => {
-          if (!candidate || !candidate.year || !spec.year) return;
-          if (Math.abs(candidate.year - spec.year) > 1) return;
-          const label = `${candidate.customer || 'Historical'} ${candidate.event || ''} ${
-            candidate.year || ''
-          }`.trim();
-          considerForSharing(candidate, label);
-        });
+        if (Array.isArray(APP_STATE.customerSpecs)) {
+          APP_STATE.customerSpecs.forEach((candidate) => {
+            if (!candidate) return;
+            if (candidate.sample_id && spec.sample_id && candidate.sample_id === spec.sample_id) return;
+            if (!candidate.year || !spec.year) return;
+            if (Math.abs(candidate.year - spec.year) > 1) return;
+
+            const label = `${candidate.customer || 'Historical'} ${candidate.event || ''} ${
+              candidate.year || ''
+            }`.trim();
+            considerSharingCandidate(candidate, label);
+          });
+        }
 
         return suggestions;
       }
@@ -15102,21 +15171,23 @@
                 Number(allocationData.allocatedVolume) || estimateSpecAllocationVolume(spec);
               const finalVolume = Math.min(desiredVolume, remainingVolume);
 
-              if (finalVolume > 0) {
-                const finalAllocation = {
-                  allocationId: createId('alloc'),
-                  specKey: effectiveKey,
-                  sampleId,
-                  customer,
-                  event,
-                  year: Number(year) || year,
-                  sourceKey: allocationData.sourceKey,
-                  sourceType: allocationData.sourceType || 'Standing Order',
-                  allocatedVolume: finalVolume,
-                  theoreticalVolume,
-                  createdAt: nowIso,
-                  details: allocationData.details || allocationData.title || '',
-                };
+                if (finalVolume > 0) {
+                  const finalAllocation = {
+                    allocationId: createId('alloc'),
+                    specKey: effectiveKey,
+                    sampleId,
+                    customer,
+                    event,
+                    year: Number(year) || year,
+                    sourceKey: allocationData.sourceKey,
+                    sourceType: allocationData.sourceType || 'Standing Order',
+                    abo: allocationData.abo || null,
+                    rh: allocationData.rh || null,
+                    allocatedVolume: finalVolume,
+                    theoreticalVolume,
+                    createdAt: nowIso,
+                    details: allocationData.details || allocationData.title || '',
+                  };
 
                 newAllocations.push(finalAllocation);
 
