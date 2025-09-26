@@ -1,29 +1,31 @@
-Version: 0.6.3 (Planning Phase)
+Version: 0.6.3
 Date: 2025-09-25
 
-Current Task: Address Critical UI Fixes & Enhancements
+Current Task: Plan Historical Specifications Bug Fix & Enhancements
 Phase: 1 (Planning)
 
-Goal: Prioritize and execute three critical user-identified tasks: adding a missing "Earliest Bleed Date" event to the calendar, fixing a major bug in the "Delete All Filtered Specifications" function, and improving the forecasting logic to be more intelligent.
+Goal: Address a critical bug in the "Delete All Filtered Specifications" functionality and add a new "Delete All Specifications" button to improve data management capabilities.
 
 Key Objectives (this phase):
 
-Plan Calendar Enhancement: Finalize the plan to add the "Earliest Bleed Date" event type.
+Diagnose the root cause of the partial deletion bug.
 
-Diagnose & Plan Bug Fix: Investigate the deleteAllSpecs function to understand the source of the incorrect deletion count and plan the fix.
+Formulate a robust technical plan to fix the bug.
 
-Scope Forecasting Logic Overhaul: Define the new logic for the calculateForecastedQuantity function to correctly identify trends across years from sample_ids.
+Define the behavior and placement of the new "Delete All Specifications" button.
 
 Project Roadmap & Status
-Priority 0: Critical Fixes & Foundational Changes (New)
+Priority 0: Critical Fixes & Foundational Changes
 Task	Status	Version	Notes
-Add "Earliest Bleed Date" to Calendar UI	Not Started	v0.6.3	Add a new manual event type to the calendar modal for critical date planning.
-Fix "Delete All Filtered" Bug & Add "Delete All" Button	Not Started	v0.6.3	Correct the logic that causes partial deletion and add a new button to delete all specifications regardless of filtering.
-Overhaul Forecasting Logic for Future Specs	Not Started	v0.6.4	Refactor the calculateForecastedQuantity function to correctly parse sample_ids and identify year-over-year trends.
+Add "Earliest Bleed Date" to Calendar UI	Completed	v0.6.3	Added a new manual event type to the calendar modal for critical date planning.
+Fix "Delete All Filtered" Bug & Add "Delete All" Button	Not Started	v0.6.4	Correct the logic that causes partial deletion and add a new button to delete all specifications regardless of filtering.
+Overhaul Forecasting Logic for Future Specs	Not Started	v0.6.5	Refactor the calculateForecastedQuantity function to correctly parse sample_ids and identify year-over-year trends.
 
 Priority 4: Dashboard & Analytics
 Task	Status	Version	Notes
 Implement Dynamic Dashboard & Tracker Widgets	Completed	v0.6.0	Overhauled dashboard with dynamic widgets for cost tracking, antibody usage, and a new personal Case Study Tracker.
 Build Core Reporting Module	Completed	v0.6.1	Created the new Reporting panel, sidebar link, and UI controls for report generation.
 Enhance 'Vendors' Module for Cost Tracking	Completed	v0.6.2	Added functionality to log and view purchases for each vendor to track 'Other Raw Materials' costs.
-Develop Annual Cost Analysis Report	On Hold	v0.6.5	Generate a detailed breakdown of all costs within a selected year. (On hold pending critical fixes).
+Develop Annual Cost Analysis Report	On Hold	v0.6.4	Generate a detailed breakdown of all costs within a selected year. (On hold pending critical fixes).
+
+COMPLETED - Project Roadmap (v0.4.x - v0.5.x)
