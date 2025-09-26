@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Blood Optimization Platform v0.6.3 | Hemo bioscience</title>
+    <title>Blood Optimization Platform v0.6.4 | Hemo bioscience</title>
     <style>
       * {
         margin: 0;
@@ -1853,7 +1853,7 @@
       <!-- Header Bar -->
       <header class="header-bar">
         <div class="header-left">
-          <div class="version-badge">v0.6.3</div>
+          <div class="version-badge">v0.6.4</div>
           <div class="active-users" id="active-users" style="display: none">
             <span>👤 Active:</span>
             <span id="active-user-list">-</span>
@@ -2169,16 +2169,24 @@
                     border-radius: 6px;
                   "
                 >
-                  <div style="color: var(--gray)">
-                    <span id="spec-selected-count">0 specifications selected</span>
+                  <span id="spec-selected-count" style="color: var(--gray)">
+                    0 specifications selected
+                  </span>
+                  <div class="btn-group">
+                    <button
+                      class="btn btn-warning"
+                      onclick="deleteAllSpecs()"
+                      id="delete-all-specs-btn"
+                    >
+                      Delete Filtered
+                    </button>
+                    <button
+                      class="btn btn-danger"
+                      onclick="deleteAllSpecifications_UNFILTERED()"
+                    >
+                      Delete ALL Specs
+                    </button>
                   </div>
-                  <button
-                    class="btn btn-danger"
-                    onclick="deleteAllSpecs()"
-                    id="delete-all-specs-btn"
-                  >
-                    Delete All Filtered Specifications
-                  </button>
                 </div>
 
                 <!-- Pagination Row -->
@@ -11551,19 +11559,15 @@
             `Are you sure you want to delete ${count} specifications${filterText}?\n\nThis action cannot be undone.`
           )
         ) {
-          // Remove all filtered specs from the main array
-          filteredSpecs.forEach((specToDelete) => {
-            const index = APP_STATE.customerSpecs.findIndex(
-              (spec) =>
-                spec.customer === specToDelete.customer &&
-                spec.event === specToDelete.event &&
-                spec.year === specToDelete.year &&
-                spec.sample_id === specToDelete.sample_id
-            );
-            if (index > -1) {
-              APP_STATE.customerSpecs.splice(index, 1);
-            }
-          });
+          const keysToDelete = new Set(
+            filteredSpecs.map(
+              (spec) => `${spec.customer}|${spec.event}|${spec.year}|${spec.sample_id}`
+            )
+          );
+
+          APP_STATE.customerSpecs = APP_STATE.customerSpecs.filter(
+            (spec) => !keysToDelete.has(`${spec.customer}|${spec.event}|${spec.year}|${spec.sample_id}`)
+          );
 
           updateSpecTable();
           populateSpecFilters();
@@ -11572,6 +11576,33 @@
           updateDashboard();
           showAlert('success', `Deleted ${count} specifications`);
         }
+      }
+
+      function deleteAllSpecifications_UNFILTERED() {
+        if (!APP_STATE.writeAccess) return;
+
+        if (!APP_STATE.customerSpecs || APP_STATE.customerSpecs.length === 0) {
+          showAlert('warning', 'No specifications available to delete');
+          return;
+        }
+
+        if (
+          !confirm(
+            'WARNING: Are you sure you want to delete ALL historical specifications? This will remove all spec data permanently and cannot be undone.'
+          )
+        ) {
+          return;
+        }
+
+        const count = APP_STATE.customerSpecs.length;
+        APP_STATE.customerSpecs = [];
+
+        updateSpecTable();
+        populateSpecFilters();
+        logActivity('Deleted all specifications');
+        autoSave();
+        updateDashboard();
+        showAlert('success', `Deleted ${count} specifications`);
       }
 
       function updateSpecPaginationControls() {
