@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Blood Optimization Platform v0.6.9 | Hemo bioscience</title>
+    <title>Blood Optimization Platform v0.7.0 | Hemo bioscience</title>
     <style>
       * {
         margin: 0;
@@ -1853,7 +1853,7 @@
       <!-- Header Bar -->
       <header class="header-bar">
         <div class="header-left">
-        <div class="version-badge">v0.6.9</div>
+        <div class="version-badge">v0.7.0</div>
           <div class="active-users" id="active-users" style="display: none">
             <span>👤 Active:</span>
             <span id="active-user-list">-</span>
@@ -4288,7 +4288,7 @@
             { type: 'FFS', count: 4, vendor: 'Tennessee' },
           ],
           frequency: 28,
-          bonus: { type: 'O', volume: 180 },
+          bonus: { type: 'O', volume: 180, rh: 'Any' },
         },
         {
           product: 'Hemo-QC',
@@ -12896,6 +12896,24 @@
         // In production, this would check C3, Korea, and MQC compatibility
       }
 
+      function isManufacturingCompatible(specA, specB) {
+        if (!specA || !specB) return false;
+        const aboA = normalizeAboValue(specA.abo);
+        const rhA = normalizeRhValue(specA.rh);
+        const aboB = normalizeAboValue(specB.abo);
+        const rhB = normalizeRhValue(specB.rh);
+        if (!aboA || !rhA || !aboB || !rhB) return false;
+        return aboA === aboB && rhA === rhB;
+      }
+
+      function formatBloodType(abo, rh) {
+        const normalizedAbo = normalizeAboValue(abo);
+        const normalizedRh = normalizeRhValue(rh);
+        if (!normalizedAbo || !normalizedRh) return '';
+        const rhLabel = normalizedRh === 'Neg' ? 'Negative' : 'Positive';
+        return `${normalizedAbo} ${rhLabel}`;
+      }
+
       function isSpecCompatible(spec1, spec2) {
         return isBloodUnitCompatible(spec1, { abo: spec2.abo, rh: spec2.rh });
       }
@@ -13213,12 +13231,19 @@
         const fulfillmentWindow = calculateSpecFulfillmentWindow(spec);
         if (!fulfillmentWindow) return [];
 
+        const sampleAbo = normalizeAboValue(spec.abo);
+        const sampleRh = normalizeRhValue(spec.rh);
+        if (!sampleAbo || !sampleRh) return [];
+
+        const requiredVolume = estimateSpecAllocationVolume(spec);
+        if (!Number.isFinite(requiredVolume) || requiredVolume <= 0) return [];
+
         const baseAntigens = Array.isArray(spec.antigens)
           ? spec.antigens.map((antigen) => ({ antigen: antigen.antigen, status: antigen.status }))
           : [];
 
         const suggestions = [];
-        const usedSources = new Set();
+        const usedSuggestionKeys = new Set();
 
         const specKey =
           spec.customer && spec.event && spec.year !== undefined
@@ -13228,205 +13253,199 @@
         if (specKey) {
           exclusionSet.add(specKey);
         }
-        const requiredVolume = estimateSpecAllocationVolume(spec);
 
-        const pushSuggestion = (suggestion) => {
+        const sampleSignature = { abo: sampleAbo, rh: sampleRh };
+        const sampleBloodType = formatBloodType(sampleAbo, sampleRh);
+
+        const cloneAntigens = (antigens) => {
+          if (!Array.isArray(antigens) || antigens.length === 0) {
+            return baseAntigens.map((antigen) => ({ antigen: antigen.antigen, status: antigen.status }));
+          }
+          return antigens.map((antigen) => ({ antigen: antigen.antigen, status: antigen.status }));
+        };
+
+        const pushSuggestion = (suggestion, keyParts = []) => {
           if (!suggestion) return;
           const normalizedAbo = normalizeAboValue(suggestion.abo);
           const normalizedRh = normalizeRhValue(suggestion.rh);
           if (!normalizedAbo || !normalizedRh) return;
 
-          const key = `${suggestion.sourceDescription || ''}_${normalizedAbo}_${normalizedRh}`;
-          if (usedSources.has(key)) return;
-          usedSources.add(key);
-
-          const antigenSuggestion = Array.isArray(suggestion.antigens) && suggestion.antigens.length > 0
-            ? suggestion.antigens.map((antigen) => ({ antigen: antigen.antigen, status: antigen.status }))
-            : baseAntigens.map((antigen) => ({ antigen: antigen.antigen, status: antigen.status }));
+          const key =
+            keyParts.length > 0
+              ? keyParts.join('|')
+              : `${suggestion.sourceKey || ''}|${normalizedAbo}|${normalizedRh}|${suggestion.sampleId || ''}`;
+          if (usedSuggestionKeys.has(key)) return;
+          usedSuggestionKeys.add(key);
 
           suggestions.push({
             ...suggestion,
             abo: normalizedAbo,
             rh: normalizedRh,
-            antigens: antigenSuggestion,
+            antigens: cloneAntigens(suggestion.antigens),
           });
         };
 
-        const offerStandingOrderSuggestion = (order, baseSuggestion, dateOverride = null) => {
-          if (!order || !baseSuggestion) return;
-          const sourceKey = buildStandingOrderSourceKey(order.product, dateOverride || fulfillmentWindow);
+        const standingOrderSavings = calculateStandingOrderSavings() || {};
+
+        (STANDING_ORDERS || []).forEach((order) => {
+          if (!order?.product) return;
+          if (!hasStandingOrderWithinWindow(order.product, fulfillmentWindow)) return;
+
+          const sourceKey = buildStandingOrderSourceKey(order.product, fulfillmentWindow);
+          if (!sourceKey) return;
+
           const theoreticalVolume = getStandingOrderTheoreticalVolume(order);
-          const remainingVolume = Math.max(
-            theoreticalVolume - getCommittedVolumeForSource(sourceKey, exclusionSet),
-            0
-          );
-          if (remainingVolume <= 0) return;
+          const committedVolume = getCommittedVolumeForSource(sourceKey, exclusionSet);
+          const remainingVolume = Math.max(theoreticalVolume - committedVolume, 0);
+          if (remainingVolume < requiredVolume) return;
 
-          const allocatableVolume = Math.min(requiredVolume, remainingVolume);
-          if (allocatableVolume <= 0) return;
-
-          pushSuggestion({
-            ...baseSuggestion,
-            sourceKey,
-            sourceType: 'Standing Order',
-            allocatedVolume: allocatableVolume,
-            availableVolume: remainingVolume,
-            theoreticalVolume,
-          });
-        };
-
-        const specAbo = normalizeAboValue(spec.abo);
-        const specRh = normalizeRhValue(spec.rh);
-
-        const hqcCompatibility = checkHQCCompatibility(spec);
-        if (hqcCompatibility && hqcCompatibility.compatible) {
-          const savings = calculateStandingOrderSavings() || {};
-          const hqcAboMap = { 1: 'AB', 2: 'O', 3: 'A' };
-          const hqcRhMap = { 1: 'Pos', 2: 'Pos', 3: 'Neg' };
-          const proposedAbo = specAbo || hqcAboMap[hqcCompatibility.cellId] || 'O';
-          const proposedRh = specRh || hqcRhMap[hqcCompatibility.cellId] || 'Pos';
-
-          const hqcOrder = getStandingOrderByProduct('Hemo-QC');
-          if (hqcOrder) {
-            offerStandingOrderSuggestion(hqcOrder, {
-              title: `Assign ${proposedAbo} ${proposedRh === 'Neg' ? 'Negative' : 'Positive'}`,
-              details: `Source: HQC Standing Order Overage. ${
-                savings.description || 'Leverages existing supply.'
-              }`,
-              abo: proposedAbo,
-              rh: proposedRh,
-              antigens: baseAntigens,
-              sourceDescription: `HQC ${hqcCompatibility.description}`,
-              savingsDetails:
-                savings.description || 'Uses HQC standing order overage to reduce new purchases.',
-            });
+          const units = Array.isArray(order.units) ? order.units.slice() : [];
+          if (order.bonus && order.bonus.type) {
+            units.push({ ...order.bonus, isBonus: true });
           }
-        }
 
-        (STANDING_ORDERS || [])
-          .filter((order) => order.product && order.product !== 'Hemo-QC')
-          .forEach((order) => {
-            if (!order.units || order.units.length === 0) return;
-            if (!hasStandingOrderWithinWindow(order.product, fulfillmentWindow)) return;
+          units.forEach((unit, index) => {
+            let candidateAbo = null;
+            let candidateRh = null;
+            let candidateAntigens = [];
 
-            order.units.forEach((unit) => {
-              const parsed = parseStandingOrderUnit(unit);
-              if (!parsed) return;
+            if (unit.isBonus && order.product === 'C3 Control Cells') {
+              candidateAbo = normalizeAboValue(unit.type);
+              if (!candidateAbo || candidateAbo !== sampleAbo) return;
 
-              const parsedAbo = normalizeAboValue(parsed.abo);
-              const parsedRh = parsed.rh === 'Either' ? null : normalizeRhValue(parsed.rh);
-              const targetAbo = specAbo || parsedAbo;
-              const targetRh = specRh || parsedRh || 'Pos';
-
-              if (!targetAbo || !targetRh) return;
-
-              const compatibleUnit = {
-                abo: parsedAbo || targetAbo,
-                rh: parsed.rh === 'Either' ? targetRh : parsedRh || targetRh,
-              };
-
-              if (!isBloodUnitCompatible({ abo: targetAbo, rh: targetRh }, compatibleUnit)) {
-                return;
+              const allocations = (APP_STATE.futureAllocations || []).filter(
+                (allocation) => allocation && allocation.sourceKey === sourceKey
+              );
+              let lockedRh = null;
+              if (allocations.length > 0) {
+                const existing = allocations[0];
+                lockedRh = normalizeRhValue(existing?.rh);
+                if (!lockedRh) {
+                  const detailMatch = (existing?.details || '').match(/(Positive|Negative)/i);
+                  if (detailMatch) {
+                    lockedRh = detailMatch[1].toLowerCase().startsWith('neg') ? 'Neg' : 'Pos';
+                  }
+                }
               }
 
-              const savings = calculateStandingOrderSavings() || {};
-              const antigenSuggestion =
-                parsed.antigens && parsed.antigens.length > 0 ? parsed.antigens : baseAntigens;
+              if (lockedRh) {
+                if (lockedRh !== sampleRh) return;
+                candidateRh = lockedRh;
+              } else {
+                if (sampleAbo !== 'O') return;
+                if (!['Pos', 'Neg'].includes(sampleRh)) return;
+                candidateRh = sampleRh;
+              }
+            } else {
+              const parsed = parseStandingOrderUnit(unit);
+              if (!parsed) return;
+              candidateAbo = parsed.abo;
+              const parsedRh = parsed.rh === 'Either' ? sampleRh : normalizeRhValue(parsed.rh);
+              candidateRh = parsedRh;
+              candidateAntigens = parsed.antigens && parsed.antigens.length > 0 ? parsed.antigens : [];
+            }
 
-              offerStandingOrderSuggestion(order, {
-                title: `Assign ${targetAbo} ${targetRh === 'Neg' ? 'Negative' : 'Positive'} from ${order.product}`,
-                details: `Source: ${order.product} Standing Order. ${
-                  savings.description || 'Leverages existing supply.'
-                }`,
-                abo: targetAbo,
-                rh: targetRh,
-                antigens: antigenSuggestion,
+            if (!candidateAbo || !candidateRh) return;
+
+            const candidateSignature = { abo: candidateAbo, rh: candidateRh };
+            if (!isManufacturingCompatible(sampleSignature, candidateSignature)) return;
+
+            const detailParts = [`Source: ${order.product} Standing Order`];
+            if (unit.isBonus) {
+              detailParts.push('Bonus allocation.');
+            }
+            if (standingOrderSavings.description) {
+              detailParts.push(standingOrderSavings.description);
+            }
+
+            pushSuggestion(
+              {
+                title: `Use ${formatBloodType(candidateAbo, candidateRh)} from ${order.product} (${Math.round(
+                  remainingVolume
+                )}mL available)`,
+                details: detailParts.join(' '),
+                abo: candidateAbo,
+                rh: candidateRh,
+                antigens: candidateAntigens,
                 sourceDescription: `${order.product} Standing Order`,
-                savingsDetails:
-                  savings.description || 'Uses standing order overage to offset purchases.',
-              });
-            });
+                sourceKey,
+                sourceType: 'Standing Order',
+                allocatedVolume: requiredVolume,
+                availableVolume: remainingVolume,
+                theoreticalVolume,
+                savingsDetails: standingOrderSavings.description || '',
+              },
+              [sourceKey, unit.isBonus ? 'bonus' : `unit-${index}`, candidateAbo, candidateRh]
+            );
           });
+        });
 
         const ptSavings = calculatePTSharingSavings() || {};
-        const considerForSharing = (candidate, label) => {
+
+        const considerSharingCandidate = (candidate, fallbackLabel) => {
           if (!candidate) return;
-          if (candidate === spec) return;
-          if (!candidate.event || !candidate.year) return;
+
+          if (candidate.sample_id && spec.sample_id && candidate.sample_id === spec.sample_id) return;
 
           const candidateAbo = normalizeAboValue(candidate.abo);
           const candidateRh = normalizeRhValue(candidate.rh);
           if (!candidateAbo || !candidateRh) return;
 
+          const candidateSignature = { abo: candidateAbo, rh: candidateRh };
+          if (!isManufacturingCompatible(sampleSignature, candidateSignature)) return;
+
           const otherWindow = calculateSpecFulfillmentWindow(candidate);
-          if (!otherWindow) return;
-          if (!isWindowOverlapping(fulfillmentWindow, otherWindow)) return;
-
-          const requiredAbo = specAbo || candidateAbo;
-          const requiredRh = specRh || candidateRh;
-          if (!requiredAbo || !requiredRh) return;
-
-          const donorSpec = { abo: candidateAbo, rh: candidateRh };
-          if (!isSpecCompatible({ abo: requiredAbo, rh: requiredRh }, donorSpec)) return;
-
-          const antigenSuggestion =
-            baseAntigens.length > 0
-              ? baseAntigens
-              : Array.isArray(candidate.antigens)
-              ? candidate.antigens
-              : [];
+          if (!otherWindow || !isWindowOverlapping(fulfillmentWindow, otherWindow)) return;
 
           const sourceKey = buildPTEventSourceKey(candidate);
+          if (!sourceKey) return;
+
           const theoreticalVolume = estimateSpecAllocationVolume(candidate);
-          const remainingVolume = Math.max(
-            theoreticalVolume - getCommittedVolumeForSource(sourceKey, exclusionSet),
-            0
+          const committedVolume = getCommittedVolumeForSource(sourceKey, exclusionSet);
+          const remainingVolume = Math.max(theoreticalVolume - committedVolume, 0);
+          if (remainingVolume < requiredVolume) return;
+
+          const donorSampleId = candidate.sample_id || candidate.sampleId || 'Unknown';
+          const eventLabelParts = [candidate.customer, candidate.event, candidate.year]
+            .map((part) => (part !== undefined && part !== null ? part : ''))
+            .filter(Boolean);
+          const eventLabel = eventLabelParts.join(' ').trim() || fallbackLabel;
+
+          const detailsParts = [`Source: ${eventLabel}`];
+          if (ptSavings.description) {
+            detailsParts.push(ptSavings.description);
+          }
+
+          pushSuggestion(
+            {
+              title: `Share ${sampleBloodType} from sample ${donorSampleId}`,
+              details: detailsParts.join(' '),
+              abo: candidateAbo,
+              rh: candidateRh,
+              antigens:
+                Array.isArray(candidate.antigens) && candidate.antigens.length > 0
+                  ? candidate.antigens
+                  : baseAntigens,
+              sourceDescription: `${eventLabel} sample ${donorSampleId}`,
+              sourceKey,
+              sourceType: 'PT Event Sharing',
+              allocatedVolume: requiredVolume,
+              availableVolume: remainingVolume,
+              theoreticalVolume,
+              savingsDetails: ptSavings.description || '',
+              sampleId: donorSampleId,
+            },
+            [sourceKey, donorSampleId]
           );
-          if (remainingVolume <= 0) return;
-
-          const allocatableVolume = Math.min(requiredVolume, remainingVolume);
-          if (allocatableVolume <= 0) return;
-
-          pushSuggestion({
-            title: `Share ${requiredAbo} ${requiredRh === 'Neg' ? 'Negative' : 'Positive'} from ${label}`,
-            details: `Source: ${label}. ${ptSavings.description || 'Shares inventory between events.'}`,
-            abo: requiredAbo,
-            rh: requiredRh,
-            antigens: antigenSuggestion,
-            sourceDescription: `${label}`,
-            savingsDetails:
-              ptSavings.description || 'Cross-event sharing reduces new unit purchases.',
-            sourceKey,
-            sourceType: 'PT Event Sharing',
-            allocatedVolume: allocatableVolume,
-            availableVolume: remainingVolume,
-            theoreticalVolume,
-          });
         };
 
-        (APP_STATE.futureSpecs.entries || []).forEach((candidate) => {
-          if (
-            candidate.customer === spec.customer &&
-            candidate.event === spec.event &&
-            candidate.year == spec.year &&
-            candidate.sample_id === spec.sample_id
-          ) {
-            return;
-          }
-          const label = `${candidate.customer || 'Future'} ${candidate.event || ''} ${
-            candidate.year || ''
-          }`.trim();
-          considerForSharing(candidate, label);
-        });
+        (APP_STATE.futureSpecs?.entries || [])
+          .filter((candidate) => candidate && candidate.sample_id !== spec.sample_id)
+          .forEach((candidate) => considerSharingCandidate(candidate, 'Future PT Event'));
 
-        (APP_STATE.customerSpecs || []).forEach((candidate) => {
-          if (!candidate || !candidate.year || !spec.year) return;
-          if (Math.abs(candidate.year - spec.year) > 1) return;
-          const label = `${candidate.customer || 'Historical'} ${candidate.event || ''} ${
-            candidate.year || ''
-          }`.trim();
-          considerForSharing(candidate, label);
-        });
+        (APP_STATE.customerSpecs || [])
+          .filter((candidate) => candidate && candidate.sample_id !== spec.sample_id)
+          .forEach((candidate) => considerSharingCandidate(candidate, 'Historical PT Event'));
 
         return suggestions;
       }
@@ -15112,6 +15131,8 @@
                   year: Number(year) || year,
                   sourceKey: allocationData.sourceKey,
                   sourceType: allocationData.sourceType || 'Standing Order',
+                  abo: allocationData.abo ? normalizeAboValue(allocationData.abo) : null,
+                  rh: allocationData.rh ? normalizeRhValue(allocationData.rh) : null,
                   allocatedVolume: finalVolume,
                   theoreticalVolume,
                   createdAt: nowIso,
