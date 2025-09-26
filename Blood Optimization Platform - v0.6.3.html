@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Blood Optimization Platform v0.6.2 | Hemo bioscience</title>
+    <title>Blood Optimization Platform v0.6.3 | Hemo bioscience</title>
     <style>
       * {
         margin: 0;
@@ -1853,7 +1853,7 @@
       <!-- Header Bar -->
       <header class="header-bar">
         <div class="header-left">
-          <div class="version-badge">v0.6.2</div>
+          <div class="version-badge">v0.6.3</div>
           <div class="active-users" id="active-users" style="display: none">
             <span>👤 Active:</span>
             <span id="active-user-list">-</span>
@@ -4178,6 +4178,7 @@
           { value: 'setup-event', label: 'Set Up for Event' },
         ],
         Shipping: [
+          { value: 'manual-bleed-date', label: 'Bleed Date (Manual)' },
           { value: 'external-testing', label: 'External Testing Ship' },
           // Only keep the dual-date shipment option to avoid legacy single-date entries
           { value: 'blood-shipment', label: 'Blood Shipment' },
@@ -9709,6 +9710,38 @@
         const type = typeSelect ? typeSelect.value : '';
         const notes = notesField ? notesField.value.trim() : '';
 
+        if (type === 'manual-bleed-date') {
+          if (!date) {
+            showAlert('error', 'Please fill in all required fields');
+            return;
+          }
+
+          const eventDetails = prompt(
+            'Please enter the Customer and Event for this bleed date (e.g., WSLH 1st):'
+          );
+
+          if (!eventDetails) {
+            return;
+          }
+
+          const manualBleedEvent = {
+            id: 'cal_' + Date.now(),
+            date: date,
+            type: 'blood-arrival',
+            description: `${eventDetails} - Bleed`,
+            eventType: 'PT',
+          };
+
+          APP_STATE.manufacturingCalendar.push(manualBleedEvent);
+
+          renderCalendar();
+          autoSave();
+          logActivity('Added manual bleed date', `${eventDetails} - Bleed`);
+          showAlert('success', 'Manual bleed date added');
+          closeCalendarAddEventModal();
+          return;
+        }
+
         if (!date || !type) {
           showAlert('error', 'Please fill in all required fields');
           return;
@@ -9759,6 +9792,11 @@
             `${baseDescription} (${date} → ${arrivalDate})`
           );
           showAlert('success', 'Blood shipment scheduled');
+
+          renderCalendar();
+          autoSave();
+          closeCalendarAddEventModal();
+          return;
         } else {
           const description = buildCalendarDescription(type, notes);
 
@@ -9777,12 +9815,11 @@
 
           logActivity('Added calendar event', description);
           showAlert('success', 'Calendar event added');
+
+          renderCalendar();
+          autoSave();
+          closeCalendarAddEventModal();
         }
-
-        renderCalendar();
-        autoSave();
-
-        closeCalendarAddEventModal();
       }
 
       function previousMonth() {
