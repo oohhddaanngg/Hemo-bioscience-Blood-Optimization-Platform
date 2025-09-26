@@ -1,0 +1,20 @@
+1.0	Purpose 
+To define the standard workflow for generating a Blood Utilization Plan (BUP). The BUP provides a consolidated view of all blood requirements for a selected group of PT events and optimizes the allocation of standing order and inter-event overages to minimize new purchases.
+2.0 Procedure
+2.1 Navigate and Select Events
+1.	Navigate to the BUP Generator panel from the "Analysis" section of the sidebar.
+2.	Use the filter controls (Customer, Year, Search) to locate the PT events you wish to include in the plan.
+3.	For each desired event, click the "Add to Pool" button. The event will appear as a tag in the "Selected Events Pool" below.
+2.2 Include Standing Orders
+1.	Below the event selection list, review the checkboxes under "Include Standing Orders."
+2.	Ensure the checkboxes for all relevant standing orders (HQC, C3, etc.) that will occur within the timeframe of your selected PT events are checked. This makes their overage available to the optimization algorithm.
+2.3 Generate and Interpret the BUP Report
+1.	Click the "Generate BUP Report" button.
+2.	The system will generate a report with several sections:
+o	BUP Summary: High-level totals including total pRBC volume needed, the amount that can be pulled from existing inventory/overage, and the final volume of new blood that must be ordered.
+o	Flexible Antigen Opportunities: This section will appear if the system identifies a way to save costs by specifying a flexible antigen (e.g., Fya-positive) on a standing order unit to make it shareable.
+o	Order New: A list of every blood type and volume that must be procured from a blood supplier. This represents the purchasing requirement after all optimizations have been applied.
+o	Pull from Inventory: A detailed breakdown of every optimization made. It shows which standing order overage or shared PT event unit is being allocated to which specific sample in the plan.
+o	Note: The BUP's calculations are stateful. They respect all allocations already made in the Future Specifications module, ensuring that a resource is never double-booked.
+2.4 Export the Report
+1.	Use the "Export Report" button to download a text-based version of the BUP for your records.
