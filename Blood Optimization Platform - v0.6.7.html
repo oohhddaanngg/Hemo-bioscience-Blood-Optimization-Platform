@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Blood Optimization Platform v0.6.6 | Hemo bioscience</title>
+    <title>Blood Optimization Platform v0.6.7 | Hemo bioscience</title>
     <style>
       * {
         margin: 0;
@@ -1853,7 +1853,7 @@
       <!-- Header Bar -->
       <header class="header-bar">
         <div class="header-left">
-          <div class="version-badge">v0.6.6</div>
+      <div class="version-badge">v0.6.7</div>
           <div class="active-users" id="active-users" style="display: none">
             <span>👤 Active:</span>
             <span id="active-user-list">-</span>
@@ -4169,6 +4169,9 @@
           metadata: {},
         },
 
+        futureAllocations: [],
+        optimizationDecisions: [],
+
         activeUsers: [],
         editingCustomerId: null,
         editingSpecificityId: null,
@@ -4239,6 +4242,7 @@
       // Constants
       const RBC_UNIT_ML = 180.0;
       const RETENTION_SAMPLES = 5;
+      const DEFAULT_UNIT_VOLUME = 180;
       const MAX_BLOOD_AGE = 77; // days
       const STANDARD_BUFFER = 10; // days
       const EXTERNAL_TESTING_BUFFER = 17; // days (future feature)
@@ -8189,6 +8193,11 @@
       function findSharingOpportunities(bloodGroups, selectedEvents) {
         const opportunities = [];
 
+        const selectedEventKeySet = new Set(
+          (selectedEvents || []).map((event) => `${event.customer}_${event.event}_${event.year}`)
+        );
+        const plannedLedgerShares = {};
+
         // Define standing order inventory with CORRECT specifications
         const standingOrders = {
           HQC: [
@@ -8438,22 +8447,39 @@
                   }
 
                   if (compatible && shareVolume > 0) {
-                    // Calculate proper min/max based on HQC overage possibilities
-                    const minShare = Math.min(remaining, HQC_OVERAGE_MIN);
-                    const maxShare = Math.min(remaining, HQC_OVERAGE_MAX);
+                    const hqcOrder = getStandingOrderByProduct('Hemo-QC');
+                    const sourceKey = buildStandingOrderSourceKey('Hemo-QC', hqcBleedDate);
+                    const theoreticalVolume = getStandingOrderTheoreticalVolume(hqcOrder);
+                    const alreadyPlanned = plannedLedgerShares[sourceKey] || 0;
+                    const availableVolume = calculateAvailableResourceVolume(
+                      sourceKey,
+                      theoreticalVolume,
+                      selectedEventKeySet,
+                      alreadyPlanned
+                    );
+                    shareVolume = Math.min(shareVolume, availableVolume);
 
-                    sources.push({
-                      source: sourceDescription,
-                      type: `${stock.type} ${stock.rh}`,
-                      volumeMin: minShare,
-                      volumeMax: maxShare,
-                      flexibleNote: flexibleNote,
-                    });
-                    remaining -= shareVolume;
-                    console.log(`Added ${shareVolume}p from ${sourceDescription}`);
+                    if (shareVolume <= 0) {
+                      compatible = false;
+                    } else {
+                      plannedLedgerShares[sourceKey] = alreadyPlanned + shareVolume;
 
-                    if (flexibleNote) {
-                      group.flexibleAntigenNote = flexibleNote;
+                      const minShare = Math.min(shareVolume, remaining, HQC_OVERAGE_MIN);
+                      const maxShare = Math.min(shareVolume, remaining, HQC_OVERAGE_MAX);
+
+                      sources.push({
+                        source: sourceDescription,
+                        type: `${stock.type} ${stock.rh}`,
+                        volumeMin: minShare,
+                        volumeMax: maxShare,
+                        flexibleNote: flexibleNote,
+                      });
+                      remaining -= shareVolume;
+                      console.log(`Added ${shareVolume}p from ${sourceDescription}`);
+
+                      if (flexibleNote) {
+                        group.flexibleAntigenNote = flexibleNote;
+                      }
                     }
                   }
                 }
@@ -8495,13 +8521,30 @@
                   ) {
                     const used = Math.min(stock.volume, remaining);
                     if (used > 0) {
-                      sources.push({
-                        source: `Korea-${index + 1}`,
-                        type: `${stock.type} ${stock.rh} ${stock.antigens.phenotype || ''}`,
-                        volumeMin: used,
-                        volumeMax: used,
-                      });
-                      remaining -= used;
+                      const sourceKey = buildStandingOrderSourceKey(
+                        'Korea FFMU/Mirrscitech',
+                        mirrsDate
+                      );
+                      const mirrOrder = getStandingOrderByProduct('Korea FFMU/Mirrscitech');
+                      const theoreticalVolume = getStandingOrderTheoreticalVolume(mirrOrder);
+                      const alreadyPlanned = plannedLedgerShares[sourceKey] || 0;
+                      const availableVolume = calculateAvailableResourceVolume(
+                        sourceKey,
+                        theoreticalVolume,
+                        selectedEventKeySet,
+                        alreadyPlanned
+                      );
+                      const adjustedUsed = Math.min(used, availableVolume);
+                      if (adjustedUsed > 0) {
+                        plannedLedgerShares[sourceKey] = alreadyPlanned + adjustedUsed;
+                        sources.push({
+                          source: `Korea-${index + 1}`,
+                          type: `${stock.type} ${stock.rh} ${stock.antigens.phenotype || ''}`,
+                          volumeMin: adjustedUsed,
+                          volumeMax: adjustedUsed,
+                        });
+                        remaining -= adjustedUsed;
+                      }
                     }
                   }
                 }
@@ -8544,14 +8587,28 @@
 
                   if (c3Compatible) {
                     const used = Math.min(180, remaining); // C3 bonus is always 180mL
-                    sources.push({
-                      source: 'C3 Bonus',
-                      type: `O ${isRhFlexible ? 'Pos/Neg' : groupRh}`,
-                      volumeMin: used,
-                      volumeMax: used,
-                    });
-                    remaining -= used;
-                    console.log(`Added ${used}p from C3 Bonus`);
+                    const sourceKey = buildStandingOrderSourceKey('C3 Control Cells', c3Date);
+                    const c3Order = getStandingOrderByProduct('C3 Control Cells');
+                    const theoreticalVolume = getStandingOrderTheoreticalVolume(c3Order);
+                    const alreadyPlanned = plannedLedgerShares[sourceKey] || 0;
+                    const availableVolume = calculateAvailableResourceVolume(
+                      sourceKey,
+                      theoreticalVolume,
+                      selectedEventKeySet,
+                      alreadyPlanned
+                    );
+                    const adjustedUsed = Math.min(used, availableVolume);
+                    if (adjustedUsed > 0) {
+                      plannedLedgerShares[sourceKey] = alreadyPlanned + adjustedUsed;
+                      sources.push({
+                        source: 'C3 Bonus',
+                        type: `O ${isRhFlexible ? 'Pos/Neg' : groupRh}`,
+                        volumeMin: adjustedUsed,
+                        volumeMax: adjustedUsed,
+                      });
+                      remaining -= adjustedUsed;
+                      console.log(`Added ${adjustedUsed}p from C3 Bonus`);
+                    }
                   }
                 }
               }
@@ -8608,16 +8665,30 @@
                   if (compatible) {
                     const used = Math.min(stock.volume, remaining);
                     if (used > 0) {
-                      sources.push({
-                        source: `MQC-${index + 1}`,
-                        type: `${stock.type} ${stock.rh}${
-                          stock.antigens ? ' ' + stock.antigens : ''
-                        }`,
-                        volumeMin: used,
-                        volumeMax: used,
-                      });
-                      remaining -= used;
-                      console.log(`Added ${used}p from MQC-${index + 1}`);
+                      const sourceKey = buildStandingOrderSourceKey('MQC/MQC-CAT', mqcDate);
+                      const mqcOrder = getStandingOrderByProduct('MQC/MQC-CAT');
+                      const theoreticalVolume = getStandingOrderTheoreticalVolume(mqcOrder);
+                      const alreadyPlanned = plannedLedgerShares[sourceKey] || 0;
+                      const availableVolume = calculateAvailableResourceVolume(
+                        sourceKey,
+                        theoreticalVolume,
+                        selectedEventKeySet,
+                        alreadyPlanned
+                      );
+                      const adjustedUsed = Math.min(used, availableVolume);
+                      if (adjustedUsed > 0) {
+                        plannedLedgerShares[sourceKey] = alreadyPlanned + adjustedUsed;
+                        sources.push({
+                          source: `MQC-${index + 1}`,
+                          type: `${stock.type} ${stock.rh}${
+                            stock.antigens ? ' ' + stock.antigens : ''
+                          }`,
+                          volumeMin: adjustedUsed,
+                          volumeMax: adjustedUsed,
+                        });
+                        remaining -= adjustedUsed;
+                        console.log(`Added ${adjustedUsed}p from MQC-${index + 1}`);
+                      }
                     }
                   }
                 }
@@ -8821,24 +8892,38 @@
                   const shareVolume = Math.min(ptOverage, remaining);
 
                   if (shareVolume > 0) {
-                    sources.push({
-                      source: `PT: ${ptSpec.customer} ${ptSpec.event}`,
-                      type: `${ptABO} ${ptRh}`,
-                      volumeMin: shareVolume,
-                      volumeMax: shareVolume,
-                      isPTEvent: true,
-                    });
-                    remaining -= shareVolume;
-
-                    console.log(
-                      `✓ Can share ${shareVolume.toFixed(0)}mL from ${ptSpec.customer} ${
-                        ptSpec.event
-                      }`
+                    const sourceKey = buildPTEventSourceKey(ptSpec);
+                    const theoreticalVolume = estimateSpecAllocationVolume(ptSpec);
+                    const alreadyPlanned = plannedLedgerShares[sourceKey] || 0;
+                    const availableVolume = calculateAvailableResourceVolume(
+                      sourceKey,
+                      theoreticalVolume,
+                      selectedEventKeySet,
+                      alreadyPlanned
                     );
+                    const adjustedShareVolume = Math.min(shareVolume, availableVolume);
 
-                    // Track this as a flexible opportunity if antigens were made compatible
-                    if (ptAntigens !== groupAntigens && !areAntigensFlexible) {
-                      group.ptSharingNote = `Consider matching antigens with ${ptSpec.customer} ${ptSpec.event} for sharing`;
+                    if (adjustedShareVolume > 0) {
+                      plannedLedgerShares[sourceKey] = alreadyPlanned + adjustedShareVolume;
+                      sources.push({
+                        source: `PT: ${ptSpec.customer} ${ptSpec.event}`,
+                        type: `${ptABO} ${ptRh}`,
+                        volumeMin: adjustedShareVolume,
+                        volumeMax: adjustedShareVolume,
+                        isPTEvent: true,
+                      });
+                      remaining -= adjustedShareVolume;
+
+                      console.log(
+                        `✓ Can share ${adjustedShareVolume.toFixed(0)}mL from ${ptSpec.customer} ${
+                          ptSpec.event
+                        }`
+                      );
+
+                      // Track this as a flexible opportunity if antigens were made compatible
+                      if (ptAntigens !== groupAntigens && !areAntigensFlexible) {
+                        group.ptSharingNote = `Consider matching antigens with ${ptSpec.customer} ${ptSpec.event} for sharing`;
+                      }
                     }
                   }
                 } else {
@@ -12595,6 +12680,172 @@
         return null;
       }
 
+      function serializeAntigensForComparison(antigens) {
+        if (!Array.isArray(antigens) || antigens.length === 0) {
+          return '';
+        }
+
+        return antigens
+          .map((antigen) => {
+            if (!antigen) return '';
+            const name = (antigen.antigen || '').toString().toUpperCase();
+            if (!name) return '';
+            const status = (antigen.status || '').toString().toLowerCase().startsWith('neg') ? 'NEG' : 'POS';
+            return `${name}:${status}`;
+          })
+          .filter(Boolean)
+          .sort()
+          .join('|');
+      }
+
+      function formatDateKey(date) {
+        if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+          return 'unscheduled';
+        }
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      }
+
+      function normalizeKeyPart(value, fallback = 'Unknown') {
+        if (value === undefined || value === null) {
+          return fallback;
+        }
+        const str = value.toString().trim();
+        if (!str) return fallback;
+        return str.replace(/[^A-Za-z0-9]+/g, '_');
+      }
+
+      function buildStandingOrderSourceKey(productName, windowOrDate) {
+        if (!productName) return null;
+        const normalizedProduct = normalizeKeyPart(productName, 'StandingOrder');
+
+        let date = null;
+        if (windowOrDate instanceof Date) {
+          date = windowOrDate;
+        } else if (windowOrDate && typeof windowOrDate === 'object') {
+          if (windowOrDate.ship instanceof Date) {
+            date = windowOrDate.ship;
+          } else if (windowOrDate.latest instanceof Date) {
+            date = windowOrDate.latest;
+          } else if (windowOrDate.earliest instanceof Date) {
+            date = windowOrDate.earliest;
+          } else if (windowOrDate.targetDate instanceof Date) {
+            date = windowOrDate.targetDate;
+          }
+        }
+
+        const datePart = date ? formatDateKey(date) : 'unscheduled';
+        return `${normalizedProduct}_Overage_${datePart}`;
+      }
+
+      function getStandingOrderByProduct(productName) {
+        if (!productName) return null;
+        return STANDING_ORDERS.find((order) => order.product === productName) || null;
+      }
+
+      function getStandingOrderTheoreticalVolume(order) {
+        if (!order) return 0;
+        let total = 0;
+        if (Array.isArray(order.units)) {
+          order.units.forEach((unit) => {
+            if (!unit) return;
+            const count = Number(unit.count);
+            const volume = Number(unit.volume);
+            const safeCount = Number.isFinite(count) && count > 0 ? count : 1;
+            const safeVolume = Number.isFinite(volume) && volume > 0 ? volume : DEFAULT_UNIT_VOLUME;
+            total += safeCount * safeVolume;
+          });
+        }
+        if (order.bonus && order.bonus.volume) {
+          const bonusVolume = Number(order.bonus.volume);
+          total += Number.isFinite(bonusVolume) && bonusVolume > 0 ? bonusVolume : 0;
+        }
+        return total;
+      }
+
+      function buildPTEventSourceKey(spec) {
+        if (!spec) return null;
+        const customerPart = normalizeKeyPart(spec.customer, 'PT');
+        const eventPart = normalizeKeyPart(spec.event, 'Event');
+        const yearValue =
+          spec.year !== undefined && spec.year !== null
+            ? spec.year
+            : spec.sample_year !== undefined
+            ? spec.sample_year
+            : 'TBD';
+        const yearPart = yearValue.toString().trim() || 'TBD';
+        return `${customerPart}_${eventPart}_${yearPart}`;
+      }
+
+      function estimateSpecAllocationVolume(spec) {
+        if (!spec) return DEFAULT_UNIT_VOLUME;
+
+        const sampleDefinitions = APP_STATE.sampleDefinitions || [];
+        const sampleDef = sampleDefinitions.find((def) => def.sample_type_id === spec.sample_type_id);
+        const fillVolume = parseFloat(sampleDef?.fill_ml);
+        const hematocrit = parseFloat(sampleDef?.hct_percent);
+
+        const quantityCandidates = [
+          spec.quantity,
+          spec.expected_quantity,
+          spec.projected_quantity,
+          spec.projectedQuantity,
+          spec.forecast_quantity,
+        ];
+        const quantity = quantityCandidates
+          .map((value) => (Number.isFinite(Number(value)) ? Number(value) : null))
+          .find((value) => value && value > 0);
+
+        const safeQuantity = quantity || 100;
+        const volumePerSample = Number.isFinite(fillVolume) && fillVolume > 0 ? fillVolume : 2;
+        const hctDecimal = Number.isFinite(hematocrit) && hematocrit > 0 ? hematocrit / 100 : 0.04;
+
+        const baseVolume = safeQuantity * volumePerSample * hctDecimal;
+        const retentionVolume = RETENTION_SAMPLES * volumePerSample * hctDecimal;
+        const totalVolume = (baseVolume + retentionVolume) * 1.1;
+
+        const calculated = Number.isFinite(totalVolume) && totalVolume > 0 ? totalVolume : DEFAULT_UNIT_VOLUME;
+        return Math.max(Math.round(calculated), DEFAULT_UNIT_VOLUME);
+      }
+
+      function getCommittedVolumeForSource(sourceKey, excludedSpecKeys = new Set()) {
+        if (!sourceKey || !Array.isArray(APP_STATE.futureAllocations)) {
+          return 0;
+        }
+
+        const exclusionSet =
+          excludedSpecKeys instanceof Set
+            ? excludedSpecKeys
+            : Array.isArray(excludedSpecKeys)
+            ? new Set(excludedSpecKeys)
+            : new Set();
+
+        return APP_STATE.futureAllocations.reduce((sum, allocation) => {
+          if (!allocation || allocation.sourceKey !== sourceKey) {
+            return sum;
+          }
+          if (exclusionSet.has(allocation.specKey)) {
+            return sum;
+          }
+          const volume = Number(allocation.allocatedVolume);
+          return sum + (Number.isFinite(volume) ? volume : 0);
+        }, 0);
+      }
+
+      function calculateAvailableResourceVolume(
+        sourceKey,
+        theoreticalVolume,
+        excludedSpecKeys = new Set(),
+        alreadyPlanned = 0
+      ) {
+        const committed = getCommittedVolumeForSource(sourceKey, excludedSpecKeys);
+        const planned = Number.isFinite(alreadyPlanned) ? alreadyPlanned : 0;
+        const total = Number.isFinite(theoreticalVolume) ? theoreticalVolume : 0;
+        return Math.max(total - committed - planned, 0);
+      }
+
       function parseStandingOrderUnit(unit) {
         if (!unit || !unit.type) return null;
         let normalized = unit.type
@@ -12680,6 +12931,16 @@
         const suggestions = [];
         const usedSources = new Set();
 
+        const specKey =
+          spec.customer && spec.event && spec.year !== undefined
+            ? `${spec.customer}_${spec.event}_${spec.year}`
+            : null;
+        const exclusionSet = new Set();
+        if (specKey) {
+          exclusionSet.add(specKey);
+        }
+        const requiredVolume = estimateSpecAllocationVolume(spec);
+
         const pushSuggestion = (suggestion) => {
           if (!suggestion) return;
           const normalizedAbo = normalizeAboValue(suggestion.abo);
@@ -12702,6 +12963,29 @@
           });
         };
 
+        const offerStandingOrderSuggestion = (order, baseSuggestion, dateOverride = null) => {
+          if (!order || !baseSuggestion) return;
+          const sourceKey = buildStandingOrderSourceKey(order.product, dateOverride || fulfillmentWindow);
+          const theoreticalVolume = getStandingOrderTheoreticalVolume(order);
+          const remainingVolume = Math.max(
+            theoreticalVolume - getCommittedVolumeForSource(sourceKey, exclusionSet),
+            0
+          );
+          if (remainingVolume <= 0) return;
+
+          const allocatableVolume = Math.min(requiredVolume, remainingVolume);
+          if (allocatableVolume <= 0) return;
+
+          pushSuggestion({
+            ...baseSuggestion,
+            sourceKey,
+            sourceType: 'Standing Order',
+            allocatedVolume: allocatableVolume,
+            availableVolume: remainingVolume,
+            theoreticalVolume,
+          });
+        };
+
         const specAbo = normalizeAboValue(spec.abo);
         const specRh = normalizeRhValue(spec.rh);
 
@@ -12713,16 +12997,21 @@
           const proposedAbo = specAbo || hqcAboMap[hqcCompatibility.cellId] || 'O';
           const proposedRh = specRh || hqcRhMap[hqcCompatibility.cellId] || 'Pos';
 
-          pushSuggestion({
-            title: `Assign ${proposedAbo} ${proposedRh === 'Neg' ? 'Negative' : 'Positive'}`,
-            details: `Source: HQC Standing Order Overage. ${savings.description || 'Leverages existing supply.'}`,
-            abo: proposedAbo,
-            rh: proposedRh,
-            antigens: baseAntigens,
-            sourceDescription: `HQC ${hqcCompatibility.description}`,
-            savingsDetails:
-              savings.description || 'Uses HQC standing order overage to reduce new purchases.',
-          });
+          const hqcOrder = getStandingOrderByProduct('Hemo-QC');
+          if (hqcOrder) {
+            offerStandingOrderSuggestion(hqcOrder, {
+              title: `Assign ${proposedAbo} ${proposedRh === 'Neg' ? 'Negative' : 'Positive'}`,
+              details: `Source: HQC Standing Order Overage. ${
+                savings.description || 'Leverages existing supply.'
+              }`,
+              abo: proposedAbo,
+              rh: proposedRh,
+              antigens: baseAntigens,
+              sourceDescription: `HQC ${hqcCompatibility.description}`,
+              savingsDetails:
+                savings.description || 'Uses HQC standing order overage to reduce new purchases.',
+            });
+          }
         }
 
         (STANDING_ORDERS || [])
@@ -12755,7 +13044,7 @@
               const antigenSuggestion =
                 parsed.antigens && parsed.antigens.length > 0 ? parsed.antigens : baseAntigens;
 
-              pushSuggestion({
+              offerStandingOrderSuggestion(order, {
                 title: `Assign ${targetAbo} ${targetRh === 'Neg' ? 'Negative' : 'Positive'} from ${order.product}`,
                 details: `Source: ${order.product} Standing Order. ${
                   savings.description || 'Leverages existing supply.'
@@ -12798,6 +13087,17 @@
               ? candidate.antigens
               : [];
 
+          const sourceKey = buildPTEventSourceKey(candidate);
+          const theoreticalVolume = estimateSpecAllocationVolume(candidate);
+          const remainingVolume = Math.max(
+            theoreticalVolume - getCommittedVolumeForSource(sourceKey, exclusionSet),
+            0
+          );
+          if (remainingVolume <= 0) return;
+
+          const allocatableVolume = Math.min(requiredVolume, remainingVolume);
+          if (allocatableVolume <= 0) return;
+
           pushSuggestion({
             title: `Share ${requiredAbo} ${requiredRh === 'Neg' ? 'Negative' : 'Positive'} from ${label}`,
             details: `Source: ${label}. ${ptSavings.description || 'Shares inventory between events.'}`,
@@ -12807,6 +13107,11 @@
             sourceDescription: `${label}`,
             savingsDetails:
               ptSavings.description || 'Cross-event sharing reduces new unit purchases.',
+            sourceKey,
+            sourceType: 'PT Event Sharing',
+            allocatedVolume: allocatableVolume,
+            availableVolume: remainingVolume,
+            theoreticalVolume,
           });
         };
 
@@ -13024,6 +13329,19 @@
 
             validateAntigenDuplicates(containerId);
           }
+        }
+
+        try {
+          row.dataset.provisionalAllocation = JSON.stringify(suggestion);
+        } catch (error) {
+          console.warn('Unable to store provisional allocation for row', error);
+        }
+
+        const suggestionsButton = row.querySelector('[data-suggestion-button]');
+        if (suggestionsButton) {
+          suggestionsButton.textContent = '✔️ Allocated';
+          suggestionsButton.classList.remove('btn-outline');
+          suggestionsButton.classList.add('btn-success');
         }
 
         delete optimizationSuggestionStore[suggestionId];
@@ -14120,6 +14438,7 @@
             <td>
               <button
                 class="btn btn-outline btn-sm"
+                data-suggestion-button="true"
                 onclick="showOptimizationSuggestions(event, '${specKey}', ${idx})"
               >
                 💡 Suggestions
@@ -14398,6 +14717,14 @@
           specMap.set(spec.sample_id, spec);
         });
 
+        const newAllocations = [];
+        const newDecisions = [];
+        const nowIso = new Date().toISOString();
+
+        APP_STATE.futureAllocations = Array.isArray(APP_STATE.futureAllocations)
+          ? APP_STATE.futureAllocations.filter((allocation) => allocation.specKey !== effectiveKey)
+          : [];
+
         tbody.querySelectorAll('tr').forEach((row) => {
           const sampleId = row.dataset.sampleId;
           const spec = specMap.get(sampleId);
@@ -14445,7 +14772,131 @@
               }
             });
           }
+
+          const suggestionsButton = row.querySelector('[data-suggestion-button]');
+          const provisionalDataRaw = row.dataset.provisionalAllocation;
+
+          if (suggestionsButton) {
+            suggestionsButton.textContent = '💡 Suggestions';
+            suggestionsButton.classList.add('btn-outline');
+            suggestionsButton.classList.remove('btn-success');
+          }
+
+          if (provisionalDataRaw) {
+            let allocationData = null;
+            try {
+              allocationData = JSON.parse(provisionalDataRaw);
+            } catch (error) {
+              console.warn('Unable to parse provisional allocation for sample', sampleId, error);
+            }
+
+            delete row.dataset.provisionalAllocation;
+
+            if (allocationData && allocationData.sourceKey) {
+              const theoreticalVolume =
+                Number(allocationData.theoreticalVolume) || estimateSpecAllocationVolume(spec);
+              const plannedVolume = newAllocations
+                .filter((allocation) => allocation.sourceKey === allocationData.sourceKey)
+                .reduce((sum, allocation) => sum + (Number(allocation.allocatedVolume) || 0), 0);
+
+              const remainingVolume = calculateAvailableResourceVolume(
+                allocationData.sourceKey,
+                theoreticalVolume,
+                new Set([effectiveKey]),
+                plannedVolume
+              );
+
+              const desiredVolume =
+                Number(allocationData.allocatedVolume) || estimateSpecAllocationVolume(spec);
+              const finalVolume = Math.min(desiredVolume, remainingVolume);
+
+              if (finalVolume > 0) {
+                const finalAllocation = {
+                  allocationId: createId('alloc'),
+                  specKey: effectiveKey,
+                  sampleId,
+                  customer,
+                  event,
+                  year: Number(year) || year,
+                  sourceKey: allocationData.sourceKey,
+                  sourceType: allocationData.sourceType || 'Standing Order',
+                  allocatedVolume: finalVolume,
+                  theoreticalVolume,
+                  createdAt: nowIso,
+                  details: allocationData.details || allocationData.title || '',
+                };
+
+                newAllocations.push(finalAllocation);
+
+                newDecisions.push({
+                  decisionId: createId('optDecision'),
+                  specKey: effectiveKey,
+                  sampleId,
+                  customer,
+                  event,
+                  year: Number(year) || year,
+                  decision: 'Accepted',
+                  sourceKey: finalAllocation.sourceKey,
+                  sourceType: finalAllocation.sourceType,
+                  timestamp: nowIso,
+                  details:
+                    allocationData.details ||
+                    allocationData.savingsDetails ||
+                    allocationData.title ||
+                    'Accepted optimization suggestion.',
+                });
+              } else {
+                newDecisions.push({
+                  decisionId: createId('optDecision'),
+                  specKey: effectiveKey,
+                  sampleId,
+                  customer,
+                  event,
+                  year: Number(year) || year,
+                  decision: 'Allocation Skipped',
+                  sourceKey: allocationData.sourceKey,
+                  timestamp: nowIso,
+                  details:
+                    'Suggested allocation could not be committed due to insufficient remaining volume.',
+                });
+              }
+            }
+          } else {
+            const suggestions = findBestSuggestionForSample(spec);
+            if (Array.isArray(suggestions) && suggestions.length > 0) {
+              const matchesSuggestion = suggestions.some((suggestion) => {
+                return (
+                  normalizeAboValue(suggestion.abo) === normalizeAboValue(spec.abo) &&
+                  normalizeRhValue(suggestion.rh) === normalizeRhValue(spec.rh) &&
+                  serializeAntigensForComparison(suggestion.antigens) ===
+                    serializeAntigensForComparison(spec.antigens)
+                );
+              });
+
+              if (!matchesSuggestion) {
+                newDecisions.push({
+                  decisionId: createId('optDecision'),
+                  specKey: effectiveKey,
+                  sampleId,
+                  customer,
+                  event,
+                  year: Number(year) || year,
+                  decision: 'Manual Entry',
+                  timestamp: nowIso,
+                  details: 'Manual entry saved without adopting available optimization suggestions.',
+                  suggestionCount: suggestions.length,
+                });
+              }
+            }
+          }
         });
+
+        if (newAllocations.length > 0) {
+          APP_STATE.futureAllocations.push(...newAllocations);
+        }
+        if (newDecisions.length > 0) {
+          APP_STATE.optimizationDecisions.push(...newDecisions);
+        }
 
         const metadata = APP_STATE.futureSpecs.metadata[effectiveKey] || {};
         const now = new Date().toISOString();
