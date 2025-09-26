@@ -1,59 +1,55 @@
 Blood Optimization Platform - Business Logic & Process Manual
 
-Version: 1.1
+Version: 2.0
 Date: 2025-09-26
-Purpose: This document serves as the authoritative guide to the business logic, data rules, and operational processes embedded within the Hemo bioscience Blood Optimization Platform.
+Purpose: This document is the authoritative guide to the business logic, data rules, and operational processes embedded within the Hemo bioscience Blood Optimization Platform. It is the single source of truth for all calculations and decision-making algorithms.
 
-1. Core Temporal Logic: The Unit Lifecycle
+1.0 Core Temporal Logic
 
-The 77-Day Rule: An RBC unit has a maximum usable lifespan of 77 days. It expires on day 78.
 
-Physical Availability Constraint: A unit cannot be used until its physical "Arrival Date".
+1.1 Unit Lifespan: An RBC unit has a maximum usable lifespan of 77 days from its bleed date.
 
-True Optimization Window: The valid window to allocate a unit is between (Recipient's Expiration Date - 77 days) and (Recipient's Ship Date - 10 days). The unit's "Arrival Date" must fall within this window.
 
-2. Blood Compatibility & Phenotype Rules
 
-Standard Matching: Default behavior is to match ABO and Rh types exactly.
+1.2 Optimization Window: The valid window to use a unit for a specific PT event is between (Event Expiration Date - 77 days) and (Event Ship Date - 10 days). The unit's "Arrival Date" must be on or before the date it is needed within this window.
 
-Flexible Requirements: A blank ABO/Rh or a DAT Negative requirement means "any type acceptable."
 
-Specific Requirements:
 
-DAT IgG Positive must be filled by an RhD Positive unit.
+1.3 Standard Earliest Bleed Date: While the absolute maximum is 77 days, the standard target for an "Earliest Bleed Date" is 70 days prior to the event's expiration date. The 77-day window is used by default in the system to maximize sharing opportunities.
 
-C3 Control can be filled by either an O Pos or O Neg unit.
 
-Antigen Matching Logic:
+2.0 Blood Compatibility & Manufacturing Rules
 
-Specified Antigens: The donor unit must match the required status (Positive/Negative). Any other antigens on the donor unit are irrelevant.
+2.1 Default Compatibility Rule (Automated Suggestions): For the purpose of manufacturing homogenous samples, all automated suggestions for sharing (both in the Future Spec modal and the BUP Generator) must be an exact ABO/Rh match by default. The system should not suggest using an O Neg unit for an A Neg sample.
 
-"As Measured" Antigens: The rule is cohort consistency. If multiple units are required, all units in that cohort must have the exact same phenotype for all "as measured" antigens.
+2.2 Manual Override: The user retains the ability to manually override suggestions and assign compatible, non-identical blood types to handle special cases, such as creating mixed-field reactivity samples.
 
-3. Allocation & Sharing Logic
 
-Two-Tier Priority Hierarchy: 1. Standing Orders, 2. PT Events.
+2.3 Antigen Homogeneity ("As Measured"): If multiple RBC units are required for the same sample, the units must have the exact same antigen phenotype for all antigens listed as "As measured" on the customer specification. This is a strict requirement.
 
-Prioritization Within Tiers: The rule is temporal proximity. Prioritize the donor unit with the date closest to the start of the recipient's fulfillment window.
+2.4 Special Case - C3 Control Bonus Unit:
 
-4. Module-Specific Processes
+The C3 standing order includes a bonus unit specified as "Group O, Any Rh".
 
-BUP Generator & Platform Vision: The platform is an efficiency and decision-support tool. Its outputs, including the BUP Generator, are intended to inform planning and are not part of a regulated document control process.
+This unit is flexible and can be used to fulfill either an O Positive or O Negative requirement.
 
-Future Spec Forecasting:
+Locking Logic: The first time this bonus unit is allocated to a sample, its Rh type becomes "locked" to that sample's Rh type for the remainder of its volume. The system must track this lock and only offer the remaining volume to other samples with the same locked Rh type.
 
-Sample ID Normalization: To establish a trend, the forecasting algorithm must normalize sample_ids by removing any four-digit year (e.g., 2023-AB-01 and 2024-AB-01 are treated as the same item, AB-01).
+3.0 Overage & Volume Calculation Logic
 
-Trend Calculation: The forecast is based on the average year-over-year change from at least two historical data points for the normalized sample ID.
 
-Bulk Overage Tracking (RBCs & Serums): Overage quantity is entered manually by the user due to variable volume loss during manufacturing.
+3.1 pRBC Volume per Unit: One standard unit of pRBCs is considered to have 180 mL of usable volume.
 
-Antibodies Module:
+3.2 Overage Tiers for pRBC Calculation: The system must use the following tiered percentages when calculating the required pRBC volume for an event:
 
-The cost-per-use at optimal dilution is calculated as: (Price Paid / Quantity Bought in ml) / Dilution Factor.
 
-5. Data & Structural Logic
+Standard Overage: 10-15% (multiplied by 1.10-1.15).
 
-Future vs. Historical Specs: "Future" refers to the next calendar year; "Historical" refers to the current and all previous years.
 
-Annual Data Migration: A user-initiated process in the Settings panel migrates "Future" specs to "Historical" specs.
+DAT/Eluate Overage: 25-30% (multiplied by 1.25-1.30) to account for volume loss during washing.
+
+3.3 Stateful, Volume-Based Allocation: The system must track all allocations in a central ledger (futureAllocations). When suggesting an overage unit (from a Standing Order or another PT Event), the system must first check the ledger, subtract the volume of all previous commitments, and only offer the true remaining volume. This prevents double-booking and allows a single large overage unit to satisfy multiple smaller needs.
+
+4.0 Platform Vision & Scope
+
+4.1 Decision Support Tool: The platform's primary purpose is to increase efficiency and support decision-making. It is not a regulated document control system. Its outputs (e.g., the BUP) are planning documents, not final, regulated manufacturing records.
