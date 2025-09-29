@@ -1863,7 +1863,7 @@
         <div class="header-right">
           <div class="storage-status" id="storage-status">
             <span class="dot"></span>
-            <span id="storage-text">Not Connected</span>
+            <span id="storage-text">Last saved: Never</span>
           </div>
 
           <div class="user-info">
@@ -3296,57 +3296,18 @@
 
           <div class="content-body">
             <div class="card">
-              <h3 class="card-title mb-3">File Storage Configuration</h3>
-
-              <div id="storage-setup" style="display: none">
-                <div class="alert alert-warning">
-                  ⚠️ File storage not configured. Click below to select a storage folder.
-                </div>
-                <button class="btn btn-primary" onclick="setupFileAccess()">
-                  Select Storage Folder
-                </button>
-              </div>
-
-              <div id="storage-connected" style="display: none">
-                <div class="alert alert-success">✅ Connected to storage folder</div>
-                <div class="form-group">
-                  <label class="form-label">Current Storage Location</label>
-                  <input
-                    type="text"
-                    class="form-input"
-                    id="storage-path"
-                    readonly
-                    value="[Folder Selected]"
-                  />
-                </div>
-                <button class="btn btn-warning btn-sm" onclick="resetFileAccess()">
-                  Change Storage Location
-                </button>
-              </div>
-            </div>
-
-            <div class="card">
-              <h3 class="card-title mb-3">User Identification</h3>
-              <div class="form-group">
-                <label for="user-name-setting">Your Name</label>
-                <input
-                  type="text"
-                  id="user-name-setting"
-                  class="form-input"
-                  placeholder="Enter your name"
-                />
-                <small>This will be used to track who makes changes</small>
-              </div>
+              <h3 class="card-title mb-3">Backup &amp; Data Management</h3>
+              <p class="mb-3">
+                Export a backup of your current application data or import a previously saved
+                snapshot.
+              </p>
               <div class="btn-group">
-                <button class="btn btn-primary" onclick="saveUserSettings()">
-                  Save User Settings
+                <button class="btn btn-primary" onclick="exportDataToJSON()">
+                  Export All Data to File
                 </button>
-                <button class="btn btn-warning" onclick="resetSetup()">Reset Setup</button>
-              </div>
-              <div class="alert alert-info mt-2" style="display: none" id="reset-setup-info">
-                <strong>Reset Setup:</strong> This will clear your setup status and allow you to
-                re-run the setup wizard. Your data will NOT be deleted. Use this if you're having
-                access issues.
+                <button class="btn btn-outline" onclick="importDataFromJSON()">
+                  Import Data from File
+                </button>
               </div>
             </div>
 
@@ -3390,13 +3351,6 @@
               </div>
             </div>
 
-            <div class="card">
-              <h3 class="card-title mb-3">Export/Import</h3>
-              <div class="btn-group">
-                <button class="btn btn-primary" onclick="exportAllData()">Export All Data</button>
-                <button class="btn btn-outline" onclick="importBackup()">Import Backup</button>
-              </div>
-            </div>
           </div>
         </div>
       </main>
@@ -3416,14 +3370,10 @@
             </div>
             <div class="setup-step" id="step-2">
               <div class="step-number">2</div>
-              <div class="step-label">Storage Setup</div>
+              <div class="step-label">Instructions</div>
             </div>
             <div class="setup-step" id="step-3">
               <div class="step-number">3</div>
-              <div class="step-label">Instructions</div>
-            </div>
-            <div class="setup-step" id="step-4">
-              <div class="step-number">4</div>
               <div class="step-label">Get Started</div>
             </div>
           </div>
@@ -4171,11 +4121,11 @@
         },
         editingQuantityId: null,
         editingHistoricalQuantityId: null,
-        dirHandle: null,
         currentUser: null,
         writeAccess: false,
         setupComplete: false,
         instructionsAcknowledged: false,
+        lastSavedAt: null,
         theme: localStorage.getItem('theme') || 'light',
         currentSetupStep: 1,
         currentMonth: new Date().getMonth(),
@@ -4348,6 +4298,74 @@
         'M',
         'N',
       ];
+
+      // ===============================
+      // Database Management
+      // ===============================
+
+      let dbInstance = null;
+
+      function initDB() {
+        if (dbInstance) {
+          return Promise.resolve(dbInstance);
+        }
+
+        return new Promise((resolve, reject) => {
+          const request = indexedDB.open('HemoBioscienceDB', 1);
+
+          request.onupgradeneeded = function (event) {
+            const db = event.target.result;
+            if (!db.objectStoreNames.contains('appDataStore')) {
+              db.createObjectStore('appDataStore');
+            }
+          };
+
+          request.onsuccess = function () {
+            dbInstance = request.result;
+            resolve(dbInstance);
+          };
+
+          request.onerror = function () {
+            reject(request.error);
+          };
+        });
+      }
+
+      async function saveStateToDB(stateObject) {
+        const db = await initDB();
+
+        return new Promise((resolve, reject) => {
+          const transaction = db.transaction('appDataStore', 'readwrite');
+          const store = transaction.objectStore('appDataStore');
+          const request = store.put(stateObject, 'currentState');
+
+          request.onsuccess = function () {
+            resolve();
+          };
+
+          request.onerror = function () {
+            reject(request.error);
+          };
+        });
+      }
+
+      async function loadStateFromDB() {
+        const db = await initDB();
+
+        return new Promise((resolve, reject) => {
+          const transaction = db.transaction('appDataStore', 'readonly');
+          const store = transaction.objectStore('appDataStore');
+          const request = store.get('currentState');
+
+          request.onsuccess = function (event) {
+            resolve(event.target.result || null);
+          };
+
+          request.onerror = function () {
+            reject(request.error);
+          };
+        });
+      }
 
       // Helper function to migrate old antigen/antibody format to new format
       function migrateFutureSpecsFormat() {
@@ -4577,6 +4595,65 @@
       // ===============================
 
       document.addEventListener('DOMContentLoaded', async function () {
+        // Apply saved theme
+        document.body.setAttribute('data-theme', APP_STATE.theme);
+        updateThemeIcon();
+
+        // Initialize IndexedDB and load any existing state
+        let storedState = null;
+        try {
+          await initDB();
+          storedState = await loadStateFromDB();
+        } catch (error) {
+          console.error('Failed to initialize IndexedDB:', error);
+        }
+
+        if (storedState && typeof storedState === 'object') {
+          Object.assign(APP_STATE, storedState);
+        }
+
+        const storageStatus = document.getElementById('storage-status');
+        if (storageStatus) {
+          storageStatus.classList.add('connected');
+        }
+
+        const storageText = document.getElementById('storage-text');
+        if (storageText) {
+          if (APP_STATE.lastSavedAt) {
+            const savedDate = new Date(APP_STATE.lastSavedAt);
+            storageText.textContent = `Last saved ${savedDate.toLocaleString()}`;
+          } else {
+            storageText.textContent = 'Last saved: Never';
+          }
+        }
+
+        const localUser = localStorage.getItem('current_user');
+        if (localUser) {
+          APP_STATE.currentUser = localUser;
+        } else if (APP_STATE.currentUser) {
+          localStorage.setItem('current_user', APP_STATE.currentUser);
+        }
+
+        const storedSetupComplete = !!APP_STATE.setupComplete;
+        const storedInstructionsAcknowledged = !!APP_STATE.instructionsAcknowledged;
+        const localSetupComplete = localStorage.getItem('setup_complete') === 'true';
+        const localInstructionsAcknowledged =
+          localStorage.getItem('instructions_acknowledged') === 'true';
+
+        APP_STATE.setupComplete = storedSetupComplete || localSetupComplete;
+        APP_STATE.instructionsAcknowledged =
+          storedInstructionsAcknowledged || localInstructionsAcknowledged;
+        APP_STATE.writeAccess = APP_STATE.instructionsAcknowledged;
+
+        if (APP_STATE.setupComplete) {
+          localStorage.setItem('setup_complete', 'true');
+        }
+        if (APP_STATE.instructionsAcknowledged) {
+          localStorage.setItem('instructions_acknowledged', 'true');
+        }
+
+        updateUserDisplay();
+
         // === Antibodies v0.5.0 one-time migration (idempotent) ===
         (function migrateAntibodiesV050() {
           try {
@@ -4662,79 +4739,47 @@
           }
         })();
 
-        // Apply saved theme
-        document.body.setAttribute('data-theme', APP_STATE.theme);
-        updateThemeIcon();
-
-        // Check if setup is needed
-        const setupComplete = localStorage.getItem('setup_complete') === 'true';
-        const currentUser = localStorage.getItem('current_user');
-
-        // Try to auto-connect to previous storage
-        if (currentUser && !setupComplete) {
-          // User exists but setup not marked complete - check for existing data
-          APP_STATE.currentUser = currentUser;
-          await attemptAutoConnect();
-        }
-
-        if (!setupComplete || !currentUser) {
-          // Create automatic backup if data exists
-          await createAutomaticBackup('new_user_detected');
-          showSetupWizard();
-        } else {
-          APP_STATE.setupComplete = true;
-          APP_STATE.currentUser = currentUser;
-          APP_STATE.instructionsAcknowledged =
-            localStorage.getItem('instructions_acknowledged') === 'true';
-          APP_STATE.writeAccess = APP_STATE.instructionsAcknowledged;
-
-          updateUserDisplay();
-          await checkFileAccess();
-          await loadData();
-
-          (function ensureVendorPurchasesArray() {
-            if (!Array.isArray(APP_STATE.vendors)) {
-              APP_STATE.vendors = [];
-              return;
-            }
-
-            let updated = false;
-            APP_STATE.vendors.forEach((vendor) => {
-              if (vendor && !Array.isArray(vendor.purchases)) {
-                vendor.purchases = [];
-                updated = true;
-              }
-            });
-
-            if (updated) {
-              console.info('[Vendors] purchases array migration applied');
-            }
-          })();
-
-          const needsAntibodyMigration =
-            Array.isArray(APP_STATE.antibodies) &&
-            APP_STATE.antibodies.some((entry) => entry && !entry.inventory);
-          if (needsAntibodyMigration) {
-            migrateAntibodiesToLotStructure(true);
-          } else {
-            migrateAntibodiesToLotStructure();
+        (function ensureVendorPurchasesArray() {
+          if (!Array.isArray(APP_STATE.vendors)) {
+            APP_STATE.vendors = [];
+            return;
           }
 
-          populateMigrationYearOptions();
-          populateQuantityMigrationOptions();
+          let updated = false;
+          APP_STATE.vendors.forEach((vendor) => {
+            if (vendor && !Array.isArray(vendor.purchases)) {
+              vendor.purchases = [];
+              updated = true;
+            }
+          });
 
-          updateDashboard();
-          updateCustomerList();
-          updateAntibodyView();
-          updateActivityLog();
-          displayStandingOrders();
-          initializeCalendar();
-          // Initialize calendar with current month/year
-          APP_STATE.currentMonth = new Date().getMonth();
-          APP_STATE.currentYear = new Date().getFullYear();
-          renderCalendar();
-          initializeReportingPanel();
+          if (updated) {
+            console.info('[Vendors] purchases array migration applied');
+          }
+        })();
+
+        const needsAntibodyMigration =
+          Array.isArray(APP_STATE.antibodies) &&
+          APP_STATE.antibodies.some((entry) => entry && !entry.inventory);
+        if (needsAntibodyMigration) {
+          migrateAntibodiesToLotStructure(true);
+        } else {
+          migrateAntibodiesToLotStructure();
         }
+
+        populateMigrationYearOptions();
+        populateQuantityMigrationOptions();
+
+        updateDashboard();
+        updateCustomerList();
+        updateAntibodyView();
+        updateActivityLog();
+        displayStandingOrders();
+        initializeCalendar();
+        // Initialize calendar with current month/year
+        APP_STATE.currentMonth = new Date().getMonth();
+        APP_STATE.currentYear = new Date().getFullYear();
+        renderCalendar();
 
         if (!document.getElementById('report-type-select')?.dataset.reportingInitialized) {
           initializeReportingPanel();
@@ -4760,13 +4805,17 @@
           });
         }
 
+        if (!APP_STATE.setupComplete || !APP_STATE.currentUser || !APP_STATE.instructionsAcknowledged) {
+          showSetupWizard();
+        }
+
         // Initialize drag and drop
         initializeDragAndDrop();
 
         populateCustomerDropdowns();
 
-        // Auto-save every 30 seconds
-        setInterval(autoSave, 30000);
+        // Persist state every 30 seconds
+        setInterval(persistState, 30000);
       });
 
       // ===============================
@@ -4787,7 +4836,7 @@
         // Rest of the function...
 
         // Update step indicators
-        for (let i = 1; i <= 4; i++) {
+        for (let i = 1; i <= 3; i++) {
           const stepEl = document.getElementById(`step-${i}`);
           stepEl.classList.remove('active', 'completed');
           if (i < step) stepEl.classList.add('completed');
@@ -4803,7 +4852,7 @@
           case 1:
             content.innerHTML = `
                                                             <h3>Welcome! Let's set up your profile</h3>
-                                                            <p>This platform requires initial configuration to function properly.</p>
+                                                            <p>This platform requires your name so activity can be tracked accurately.</p>
                                                             <div class="form-group">
                                                                 <label class="form-label">Your Name</label>
                                                                 <input type="text" class="form-input" id="setup-user-name"
@@ -4814,7 +4863,7 @@
                                                                 <small>This will be used to track changes and activity</small>
                                                             </div>
                                                             <div class="alert alert-warning">
-                                                                ⚠️ This platform will have read-only access until setup is complete
+                                                                ⚠️ Editing features remain read-only until setup is complete
                                                             </div>
                                                         `;
             backBtn.style.display = 'none';
@@ -4824,25 +4873,6 @@
 
           case 2:
             content.innerHTML = `
-                                                            <h3>Storage Setup</h3>
-                                                            <p>Select a folder where data will be stored and auto-saved.</p>
-                                                            <div id="wizard-storage-status"></div>
-                                                            <button class="btn btn-primary" onclick="setupFileAccessFromWizard()">
-                                                                Select Storage Folder
-                                                            </button>
-                                                            <div class="alert alert-info mt-2">
-                                                                📁 A folder structure will be created automatically<br>
-                                                                💾 Data will auto-save every 30 seconds<br>
-                                                                🔒 Your browser will remember this location
-                                                            </div>
-                                                        `;
-            backBtn.style.display = 'inline-flex';
-            nextBtn.textContent = 'Next';
-            nextBtn.disabled = !APP_STATE.dirHandle;
-            break;
-
-          case 3:
-            content.innerHTML = `
                                                             <h3>Platform Instructions</h3>
                                                             <div class="instructions-panel">
                                                                 <h4>Important Guidelines:</h4>
@@ -4850,7 +4880,7 @@
                                                                     <li>All changes are tracked with your user name</li>
                                                                     <li>Data auto-saves every 30 seconds</li>
                                                                     <li>Use Chrome or Edge browser for best compatibility</li>
-                                                                    <li>Regular backups are created automatically</li>
+                                                                    <li>Your data is saved locally in this browser</li>
                                                                 </ul>
 
                                                                 <h4>Blood Unit Management:</h4>
@@ -4893,13 +4923,12 @@
             nextBtn.disabled = false;
             break;
 
-          case 4:
+          case 3:
             content.innerHTML = `
                                                             <h3>Setup Complete!</h3>
                                                             <p>You're ready to start using the Blood Optimization Platform.</p>
                                                             <div class="alert alert-success">
                                                                 ✅ User profile configured<br>
-                                                                ✅ Storage folder connected<br>
                                                                 ✅ Instructions acknowledged<br>
                                                                 ✅ Write access enabled
                                                             </div>
@@ -4932,12 +4961,6 @@
           updateUserDisplay();
           console.log('Step 1 validated, name set to:', name);
         } else if (APP_STATE.currentSetupStep === 2) {
-          if (!APP_STATE.dirHandle) {
-            showAlert('error', 'Please select a storage folder');
-            return;
-          }
-          console.log('Step 2 validated');
-        } else if (APP_STATE.currentSetupStep === 3) {
           const acknowledged = document.getElementById('acknowledge-instructions').checked;
           if (!acknowledged) {
             showAlert('error', 'Please acknowledge the instructions');
@@ -4946,25 +4969,17 @@
           APP_STATE.instructionsAcknowledged = true;
           APP_STATE.writeAccess = true;
           localStorage.setItem('instructions_acknowledged', 'true');
-          console.log('Step 3 validated');
-        } else if (APP_STATE.currentSetupStep === 4) {
+          console.log('Step 2 validated');
+        } else if (APP_STATE.currentSetupStep === 3) {
           // Complete setup
           APP_STATE.setupComplete = true;
           localStorage.setItem('setup_complete', 'true');
           document.getElementById('setup-wizard-modal').classList.remove('active');
 
-          // Initialize app
-          loadData();
-          updateDashboard();
-          updateCustomerList();
-          updateAntibodyView();
-          updateActivityLog();
-          displayStandingOrders();
-          initializeCalendar();
-
           logActivity('Platform setup completed');
           showAlert('success', 'Setup complete! Welcome to Blood Optimization Platform.');
-          console.log('Step 4 - setup complete');
+          console.log('Step 3 - setup complete');
+          persistState();
           return;
         }
 
@@ -4978,260 +4993,29 @@
         }
       }
 
-      async function setupFileAccessFromWizard() {
-        try {
-          APP_STATE.dirHandle = await window.showDirectoryPicker({
-            mode: 'readwrite',
-          });
+      async function persistState() {
+        if (!APP_STATE.writeAccess) return;
 
-          // Create folder structure
-          await createFolderStructure();
-
-          const statusDiv = document.getElementById('wizard-storage-status');
-          statusDiv.innerHTML =
-            '<div class="alert alert-success">✅ Storage folder connected successfully!</div>';
-
-          // Enable next button
-          document.getElementById('setup-next').disabled = false;
-
-          // Update main storage status
-          document.getElementById('storage-status').classList.add('connected');
-          document.getElementById('storage-text').textContent = 'Connected';
-        } catch (err) {
-          if (err.name !== 'AbortError') {
-            showAlert('error', 'Failed to access folder. Please try again.');
-          }
-        }
-      }
-
-      async function attemptAutoConnect() {
-        // This function tries to reconnect to previous storage without user interaction
-        // It's called when a user is recognized but setup isn't marked complete
+        const previousTimestamp = APP_STATE.lastSavedAt;
 
         try {
-          // For security reasons, we can't auto-connect without user permission
-          // But we can check localStorage for indicators
-          const storageGranted = localStorage.getItem('storage_granted');
+          const timestamp = new Date().toISOString();
+          APP_STATE.lastSavedAt = timestamp;
+          await saveStateToDB(APP_STATE);
 
-          if (storageGranted === 'true') {
-            // User previously granted storage access
-            // Mark setup as complete for known users with previous access
-            localStorage.setItem('setup_complete', 'true');
-            localStorage.setItem('instructions_acknowledged', 'true');
-            APP_STATE.writeAccess = true;
-          }
-        } catch (err) {
-          console.log('Auto-connect check failed:', err);
-        }
-      }
-
-      // ===============================
-      // File System Access API
-      // ===============================
-
-      async function setupFileAccess() {
-        try {
-          APP_STATE.dirHandle = await window.showDirectoryPicker({
-            mode: 'readwrite',
-          });
-
-          // Create folder structure
-          await createFolderStructure();
-
-          // Check if data file exists
-          try {
-            const dataDir = await APP_STATE.dirHandle.getDirectoryHandle('data');
-            const fileHandle = await dataDir.getFileHandle('blood_platform_data.json');
-            const file = await fileHandle.getFile();
-            const text = await file.text();
-            const data = JSON.parse(text);
-
-            // Data exists! Mark setup as complete
-            if (data && data.customers) {
-              localStorage.setItem('setup_complete', 'true');
-              localStorage.setItem('instructions_acknowledged', 'true');
-              APP_STATE.writeAccess = true;
-
-              // Create automatic backup
-              await createAutomaticBackup('existing_data_reconnection');
-
-              showAlert('success', 'Connected to existing data. Setup complete!');
-            }
-          } catch (err) {
-            // No existing data, this is a new setup
-            console.log('No existing data found, proceeding with new setup');
+          const status = document.getElementById('storage-status');
+          if (status) {
+            status.classList.add('connected');
           }
 
-          // Update UI
-          document.getElementById('storage-setup').style.display = 'none';
-          document.getElementById('storage-connected').style.display = 'block';
-          document.getElementById('storage-status').classList.add('connected');
-          document.getElementById('storage-text').textContent = 'Connected';
-
-          logActivity('Connected to storage folder');
-
-          // Load existing data
-          await loadData();
-        } catch (err) {
-          if (err.name !== 'AbortError') {
-            showAlert('error', 'Failed to access folder. Please try again.');
+          const storageText = document.getElementById('storage-text');
+          if (storageText) {
+            const savedDate = new Date(APP_STATE.lastSavedAt);
+            storageText.textContent = `Last saved ${savedDate.toLocaleString()}`;
           }
-        }
-      }
-
-      async function createFolderStructure() {
-        if (!APP_STATE.dirHandle) return;
-
-        try {
-          // Create subfolders
-          await APP_STATE.dirHandle.getDirectoryHandle('data', { create: true });
-          await APP_STATE.dirHandle.getDirectoryHandle('backups', { create: true });
-          await APP_STATE.dirHandle.getDirectoryHandle('exports', { create: true });
-          await APP_STATE.dirHandle.getDirectoryHandle('logs', { create: true });
-        } catch (err) {
-          console.error('Failed to create folder structure:', err);
-        }
-      }
-
-      async function checkFileAccess() {
-        if (APP_STATE.dirHandle) {
-          document.getElementById('storage-setup').style.display = 'none';
-          document.getElementById('storage-connected').style.display = 'block';
-          document.getElementById('storage-status').classList.add('connected');
-          document.getElementById('storage-text').textContent = 'Connected';
-        } else {
-          document.getElementById('storage-setup').style.display = 'block';
-          document.getElementById('storage-connected').style.display = 'none';
-
-          // If user was previously set up, show reconnect prompt
-          if (APP_STATE.setupComplete) {
-            const setupDiv = document.getElementById('storage-setup');
-            if (setupDiv) {
-              setupDiv.innerHTML = `
-                                                        <div class="alert alert-warning">
-                                                            ⚠️ Storage disconnected after refresh. Please reconnect to your storage folder.
-                                                        </div>
-                                                        <button class="btn btn-primary" onclick="setupFileAccess()">
-                                                            Reconnect Storage Folder
-                                                        </button>
-                                                        <div class="alert alert-info mt-2">
-                                                            This is normal browser security behavior. Your data is safe.
-                                                        </div>
-                                                    `;
-            }
-          }
-        }
-      }
-
-      async function resetFileAccess() {
-        APP_STATE.dirHandle = null;
-        document.getElementById('storage-setup').style.display = 'block';
-        document.getElementById('storage-connected').style.display = 'none';
-        document.getElementById('storage-status').classList.remove('connected');
-        document.getElementById('storage-text').textContent = 'Not Connected';
-      }
-
-      async function createAutomaticBackup(reason) {
-        if (!APP_STATE.dirHandle) return;
-
-        try {
-          const backupsDir = await APP_STATE.dirHandle.getDirectoryHandle('backups');
-
-          // Create timestamp
-          const now = new Date();
-          const timestamp = now
-            .toISOString()
-            .replace(/[:.]/g, '')
-            .replace('T', '_')
-            .substring(0, 15);
-          const filename = `blood_platform_backup_${timestamp}.json`;
-
-          // Create backup data
-          const backupData = {
-            version: APP_STATE.version,
-            backupDate: now.toISOString(),
-            backupReason: reason,
-            customers: APP_STATE.customers,
-            sampleDefinitions: APP_STATE.sampleDefinitions,
-            customerSpecs: APP_STATE.customerSpecs,
-            quantities: APP_STATE.quantities,
-            historicalQuantities: APP_STATE.historicalQuantities,
-            antibodies: APP_STATE.antibodies,
-            vendors: APP_STATE.vendors,
-            bloodSuppliers: APP_STATE.bloodSuppliers,
-            bloodUnits: APP_STATE.bloodUnits,
-            bulkRBCs: APP_STATE.bulkRBCs,
-            bulkSerums: APP_STATE.bulkSerums,
-            manufacturingCalendar: APP_STATE.manufacturingCalendar,
-            activityLog: APP_STATE.activityLog,
-            decisions: APP_STATE.decisions,
-            caseStudies: APP_STATE.caseStudies,
-            futureSpecs: APP_STATE.futureSpecs, // ADD THIS LINE
-          };
-
-          const fileHandle = await backupsDir.getFileHandle(filename, { create: true });
-          const writable = await fileHandle.createWritable();
-          await writable.write(JSON.stringify(backupData, null, 2));
-          await writable.close();
-
-          console.log(`Backup created: ${filename}`);
-        } catch (err) {
-          console.error('Failed to create backup:', err);
-        }
-      }
-
-      async function autoSave() {
-        if (!APP_STATE.dirHandle || !APP_STATE.writeAccess) return;
-
-        try {
-          await saveToFile();
-          console.log('Auto-saved at', new Date().toLocaleTimeString());
-        } catch (err) {
-          console.error('Auto-save failed:', err);
-        }
-      }
-
-      async function saveToFile() {
-        if (!APP_STATE.dirHandle || !APP_STATE.writeAccess) return;
-
-        try {
-          const dataDir = await APP_STATE.dirHandle.getDirectoryHandle('data');
-          const fileHandle = await dataDir.getFileHandle('blood_platform_data.json', {
-            create: true,
-          });
-          const writable = await fileHandle.createWritable();
-
-          const data = {
-            version: APP_STATE.version,
-            lastModified: new Date().toISOString(),
-            lastModifiedBy: APP_STATE.currentUser,
-            activeUsers: APP_STATE.activeUsers,
-            customers: APP_STATE.customers,
-            sampleDefinitions: APP_STATE.sampleDefinitions,
-            customerSpecs: APP_STATE.customerSpecs,
-            quantities: APP_STATE.quantities,
-            historicalQuantities: APP_STATE.historicalQuantities,
-            antibodies: APP_STATE.antibodies,
-            vendors: APP_STATE.vendors,
-            bloodSuppliers: APP_STATE.bloodSuppliers,
-            bloodUnits: APP_STATE.bloodUnits,
-            bulkRBCs: APP_STATE.bulkRBCs,
-            bulkSerums: APP_STATE.bulkSerums,
-            manufacturingCalendar: APP_STATE.manufacturingCalendar,
-            activityLog: APP_STATE.activityLog,
-            decisions: APP_STATE.decisions,
-            caseStudies: APP_STATE.caseStudies,
-            futureSpecs: APP_STATE.futureSpecs, // ADD THIS LINE
-          };
-
-          await writable.write(JSON.stringify(data, null, 2));
-          await writable.close();
-
-          // Update status
-          const now = new Date().toLocaleTimeString();
-          document.getElementById('storage-text').textContent = `Saved at ${now}`;
-        } catch (err) {
-          console.error('Failed to save:', err);
+        } catch (error) {
+          APP_STATE.lastSavedAt = previousTimestamp;
+          console.error('Failed to persist state:', error);
         }
       }
 
@@ -5509,95 +5293,6 @@
         return data;
       }
 
-      async function loadData() {
-        if (!APP_STATE.dirHandle) return;
-
-        try {
-          const dataDir = await APP_STATE.dirHandle.getDirectoryHandle('data');
-          const fileHandle = await dataDir.getFileHandle('blood_platform_data.json');
-          const file = await fileHandle.getFile();
-          const text = await file.text();
-          const data = JSON.parse(text);
-
-          // *** MIGRATE DATA FORMATS ***
-          const migratedData = migrateDataFormats(data);
-
-          // Check for different user
-          if (
-            migratedData.lastModifiedBy &&
-            migratedData.lastModifiedBy !== APP_STATE.currentUser
-          ) {
-            // Create backup before loading
-            await createAutomaticBackup('different_user_detected');
-          }
-
-          // Load data into state
-          APP_STATE.customers = migratedData.customers || [];
-          APP_STATE.sampleDefinitions = migratedData.sampleDefinitions || [];
-          APP_STATE.customerSpecs = migratedData.customerSpecs || [];
-          APP_STATE.quantities = migratedData.quantities || [];
-          APP_STATE.historicalQuantities = migratedData.historicalQuantities || [];
-          APP_STATE.antibodies = migratedData.antibodies || [];
-          antibodyMigrationChecked = false;
-          migrateAntibodiesToLotStructure(true);
-          APP_STATE.vendors = migratedData.vendors || [];
-          APP_STATE.bloodSuppliers = migratedData.bloodSuppliers || [];
-          APP_STATE.bloodUnits = migratedData.bloodUnits || [];
-          APP_STATE.bulkRBCs = migratedData.bulkRBCs || [];
-          APP_STATE.bulkSerums = migratedData.bulkSerums || [];
-          APP_STATE.manufacturingCalendar = migratedData.manufacturingCalendar || [];
-          // Generate standing orders for current month after data load
-          APP_STATE.activityLog = migratedData.activityLog || [];
-          APP_STATE.decisions = migratedData.decisions || [];
-          APP_STATE.caseStudies = migratedData.caseStudies || [];
-          APP_STATE.activeUsers = migratedData.activeUsers || [];
-          APP_STATE.futureSpecs = migratedData.futureSpecs || {
-            entries: [],
-            versions: {},
-            metadata: {},
-          };
-          // Ensure future specs display updates after data load
-          setTimeout(() => {
-            if (document.getElementById('future-specs-list')) {
-              updateFutureSpecsList();
-            }
-          }, 100);
-          if (APP_STATE.futureSpecs.entries && APP_STATE.futureSpecs.entries.length > 0) {
-            setTimeout(() => {
-              if (document.getElementById('future-specs-list')) {
-                updateFutureSpecsList();
-              }
-            }, 100);
-          }
-
-          // Update active users list
-          updateActiveUsers(migratedData.lastModifiedBy);
-
-          // Update all displays
-          updateDashboard();
-          updateCustomerList();
-          updateVendorList();
-          updateBloodSupplierList();
-          updateBulkRBCList();
-          updateBulkSerumList();
-          updateAntibodyView();
-          updateActivityLog();
-          updateAllTables();
-          populateQuantityFilters();
-          populateHistoricalQuantityFilters();
-          populateMigrationYearOptions();
-          populateQuantityMigrationOptions();
-          populateSpecFilters();
-
-          // Populate calculator dropdowns after all data is loaded
-          populateCustomerDropdowns();
-        } catch (err) {
-          if (err.name !== 'NotFoundError') {
-            console.error('Failed to load data:', err);
-          }
-        }
-      }
-
       function updateActiveUsers(lastUser) {
         if (!lastUser) return;
 
@@ -5636,20 +5331,6 @@
       // User Management
       // ===============================
 
-      function saveUserSettings() {
-        const userName = document.getElementById('user-name-setting').value.trim();
-        if (!userName) {
-          showAlert('error', 'Please enter your name');
-          return;
-        }
-
-        APP_STATE.currentUser = userName;
-        localStorage.setItem('current_user', userName);
-        updateUserDisplay();
-        logActivity('Updated user settings');
-        showAlert('success', 'User settings saved');
-      }
-
       function updateUserDisplay() {
         if (APP_STATE.currentUser) {
           const initials = APP_STATE.currentUser
@@ -5659,40 +5340,6 @@
             .toUpperCase();
           document.getElementById('user-avatar').textContent = initials;
           document.getElementById('user-name').textContent = APP_STATE.currentUser;
-
-          // Check if settings element exists before updating (it won't during setup wizard)
-          const settingsNameInput = document.getElementById('user-name-setting');
-          if (settingsNameInput) {
-            settingsNameInput.value = APP_STATE.currentUser;
-          }
-        }
-      }
-
-      function resetSetup() {
-        const info = document.getElementById('reset-setup-info');
-
-        if (info && info.style.display === 'none') {
-          // First click - show info
-          info.style.display = 'block';
-          return;
-        }
-
-        // Second click - confirm and reset
-        if (
-          confirm(
-            'Are you sure you want to reset the setup? This will:\n\n• Clear your setup completion status\n• Require you to re-acknowledge instructions\n• NOT delete any of your data\n\nProceed?'
-          )
-        ) {
-          localStorage.removeItem('setup_complete');
-          localStorage.removeItem('instructions_acknowledged');
-          localStorage.removeItem('storage_granted');
-          APP_STATE.writeAccess = false;
-
-          showAlert('info', 'Setup has been reset. Please refresh the page to run setup again.');
-
-          setTimeout(() => {
-            location.reload();
-          }, 2000);
         }
       }
 
@@ -5718,7 +5365,7 @@
         }
 
         updateActivityLog();
-        autoSave();
+        persistState();
       }
 
       function updateActivityLog() {
@@ -5768,7 +5415,7 @@
         }
 
         updateDecisionsLog();
-        autoSave();
+        persistState();
       }
 
       function updateDecisionsLog() {
@@ -6161,7 +5808,7 @@
         updateCustomerList();
         populateCustomerDropdowns();
         updateDashboard();
-        autoSave();
+        persistState();
         closeCustomerModal();
       }
 
@@ -6179,7 +5826,7 @@
           populateCustomerDropdowns();
           updateDashboard();
           logActivity('Deleted customer', customer.name);
-          autoSave();
+          persistState();
           showAlert('success', 'Customer deleted');
         }
       }
@@ -6334,7 +5981,7 @@
 
         updateBloodSupplierList();
         updateDashboard();
-        autoSave();
+        persistState();
         closeBloodSupplierModal();
       }
 
@@ -6348,7 +5995,7 @@
           APP_STATE.bloodSuppliers = APP_STATE.bloodSuppliers.filter((s) => s.id !== supplierId);
           updateBloodSupplierList();
           updateDashboard();
-          autoSave();
+          persistState();
           logActivity('Deleted blood supplier', supplier.name);
           showAlert('success', 'Blood supplier deleted');
         }
@@ -6585,7 +6232,7 @@
         }
 
         updateBulkRBCList();
-        autoSave();
+        persistState();
         closeBulkRBCModal();
       }
 
@@ -6828,7 +6475,7 @@
         }
 
         updateBulkSerumList();
-        autoSave();
+        persistState();
         closeBulkSerumModal();
       }
 
@@ -6969,7 +6616,7 @@
         }
 
         updateVendorList();
-        autoSave();
+        persistState();
         closeVendorModal();
       }
 
@@ -6982,7 +6629,7 @@
         if (confirm(`Are you sure you want to delete ${vendor.name}? This cannot be undone.`)) {
           APP_STATE.vendors = APP_STATE.vendors.filter((v) => v.id !== vendorId);
           updateVendorList();
-          autoSave();
+          persistState();
           logActivity('Deleted vendor', vendor.name);
           showAlert('success', 'Vendor deleted');
         }
@@ -7084,7 +6731,7 @@
 
         vendor.purchases.push(purchase);
 
-        autoSave();
+        persistState();
         logActivity('Logged vendor purchase', `${vendor.name} - ${description}`);
         showAlert('success', 'Purchase saved successfully');
 
@@ -7184,7 +6831,7 @@
         const [removed] = vendor.purchases.splice(purchaseIndex, 1);
         const detail = removed && removed.description ? `${vendor.name} - ${removed.description}` : vendor.name;
 
-        autoSave();
+        persistState();
         logActivity('Deleted vendor purchase', detail);
         showAlert('success', 'Purchase deleted');
 
@@ -7486,7 +7133,7 @@
         dueDateInput.value = '';
 
         renderCaseStudies();
-        autoSave();
+        persistState();
         showAlert('success', 'Case study added');
         return false;
       }
@@ -7505,7 +7152,7 @@
         study.completedAt = study.completed ? new Date().toISOString() : null;
 
         renderCaseStudies();
-        autoSave();
+        persistState();
       }
 
       function deleteCaseStudy(caseId) {
@@ -7519,7 +7166,7 @@
         );
 
         renderCaseStudies();
-        autoSave();
+        persistState();
         showAlert('success', 'Case study removed');
       }
 
@@ -9714,7 +9361,7 @@
         logActivity('Deleted recurring calendar entry', entry.description);
         showAlert('success', 'Calendar entry deleted');
         renderCalendar();
-        autoSave();
+        persistState();
         closeCalendarEntryModal();
       }
 
@@ -9945,7 +9592,7 @@
           APP_STATE.manufacturingCalendar.push(manualBleedEvent);
 
           renderCalendar();
-          autoSave();
+          persistState();
           logActivity('Added manual bleed date', `${eventDetails} - Bleed`);
           showAlert('success', 'Manual bleed date added');
           closeCalendarAddEventModal();
@@ -10004,7 +9651,7 @@
           showAlert('success', 'Blood shipment scheduled');
 
           renderCalendar();
-          autoSave();
+          persistState();
           closeCalendarAddEventModal();
           return;
         } else {
@@ -10027,7 +9674,7 @@
           showAlert('success', 'Calendar event added');
 
           renderCalendar();
-          autoSave();
+          persistState();
           closeCalendarAddEventModal();
         }
       }
@@ -10194,7 +9841,7 @@
         }
 
         renderCalendar();
-        autoSave();
+        persistState();
         closeCalendarEntryModal();
       }
 
@@ -10239,7 +9886,7 @@
         }
 
         renderCalendar();
-        autoSave();
+        persistState();
         closeCalendarAddEventModal();
       }
       // ===============================
@@ -11090,7 +10737,7 @@
           updateSampleTable();
           logActivity('Imported sample definitions', `${count} samples`);
           showAlert('success', `Loaded ${count} sample definitions`);
-          autoSave();
+          persistState();
           updateDashboard();
           if (feedback) {
             feedback.textContent = `Import complete. Loaded ${count} sample definitions.`;
@@ -11141,7 +10788,7 @@
             populateSpecFilters();
             logActivity('Imported specifications', `${count} from ${file.name}`);
             showAlert('success', `Loaded ${count} specifications from ${file.name}`);
-            autoSave();
+            persistState();
             updateDashboard();
             populateCustomerDropdowns();
           } catch (error) {
@@ -11254,7 +10901,7 @@
 
           renderCalendar();
           logActivity('Imported schedule', `${file.name}: ${imported} entries`);
-          autoSave();
+          persistState();
           showAlert('success', 'Schedule imported successfully');
           if (feedback) {
             feedback.textContent = `Import complete. ${imported} entries added, ${skipped} skipped.`;
@@ -11309,7 +10956,7 @@
           updateDashboard();
           logActivity('Imported quantities', `${count} records`);
           showAlert('success', `Loaded ${count} quantity records`);
-          autoSave();
+          persistState();
           if (feedback) feedback.textContent = `Import complete. Loaded ${count} quantity records.`;
         } catch (error) {
           console.error('Order quantities import error:', error);
@@ -11478,7 +11125,7 @@
           populateQuantityMigrationOptions();
           updateDashboard();
           logActivity('Deleted all quantities', `${count} records deleted`);
-          autoSave();
+          persistState();
           showAlert('success', `Deleted ${count} quantity records`);
         }
       }
@@ -11509,7 +11156,7 @@
           populateQuantityMigrationOptions();
           updateDashboard();
           logActivity('Deleted filtered quantities', `${count} records deleted`);
-          autoSave();
+          persistState();
           showAlert('success', `Deleted ${count} quantity records`);
         }
       }
@@ -11523,7 +11170,7 @@
         populateQuantityMigrationOptions();
         updateDashboard();
         logActivity('Deleted quantity record');
-        autoSave();
+        persistState();
       }
 
       function openQuantityModal(quantityId = null) {
@@ -11627,7 +11274,7 @@
         populateQuantityFilters();
         populateQuantityMigrationOptions();
         updateDashboard();
-        autoSave();
+        persistState();
         closeQuantityModal();
       }
 
@@ -11672,7 +11319,7 @@
           updateDashboard();
           logActivity('Imported historical quantities', `${count} records`);
           showAlert('success', `Loaded ${count} historical quantity records`);
-          autoSave();
+          persistState();
           if (feedback) {
             feedback.textContent = `Import complete. Loaded ${count} historical quantity records.`;
           }
@@ -11857,7 +11504,7 @@
           populateHistoricalQuantityFilters();
           updateDashboard();
           logActivity('Deleted all historical quantities', `${count} records deleted`);
-          autoSave();
+          persistState();
           showAlert('success', `Deleted ${count} historical quantity records`);
         }
       }
@@ -11888,7 +11535,7 @@
           updateHistoricalQuantitiesTable();
           updateDashboard();
           logActivity('Deleted filtered historical quantities', `${count} records deleted`);
-          autoSave();
+          persistState();
           showAlert('success', `Deleted ${count} historical quantity records`);
         }
       }
@@ -11901,7 +11548,7 @@
         populateHistoricalQuantityFilters();
         updateDashboard();
         logActivity('Deleted historical quantity record');
-        autoSave();
+        persistState();
       }
 
       function editHistoricalQuantity(quantityId) {
@@ -12001,7 +11648,7 @@
         updateHistoricalQuantitiesTable();
         populateHistoricalQuantityFilters();
         updateDashboard();
-        autoSave();
+        persistState();
         closeHistoricalQuantityModal();
       }
 
@@ -12246,7 +11893,7 @@
           APP_STATE.sampleDefinitions.splice(index, 1);
           updateSampleTable();
           logActivity('Deleted sample definition');
-          autoSave();
+          persistState();
         }
       }
 
@@ -12268,7 +11915,7 @@
           APP_STATE.sampleDefinitions = [];
           updateSampleTable();
           logActivity('Deleted all sample definitions', `${count} items deleted`);
-          autoSave();
+          persistState();
           updateDashboard();
           showAlert('success', `Deleted ${count} sample definitions`);
         }
@@ -12301,7 +11948,7 @@
             updateSpecTable();
             populateSpecFilters(); // Refresh filter dropdowns
             logActivity('Deleted specification');
-            autoSave();
+            persistState();
             updateDashboard();
           } else {
             showAlert('error', 'Could not find specification in main list');
@@ -12358,7 +12005,7 @@
           updateSpecTable();
           populateSpecFilters();
           logActivity('Bulk deleted specifications', `${count} items deleted`);
-          autoSave();
+          persistState();
           updateDashboard();
           showAlert('success', `Deleted ${count} specifications`);
         }
@@ -12386,7 +12033,7 @@
         updateSpecTable();
         populateSpecFilters();
         logActivity('Deleted all specifications');
-        autoSave();
+        persistState();
         updateDashboard();
         showAlert('success', `Deleted ${count} specifications`);
       }
@@ -12535,102 +12182,75 @@
       // Export/Import Functions
       // ===============================
 
-      function exportAllData() {
-        const data = {
-          version: APP_STATE.version,
-          exportDate: new Date().toISOString(),
-          exportedBy: APP_STATE.currentUser,
-          customers: APP_STATE.customers,
-          sampleDefinitions: APP_STATE.sampleDefinitions,
-          customerSpecs: APP_STATE.customerSpecs,
-          quantities: APP_STATE.quantities,
-          historicalQuantities: APP_STATE.historicalQuantities,
-          antibodies: APP_STATE.antibodies,
-          vendors: APP_STATE.vendors,
-          bloodSuppliers: APP_STATE.bloodSuppliers,
-          bloodUnits: APP_STATE.bloodUnits,
-          bulkRBCs: APP_STATE.bulkRBCs,
-          bulkSerums: APP_STATE.bulkSerums,
-          manufacturingCalendar: APP_STATE.manufacturingCalendar,
-          activityLog: APP_STATE.activityLog,
-          decisions: APP_STATE.decisions,
-          futureSpecs: APP_STATE.futureSpecs, // ADD THIS LINE
-        };
+      function exportDataToJSON() {
+        try {
+          const json = JSON.stringify(APP_STATE, null, 2);
+          const blob = new Blob([json], { type: 'application/json' });
+          const link = document.createElement('a');
+          const dateStamp = new Date().toISOString().split('T')[0];
+          link.href = URL.createObjectURL(blob);
+          link.download = `blood_platform_data_backup_${dateStamp}.json`;
+          link.click();
+          URL.revokeObjectURL(link.href);
 
-        const json = JSON.stringify(data, null, 2);
-        const blob = new Blob([json], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `blood_platform_backup_${new Date().toISOString().split('T')[0]}.json`;
-        a.click();
-        URL.revokeObjectURL(url);
-
-        logActivity('Exported all data');
-        showAlert('success', 'Data exported successfully');
+          logActivity('Exported data to JSON');
+          showAlert('success', 'Download started');
+        } catch (error) {
+          console.error('Failed to export data:', error);
+          showAlert('error', 'Failed to export data');
+        }
       }
 
-      function importBackup() {
+      function importDataFromJSON() {
         const input = document.createElement('input');
         input.type = 'file';
-        input.accept = '.json';
-        input.onchange = function (e) {
-          const file = e.target.files[0];
-          const reader = new FileReader();
-          reader.onload = function (event) {
-            try {
-              const data = JSON.parse(event.target.result);
+        input.accept = '.json,application/json';
+        input.onchange = function (event) {
+          const file = event.target.files && event.target.files[0];
+          if (!file) return;
 
-              // Validate structure
-              if (!data.version) {
-                throw new Error('Invalid backup file');
+          const confirmation = confirm(
+            'Importing data will overwrite all existing information in this browser. Continue?'
+          );
+          if (!confirmation) {
+            return;
+          }
+
+          const reader = new FileReader();
+          reader.onerror = function () {
+            showAlert('error', 'Failed to read the selected file.');
+          };
+          reader.onload = async function (loadEvent) {
+            try {
+              const text = loadEvent.target?.result;
+              const parsed = JSON.parse(text);
+
+              if (!parsed || typeof parsed !== 'object' || !parsed.version) {
+                throw new Error('Invalid data file');
               }
 
-              // Import data
-              APP_STATE.customers = data.customers || [];
-              APP_STATE.sampleDefinitions = data.sampleDefinitions || [];
-              APP_STATE.customerSpecs = data.customerSpecs || [];
-              APP_STATE.quantities = data.quantities || [];
-              APP_STATE.historicalQuantities = data.historicalQuantities || [];
-              APP_STATE.antibodies = data.antibodies || [];
-              antibodyMigrationChecked = false;
-              migrateAntibodiesToLotStructure(true);
-              APP_STATE.vendors = data.vendors || [];
-              APP_STATE.bloodSuppliers = data.bloodSuppliers || [];
-              APP_STATE.bloodUnits = data.bloodUnits || [];
-              APP_STATE.bulkRBCs = data.bulkRBCs || [];
-              APP_STATE.bulkSerums = data.bulkSerums || [];
-              APP_STATE.manufacturingCalendar = data.manufacturingCalendar || [];
-              APP_STATE.activityLog = data.activityLog || [];
-              APP_STATE.decisions = data.decisions || [];
-              APP_STATE.futureSpecs = data.futureSpecs || {
-                entries: [],
-                versions: {},
-                metadata: {},
-              };
+              parsed.lastSavedAt = new Date().toISOString();
+              parsed.writeAccess = !!parsed.instructionsAcknowledged;
 
-              // Update all views
-              updateDashboard();
-              updateCustomerList();
-              populateCustomerDropdowns();
-              updateVendorList();
-              updateBloodSupplierList();
-              updateBulkRBCList();
-              updateBulkSerumList();
-              updateAntibodyView();
-              updateActivityLog();
-              updateAllTables();
-              populateQuantityFilters();
-              populateHistoricalQuantityFilters();
-              populateMigrationYearOptions();
-              populateQuantityMigrationOptions();
-              renderCalendar();
+              if (parsed.currentUser) {
+                localStorage.setItem('current_user', parsed.currentUser);
+              }
+              if (parsed.setupComplete) {
+                localStorage.setItem('setup_complete', 'true');
+              } else {
+                localStorage.removeItem('setup_complete');
+              }
+              if (parsed.instructionsAcknowledged) {
+                localStorage.setItem('instructions_acknowledged', 'true');
+              } else {
+                localStorage.removeItem('instructions_acknowledged');
+              }
 
-              logActivity('Imported backup', `From ${data.exportDate}`);
-              autoSave();
-              showAlert('success', 'Data imported successfully');
-            } catch (err) {
-              showAlert('error', 'Failed to import backup: ' + err.message);
+              await saveStateToDB(parsed);
+              location.reload();
+            } catch (error) {
+              console.error('Import failed:', error);
+              showAlert('error', 'Failed to import data: ' + error.message);
             }
           };
           reader.readAsText(file);
@@ -13960,7 +13580,7 @@
         logActivity('Created future specification', `${customer} ${event} ${year}`);
         showAlert('success', `Created ${customer} ${event} ${year} with ${samples.length} samples`);
         updateFutureSpecsList();
-        autoSave();
+        persistState();
 
         // Clear the form after successful creation
         document.getElementById('future-spec-event').value = '';
@@ -14288,7 +13908,7 @@
         yearSelect.value = '';
         migrateButton.disabled = true;
 
-        autoSave();
+        persistState();
       }
 
       function initiateSpecMigration() {
@@ -14444,7 +14064,7 @@
         migrateButton.disabled = true;
         yearSelect.value = '';
 
-        autoSave();
+        persistState();
       }
 
       function findAvailableBlood(customer, event, year) {
@@ -14564,7 +14184,7 @@
             }`
           );
           updateFutureSpecsList();
-          autoSave();
+          persistState();
         }
       }
 
@@ -14606,7 +14226,7 @@
         );
         updateFutureSpecsList();
         document.getElementById('optimization-results').style.display = 'none';
-        autoSave();
+        persistState();
       }
 
       function closeOptimization() {
@@ -14839,7 +14459,7 @@
 
         updateFutureSpecsList();
         logActivity('Cloned future specification', `${customer} ${event} ${year}`);
-        autoSave();
+        persistState();
         showAlert('success', `Cloned specification to ${customer} ${event} ${year}`);
       }
 
@@ -15237,7 +14857,7 @@
           'Updated future specification',
           `${customer} ${event} ${year} (v${metadata.currentVersion})`
         );
-        autoSave();
+        persistState();
         showAlert(
           'success',
           `Saved changes to ${customer} ${event} ${year} (Version ${metadata.currentVersion})`
@@ -15258,7 +14878,7 @@
         }
 
         updateFutureSpecsList();
-        autoSave();
+        persistState();
       }
 
       function deleteFutureSpec(specKey) {
@@ -15280,7 +14900,7 @@
 
         showAlert('success', 'Future specification deleted');
         updateFutureSpecsList();
-        autoSave();
+        persistState();
       }
 
       function saveVersion(specKey) {
@@ -15299,7 +14919,7 @@
 
         showAlert('success', `Saved as version ${metadata.currentVersion}`);
         updateFutureSpecsList();
-        autoSave();
+        persistState();
       }
       function updateAntibodyView() {
         migrateAntibodiesToLotStructure();
@@ -15620,7 +15240,7 @@
 
         updateAntibodyView();
         updateDashboard();
-        autoSave();
+        persistState();
         closeSpecificityModal();
       }
 
@@ -15646,7 +15266,7 @@
           logActivity('Deleted antibody specificity', specificity.specificity);
           updateAntibodyView();
           updateDashboard();
-          autoSave();
+          persistState();
           showAlert('success', 'Specificity removed');
         }
       }
@@ -15868,7 +15488,7 @@
 
         updateAntibodyView();
         updateDashboard();
-        autoSave();
+        persistState();
         closeLotModal();
       }
 
@@ -15898,7 +15518,7 @@
           logActivity('Deleted antibody lot', `${specificity.specificity} • ${lot.lotNumber || lot.inventoryId}`);
           updateAntibodyView();
           updateDashboard();
-          autoSave();
+          persistState();
           showAlert('success', 'Inventory lot removed');
         }
       }
@@ -15946,7 +15566,7 @@
 
         updateAntibodyView();
         updateDashboard();
-        autoSave();
+        persistState();
         closeLotModal();
       }
 
