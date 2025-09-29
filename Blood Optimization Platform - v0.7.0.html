@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Blood Optimization Platform v0.7.0 | Hemo bioscience</title>
+    <title>Blood Optimization Platform v0.7.1 | Hemo bioscience</title>
     <style>
       * {
         margin: 0;
@@ -1853,7 +1853,7 @@
       <!-- Header Bar -->
       <header class="header-bar">
         <div class="header-left">
-        <div class="version-badge">v0.7.0</div>
+        <div class="version-badge">v0.7.1</div>
           <div class="active-users" id="active-users" style="display: none">
             <span>👤 Active:</span>
             <span id="active-user-list">-</span>
@@ -7242,9 +7242,7 @@
 
         const optionsHtml = sortedCustomers
           .map((customer) => {
-            const code = customer.code;
-            const name = customer.name || customer.code;
-            return `<option value="${code}">${name}</option>`;
+            return `<option value="${customer.code}">${customer.code}</option>`;
           })
           .join('');
 
@@ -10720,7 +10718,11 @@
           }
 
           const headers = lines[0].split(',').map((h) => h.trim());
-          let count = 0;
+          const existingSampleIds = new Set(
+            (APP_STATE.sampleDefinitions || []).map((sample) => ((sample?.sample_type_id ?? '') + '').trim())
+          );
+          let imported = 0;
+          let skipped = 0;
 
           for (let i = 1; i < lines.length; i++) {
             const values = lines[i].split(',');
@@ -10730,17 +10732,27 @@
               sample[header] = values[index]?.trim();
             });
 
+            const identifier = ((sample.sample_type_id ?? '') + '').trim();
+            if (existingSampleIds.has(identifier)) {
+              skipped++;
+              continue;
+            }
+
             APP_STATE.sampleDefinitions.push(sample);
-            count++;
+            existingSampleIds.add(identifier);
+            imported++;
           }
 
           updateSampleTable();
-          logActivity('Imported sample definitions', `${count} samples`);
-          showAlert('success', `Loaded ${count} sample definitions`);
+          logActivity('Imported sample definitions', `${imported} samples`);
+          showAlert(
+            'success',
+            `Loaded ${imported} sample definitions, skipped ${skipped} duplicates.`
+          );
           persistState();
           updateDashboard();
           if (feedback) {
-            feedback.textContent = `Import complete. Loaded ${count} sample definitions.`;
+            feedback.textContent = `Import complete. Loaded ${imported} sample definitions, skipped ${skipped} duplicates.`;
           }
         } catch (error) {
           console.error('Sample definitions import error:', error);
@@ -10760,7 +10772,15 @@
           return;
         }
 
-        let totalSpecs = 0;
+        const existingSpecKeys = new Set(
+          (APP_STATE.customerSpecs || []).map((spec) =>
+            [spec?.customer, spec?.event, spec?.year, spec?.sample_id]
+              .map((value) => (value ?? '').toString().trim())
+              .join('|')
+          )
+        );
+        let totalImported = 0;
+        let totalSkipped = 0;
 
         for (const file of Array.from(files)) {
           try {
@@ -10769,7 +10789,8 @@
             if (lines.length <= 1) continue;
 
             const headers = lines[0].split(',').map((h) => h.trim());
-            let count = 0;
+            let imported = 0;
+            let skipped = 0;
 
             for (let i = 1; i < lines.length; i++) {
               const values = lines[i].split(',');
@@ -10779,15 +10800,29 @@
                 spec[header] = values[index]?.trim();
               });
 
+              const identifier = [spec.customer, spec.event, spec.year, spec.sample_id]
+                .map((value) => (value ?? '').toString().trim())
+                .join('|');
+
+              if (existingSpecKeys.has(identifier)) {
+                skipped++;
+                continue;
+              }
+
               APP_STATE.customerSpecs.push(spec);
-              count++;
+              existingSpecKeys.add(identifier);
+              imported++;
             }
 
-            totalSpecs += count;
+            totalImported += imported;
+            totalSkipped += skipped;
             updateSpecTable();
             populateSpecFilters();
-            logActivity('Imported specifications', `${count} from ${file.name}`);
-            showAlert('success', `Loaded ${count} specifications from ${file.name}`);
+            logActivity('Imported specifications', `${imported} from ${file.name}`);
+            showAlert(
+              'success',
+              `Loaded ${imported} specifications from ${file.name}, skipped ${skipped} duplicates.`
+            );
             persistState();
             updateDashboard();
             populateCustomerDropdowns();
@@ -10797,10 +10832,11 @@
         }
 
         if (feedback) {
-          feedback.textContent =
-            totalSpecs > 0
-              ? `Import complete. Loaded ${totalSpecs} specifications.`
-              : 'No specifications imported.';
+          if (totalImported === 0 && totalSkipped === 0) {
+            feedback.textContent = 'No specifications imported.';
+          } else {
+            feedback.textContent = `Import complete. Loaded ${totalImported} specifications, skipped ${totalSkipped} duplicates.`;
+          }
         }
 
         if (input) input.value = '';
@@ -10932,7 +10968,15 @@
           }
 
           const headers = lines[0].split(',').map((h) => h.trim());
-          let count = 0;
+          const existingQuantityKeys = new Set(
+            (APP_STATE.quantities || []).map((record) =>
+              [record?.customer, record?.event, record?.year, record?.sample_id]
+                .map((value) => (value ?? '').toString().trim())
+                .join('|')
+            )
+          );
+          let imported = 0;
+          let skipped = 0;
 
           for (let i = 1; i < lines.length; i++) {
             const values = lines[i].split(',');
@@ -10942,22 +10986,37 @@
               quantity[header] = values[index]?.trim();
             });
 
-            APP_STATE.quantities.push({
+            const identifier = [quantity.customer, quantity.event, quantity.year, quantity.sample_id]
+              .map((value) => (value ?? '').toString().trim())
+              .join('|');
+
+            if (existingQuantityKeys.has(identifier)) {
+              skipped++;
+              continue;
+            }
+
+            const record = {
               ...quantity,
               id: 'qty_' + Date.now() + '_' + i,
               quantity: parseInt(quantity.quantity) || 0,
-            });
-            count++;
+            };
+            APP_STATE.quantities.push(record);
+            existingQuantityKeys.add(identifier);
+            imported++;
           }
 
           updateQuantitiesTable();
           populateQuantityFilters();
           populateQuantityMigrationOptions();
           updateDashboard();
-          logActivity('Imported quantities', `${count} records`);
-          showAlert('success', `Loaded ${count} quantity records`);
+          logActivity('Imported quantities', `${imported} records`);
+          showAlert(
+            'success',
+            `Loaded ${imported} quantity records, skipped ${skipped} duplicates.`
+          );
           persistState();
-          if (feedback) feedback.textContent = `Import complete. Loaded ${count} quantity records.`;
+          if (feedback)
+            feedback.textContent = `Import complete. Loaded ${imported} quantity records, skipped ${skipped} duplicates.`;
         } catch (error) {
           console.error('Order quantities import error:', error);
           if (feedback) feedback.textContent = 'Import failed.';
@@ -11296,7 +11355,15 @@
           }
 
           const headers = lines[0].split(',').map((h) => h.trim());
-          let count = 0;
+          const existingHistoricalKeys = new Set(
+            (APP_STATE.historicalQuantities || []).map((record) =>
+              [record?.customer, record?.event, record?.year, record?.sample_id]
+                .map((value) => (value ?? '').toString().trim())
+                .join('|')
+            )
+          );
+          let imported = 0;
+          let skipped = 0;
 
           for (let i = 1; i < lines.length; i++) {
             const values = lines[i].split(',');
@@ -11306,22 +11373,36 @@
               quantity[header] = values[index]?.trim();
             });
 
-            APP_STATE.historicalQuantities.push({
+            const identifier = [quantity.customer, quantity.event, quantity.year, quantity.sample_id]
+              .map((value) => (value ?? '').toString().trim())
+              .join('|');
+
+            if (existingHistoricalKeys.has(identifier)) {
+              skipped++;
+              continue;
+            }
+
+            const record = {
               ...quantity,
               id: 'hqty_' + Date.now() + '_' + i,
               quantity: parseInt(quantity.quantity) || 0,
-            });
-            count++;
+            };
+            APP_STATE.historicalQuantities.push(record);
+            existingHistoricalKeys.add(identifier);
+            imported++;
           }
 
           updateHistoricalQuantitiesTable();
           populateHistoricalQuantityFilters();
           updateDashboard();
-          logActivity('Imported historical quantities', `${count} records`);
-          showAlert('success', `Loaded ${count} historical quantity records`);
+          logActivity('Imported historical quantities', `${imported} records`);
+          showAlert(
+            'success',
+            `Loaded ${imported} historical quantity records, skipped ${skipped} duplicates.`
+          );
           persistState();
           if (feedback) {
-            feedback.textContent = `Import complete. Loaded ${count} historical quantity records.`;
+            feedback.textContent = `Import complete. Loaded ${imported} historical quantity records, skipped ${skipped} duplicates.`;
           }
         } catch (error) {
           console.error('Historical quantities import error:', error);
@@ -12186,10 +12267,14 @@
         try {
           const json = JSON.stringify(APP_STATE, null, 2);
           const blob = new Blob([json], { type: 'application/json' });
+          const now = new Date();
+          const pad = (value) => value.toString().padStart(2, '0');
+          const timestamp = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(
+            now.getHours()
+          )}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
           const link = document.createElement('a');
-          const dateStamp = new Date().toISOString().split('T')[0];
           link.href = URL.createObjectURL(blob);
-          link.download = `blood_platform_data_backup_${dateStamp}.json`;
+          link.download = `blood_platform_data_backup_${timestamp}.json`;
           link.click();
           URL.revokeObjectURL(link.href);
 
