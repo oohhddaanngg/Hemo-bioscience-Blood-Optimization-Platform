@@ -1,35 +1,39 @@
-# Hemo bioscience Blood Optimization Platform
-## Current Work & Roadmap
+Project Current Work
+Current Version: v0.7.3
 
-**Current Version:** v0.7.2
+Completed
+Task 11: Fix Critical UI Bugs
 
----
+Description: Address two high-priority bugs identified in v0.7.2.
 
-### In Progress
+Bug 1: Data (e.g., Sample Definitions) is not rendering on initial page load/refresh, but appears after a CSV import forces a UI update.
 
-- **Task 11 (Immediate Priority): Fix Critical UI Bugs**
-  - **Description:** Address two high-priority bugs identified in v0.7.2.
-  - **Bug 1:** Data (e.g., Sample Definitions) is not rendering on initial page load/refresh, but appears after a CSV import forces a UI update.
-  - **Bug 2:** The "Add Customer" modal does not close automatically after a successful save.
-  - **Target Version:** v0.7.3
+Bug 2: The "Add Customer" modal does not close automatically after a successful save.
 
----
+Resolution: Released version v0.7.3 which calls all table rendering functions on page load and adjusts the saveCustomer() function to close the modal immediately after a successful save.
 
-### Next Up
+Version: v0.7.3
 
-- **Task 12 (High Priority): Future Spec Workflow Overhaul**
-  - **Description:** Implement critical fixes and features to make the Future Specifications module fully functional.
-  - **Requirements:**
-    1. Fix the bug where manually created specs do not appear in the UI.
-    2. Enable full editing of cloned specs (add/delete/modify samples, IDs, and types).
-    3. Fix the "Copy Structure From" dropdown to display customer codes.
-    4. Integrate the Future Specs module with the Blood Calculator.
-  - **Target Version:** v0.7.3
+In Progress
+Task 12 (Immediate Priority): Future Spec Workflow Overhaul
 
----
+Description: Implement critical fixes and features to make the Future Specifications module fully functional.
 
-### Backlog
+Requirements:
 
-- **Task 13 (Low Priority): Enhance Backup Filename Timestamp**
-  - **Description:** The v0.7.1 fix for backup filenames included the date but not the time. This needs to be updated to a full timestamp (YYYY-MM-DD_HHMMSS) to allow for multiple unique backups on the same day.
-  - **Target Version:** v0.7.3
+Fix the bug where manually created specs do not appear in the UI.
+
+Enable full editing of cloned specs (add/delete/modify samples, IDs, and types).
+
+Fix the "Copy Structure From" dropdown to display customer codes.
+
+Integrate the Future Specs module with the Blood Calculator.
+
+Target Version: v0.7.4
+
+Backlog
+Task 13 (Low Priority): Enhance Backup Filename Timestamp
+
+Description: The v0.7.1 fix for backup filenames included the date but not the time. This needs to be updated to a full timestamp (YYYY-MM-DD_HHMMSS) to allow for multiple unique backups on the same day.
+
+Target Version: v0.7.4
