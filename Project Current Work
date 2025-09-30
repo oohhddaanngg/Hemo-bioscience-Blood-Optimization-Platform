@@ -1,40 +1,21 @@
-Current Version: v0.7.3
-
-Completed
-Task 11: Fix Critical UI Bugs
-
-Description: Addressed two high-priority bugs identified in v0.7.2.
-
-Bug 1: Data not rendering on initial page load/refresh.
-
-Bug 2: "Add Customer" modal not closing on save.
-
-Resolution: Released v0.7.3.
-
-Process Improvement Note: This task's post-release failure (the dropdown bug) highlighted a critical gap in the QA process. All future code reviews will include a mandatory check for correct data display on initial page load and a holistic review of related feature areas to prevent regressions.
+Current Version: v0.7.4 (Awaiting Hotfix)
 
 In Progress
-Task 12 (Immediate Priority): Overhaul Future Specs & Core UI Logic
+Task 12.1 (Emergency Hotfix): Fix Critical UI Failure on Load
+
+Description: An uncaught TypeError in autoFillSampleDetails during the DOMContentLoaded event is breaking all application interactivity.
+
+Target Version: v0.7.5
+
+Task 12 (On Hold): Overhaul Future Specs & Core UI Logic
 
 Description: Implement critical fixes and features to make the Future Specifications module fully functional and correct a core UI bug.
 
-Requirements:
-
-Fix Critical Bug: Ensure all customer dropdowns across the application populate dynamically from the PT Customers list on page load.
-
-Fix the bug where manually created specs do not appear in the UI.
-
-Enable full editing of cloned specs (add/delete/modify samples, IDs, and types).
-
-Fix the "Copy Structure From" dropdown to display customer codes clearly.
-
-Integrate the Future Specs module with the Blood Calculator.
-
-Target Version: v0.7.4
+Target Version: v0.7.6
 
 Next Up
 Task 13 (Low Priority): Enhance Backup Filename Timestamp
 
-Description: The v0.7.1 fix for backup filenames included the date but not the time. This needs to be updated to a full timestamp (YYYY-MM-DD_HHMMSS) to allow for multiple unique backups on the same day.
+Description: Update backup filenames to a full timestamp (YYYY-MM-DD_HHMMSS).
 
-Target Version: v0.7.4
+Target Version: v0.7.6
