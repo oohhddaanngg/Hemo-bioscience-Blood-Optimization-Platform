@@ -1,37 +1,38 @@
-Project Current Work
 Current Version: v0.7.3
 
 Completed
 Task 11: Fix Critical UI Bugs
 
-Description: Address two high-priority bugs identified in v0.7.2.
+Description: Addressed two high-priority bugs identified in v0.7.2.
 
-Bug 1: Data (e.g., Sample Definitions) is not rendering on initial page load/refresh, but appears after a CSV import forces a UI update.
+Bug 1: Data not rendering on initial page load/refresh.
 
-Bug 2: The "Add Customer" modal does not close automatically after a successful save.
+Bug 2: "Add Customer" modal not closing on save.
 
-Resolution: Released version v0.7.3 which calls all table rendering functions on page load and adjusts the saveCustomer() function to close the modal immediately after a successful save.
+Resolution: Released v0.7.3.
 
-Version: v0.7.3
+Process Improvement Note: This task's post-release failure (the dropdown bug) highlighted a critical gap in the QA process. All future code reviews will include a mandatory check for correct data display on initial page load and a holistic review of related feature areas to prevent regressions.
 
 In Progress
-Task 12 (Immediate Priority): Future Spec Workflow Overhaul
+Task 12 (Immediate Priority): Overhaul Future Specs & Core UI Logic
 
-Description: Implement critical fixes and features to make the Future Specifications module fully functional.
+Description: Implement critical fixes and features to make the Future Specifications module fully functional and correct a core UI bug.
 
 Requirements:
+
+Fix Critical Bug: Ensure all customer dropdowns across the application populate dynamically from the PT Customers list on page load.
 
 Fix the bug where manually created specs do not appear in the UI.
 
 Enable full editing of cloned specs (add/delete/modify samples, IDs, and types).
 
-Fix the "Copy Structure From" dropdown to display customer codes.
+Fix the "Copy Structure From" dropdown to display customer codes clearly.
 
 Integrate the Future Specs module with the Blood Calculator.
 
 Target Version: v0.7.4
 
-Backlog
+Next Up
 Task 13 (Low Priority): Enhance Backup Filename Timestamp
 
 Description: The v0.7.1 fix for backup filenames included the date but not the time. This needs to be updated to a full timestamp (YYYY-MM-DD_HHMMSS) to allow for multiple unique backups on the same day.
