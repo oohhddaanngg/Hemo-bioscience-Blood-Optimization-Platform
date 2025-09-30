@@ -12,8 +12,10 @@ All development follows a strict four-phase process: Planning, Instruction, Code
 Development & QA Philosophy
 To ensure the long-term stability and reliability of the platform, all development work must adhere to the following principles:
 
-No Hardcoded Data: All data presented in the user interface must be sourced dynamically from the APP_STATE object, which is hydrated from the IndexedDB database on load. This includes customer lists, sample types, and any other data managed by the user. Static lists in the HTML are forbidden.
+No Hardcoded Data: All data presented in the user interface must be sourced dynamically from the APP_STATE object. Static lists in the HTML are forbidden.
 
-Test on Load: A feature is not considered complete until it is verified to work on a fresh page load. Code reviews must include this step. This ensures that the application's initial state is always correct and complete.
+Test on Load: A feature is not considered complete until it is verified to work on a fresh page load. Code reviews must include this step.
 
-Review Holistically: When a function is changed (e.g., saveCustomer), the entire feature area it belongs to (e.g., the complete customer lifecycle) must be re-verified. This prevents a narrow focus on the immediate change from introducing regressions in related functionality.
+Review Holistically: When a function is changed, the entire feature area it belongs to must be re-verified to prevent regressions.
+
+Context is King: A function's correctness depends on the context in which it's called. When a function's trigger point is changed (e.g., moving from an onclick event to DOMContentLoaded), it must be re-validated in that new context. The QA process must explicitly trace and test these new call stacks.
