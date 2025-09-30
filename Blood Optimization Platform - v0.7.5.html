@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Blood Optimization Platform v0.7.5 | Hemo bioscience</title>
+    <title>Blood Optimization Platform v0.7.6 | Hemo bioscience</title>
     <style>
       * {
         margin: 0;
@@ -1853,7 +1853,7 @@
       <!-- Header Bar -->
       <header class="header-bar">
         <div class="header-left">
-        <div class="version-badge">v0.7.5</div>
+        <div class="version-badge">v0.7.6</div>
           <div class="active-users" id="active-users" style="display: none">
             <span>👤 Active:</span>
             <span id="active-user-list">-</span>
@@ -4772,6 +4772,7 @@
 
         updateDashboard();
         updateCustomerList();
+        populateCustomerDropdowns();
         updateAntibodyView();
         updateActivityLog();
         displayStandingOrders();
@@ -4781,7 +4782,6 @@
         APP_STATE.currentYear = new Date().getFullYear();
         renderCalendar();
         updateAllTables();
-        populateCustomerDropdowns();
 
         if (!document.getElementById('report-type-select')?.dataset.reportingInitialized) {
           initializeReportingPanel();
@@ -5633,6 +5633,11 @@
           .join('');
       }
 
+      function updateCustomerDependentUI() {
+        updateCustomerList();
+        populateCustomerDropdowns();
+      }
+
       function openCustomerModal(customerId = null) {
         if (!APP_STATE.writeAccess) {
           showAlert('warning', 'Please complete setup to add PT customers');
@@ -5807,8 +5812,7 @@
           closeCustomerModal();
         }
 
-        updateCustomerList();
-        populateCustomerDropdowns();
+        updateCustomerDependentUI();
         updateDashboard();
         persistState();
       }
@@ -5823,8 +5827,7 @@
         const customer = APP_STATE.customers.find((c) => c.id === customerId);
         if (confirm(`Are you sure you want to delete ${customer.name}? This cannot be undone.`)) {
           APP_STATE.customers = APP_STATE.customers.filter((c) => c.id !== customerId);
-          updateCustomerList();
-          populateCustomerDropdowns();
+          updateCustomerDependentUI();
           updateDashboard();
           logActivity('Deleted customer', customer.name);
           persistState();
