@@ -22,6 +22,8 @@ BUP Generator: Creates optimized Blood Utilization Plans by identifying sharing 
 
 Inventory Tracking: Modules for managing inventory of blood units, serums, and antibodies.
 
-Reliable Data Persistence: All data is saved automatically and is instantly available on page load without requiring user reconnection to a file system.
+Reliable Data Persistence: All data is saved automatically and is dynamically rendered into all UI components (tables, dropdowns) on page load without requiring user reconnection.
+
+Dynamic UI: The user interface is built on the principle of a single source of truth. All data, such as customer lists, is managed in one place and dynamically populated throughout the application, eliminating static or outdated information.
 
 Data Integrity: All CSV imports feature duplicate detection to prevent redundant data entry.
