@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Blood Optimization Platform v0.7.3 | Hemo bioscience</title>
+    <title>Blood Optimization Platform v0.7.4 | Hemo bioscience</title>
     <style>
       * {
         margin: 0;
@@ -1853,7 +1853,7 @@
       <!-- Header Bar -->
       <header class="header-bar">
         <div class="header-left">
-        <div class="version-badge">v0.7.3</div>
+        <div class="version-badge">v0.7.4</div>
           <div class="active-users" id="active-users" style="display: none">
             <span>👤 Active:</span>
             <span id="active-user-list">-</span>
@@ -2295,10 +2295,6 @@
                     onchange="updateFutureCopyOptions()"
                   >
                     <option value="">Select Customer</option>
-                    <option value="WSLH">WSLH</option>
-                    <option value="ISLA">ISLA</option>
-                    <option value="OneWorld">OneWorld</option>
-                    <option value="Aurevia">Aurevia</option>
                   </select>
                 </div>
 
@@ -4785,6 +4781,7 @@
         APP_STATE.currentYear = new Date().getFullYear();
         renderCalendar();
         updateAllTables();
+        populateCustomerDropdowns();
 
         if (!document.getElementById('report-type-select')?.dataset.reportingInitialized) {
           initializeReportingPanel();
@@ -4816,8 +4813,6 @@
 
         // Initialize drag and drop
         initializeDragAndDrop();
-
-        populateCustomerDropdowns();
 
         // Persist state every 30 seconds
         setInterval(persistState, 30000);
@@ -7276,6 +7271,7 @@
         if (typeof updateSampleOptions === 'function') {
           updateSampleOptions();
         }
+
         if (typeof filterQuantities === 'function') {
           filterQuantities();
         }
@@ -7339,7 +7335,6 @@
             yearSelect.innerHTML += `<option value="${year}">${year}</option>`;
           });
         }
-      }
 
       function updateEventOptions() {
         const customerCode = document.getElementById('calc-customer')?.value || '';
@@ -7349,36 +7344,48 @@
 
         eventSelect.innerHTML = '<option value="">Select Event</option>';
 
-        if (customerCode) {
-          const eventsSet = new Set();
-
-          APP_STATE.customerSpecs
-            .filter((spec) => spec.customer === customerCode)
-            .forEach((spec) => {
-              if (!selectedYear || String(spec.year) === String(selectedYear)) {
-                eventsSet.add(spec.event);
-              }
-            });
-
-          const futureEntries = (APP_STATE.futureSpecs && APP_STATE.futureSpecs.entries) || [];
-          futureEntries
-            .filter((spec) => spec.customer === customerCode)
-            .forEach((spec) => {
-              if (!selectedYear || String(spec.year) === String(selectedYear)) {
-                eventsSet.add(spec.event);
-              }
-            });
-
-          const events = Array.from(eventsSet).sort((a, b) => `${a}`.localeCompare(`${b}`));
-
-          events.forEach((event) => {
-            eventSelect.innerHTML += `<option value="${event}">${event}</option>`;
-          });
+        if (!customerCode) {
+          updateSampleOptions();
+          return;
         }
 
-        updateSampleOptions();
-      }
+        const eventsSet = new Set();
+        const historicalSpecs = Array.isArray(APP_STATE.customerSpecs) ? APP_STATE.customerSpecs : [];
+        historicalSpecs.forEach((spec) => {
+          if (!spec || spec.customer !== customerCode) {
+            return;
+          }
+          if (selectedYear && String(spec.year) !== String(selectedYear)) {
+            return;
+          }
+          if (spec.event) {
+            eventsSet.add(spec.event);
+          }
+        });
 
+        const futureEntries = Array.isArray(APP_STATE.futureSpecs?.entries)
+          ? APP_STATE.futureSpecs.entries
+          : [];
+        futureEntries.forEach((spec) => {
+          if (!spec || spec.customer !== customerCode) {
+            return;
+          }
+          if (selectedYear && String(spec.year) !== String(selectedYear)) {
+            return;
+          }
+          if (spec.event) {
+            eventsSet.add(spec.event);
+          }
+        });
+
+        const events = Array.from(eventsSet).sort((a, b) => `${a}`.localeCompare(`${b}`));
+
+        events.forEach((event) => {
+          eventSelect.innerHTML += `<option value="${event}">${event}</option>`;
+        });
+
+        updateSampleOptions();
+    
       function updateSampleOptions() {
         const customerCode = document.getElementById('calc-customer')?.value || '';
         const selectedYear = document.getElementById('calc-year')?.value || '';
@@ -7388,38 +7395,46 @@
 
         sampleSelect.innerHTML = '<option value="">Select Sample</option>';
 
-        if (customerCode && event) {
-          const samplesSet = new Set();
-
-          APP_STATE.customerSpecs
-            .filter((spec) => spec.customer === customerCode && spec.event === event)
-            .forEach((spec) => {
-              if (!selectedYear || String(spec.year) === String(selectedYear)) {
-                if (spec.sample_id) {
-                  samplesSet.add(spec.sample_id);
-                }
-              }
-            });
-
-          const futureEntries = (APP_STATE.futureSpecs && APP_STATE.futureSpecs.entries) || [];
-          futureEntries
-            .filter((spec) => spec.customer === customerCode && spec.event === event)
-            .forEach((spec) => {
-              if (!selectedYear || String(spec.year) === String(selectedYear)) {
-                if (spec.sample_id) {
-                  samplesSet.add(spec.sample_id);
-                }
-              }
-            });
-
-          const samples = Array.from(samplesSet).sort((a, b) =>
-            `${a}`.localeCompare(`${b}`, undefined, { numeric: true, sensitivity: 'base' })
-          );
-
-          samples.forEach((sample) => {
-            sampleSelect.innerHTML += `<option value="${sample}">${sample}</option>`;
-          });
+        if (!customerCode || !event) {
+          return;
         }
+
+        const samplesSet = new Set();
+        const historicalSpecs = Array.isArray(APP_STATE.customerSpecs) ? APP_STATE.customerSpecs : [];
+        historicalSpecs.forEach((spec) => {
+          if (!spec || spec.customer !== customerCode || spec.event !== event) {
+            return;
+          }
+          if (selectedYear && String(spec.year) !== String(selectedYear)) {
+            return;
+          }
+          if (spec.sample_id) {
+            samplesSet.add(spec.sample_id);
+          }
+        });
+
+        const futureEntries = Array.isArray(APP_STATE.futureSpecs?.entries)
+          ? APP_STATE.futureSpecs.entries
+          : [];
+        futureEntries.forEach((spec) => {
+          if (!spec || spec.customer !== customerCode || spec.event !== event) {
+            return;
+          }
+          if (selectedYear && String(spec.year) !== String(selectedYear)) {
+            return;
+          }
+          if (spec.sample_id) {
+            samplesSet.add(spec.sample_id);
+          }
+        });
+
+        const samples = Array.from(samplesSet).sort((a, b) =>
+          `${a}`.localeCompare(`${b}`, undefined, { numeric: true, sensitivity: 'base' })
+        );
+
+        samples.forEach((sample) => {
+          sampleSelect.innerHTML += `<option value="${sample}">${sample}</option>`;
+        });
       }
 
       function autoFillSampleDetails() {
@@ -7470,14 +7485,74 @@
               document.getElementById('calc-sample-type').value = 'standard';
             }
 
-            // Auto-fill volume and hematocrit from sample definitions
-            if (spec.sample_type_id && APP_STATE.sampleDefinitions.length > 0) {
+            const volumeInput = document.getElementById('calc-volume');
+            const hematocritInput = document.getElementById('calc-hematocrit');
+
+            if (
+              spec.sample_type_id &&
+              Array.isArray(APP_STATE.sampleDefinitions) &&
+              APP_STATE.sampleDefinitions.length > 0
+            ) {
               const sampleDef = APP_STATE.sampleDefinitions.find(
                 (def) => def.sample_type_id === spec.sample_type_id
               );
               if (sampleDef) {
-                document.getElementById('calc-volume').value = sampleDef.fill_ml || 2;
-                document.getElementById('calc-hematocrit').value = sampleDef.hct_percent || 4;
+                if (volumeInput) {
+                  const fillValue = sampleDef.fill_ml != null && sampleDef.fill_ml !== '' ? sampleDef.fill_ml : 2;
+                  volumeInput.value = fillValue;
+                }
+                if (hematocritInput) {
+                  const hctValue = sampleDef.hct_percent != null && sampleDef.hct_percent !== '' ? sampleDef.hct_percent : 4;
+                  hematocritInput.value = hctValue;
+                }
+              }
+            }
+
+            const volumeMissing =
+              !volumeInput || volumeInput.value === '' || Number(volumeInput.value) === 0;
+            const hematocritMissing =
+              !hematocritInput || hematocritInput.value === '' || Number(hematocritInput.value) === 0;
+
+            if ((volumeMissing || hematocritMissing) && Array.isArray(APP_STATE.futureSpecs?.entries)) {
+              const fallbackSpec = APP_STATE.futureSpecs.entries.find((futureSample) => {
+                if (!futureSample) {
+                  return false;
+                }
+                if (futureSample.customer !== customerCode || futureSample.event !== event) {
+                  return false;
+                }
+                if (selectedYear && String(futureSample.year) !== String(selectedYear)) {
+                  return false;
+                }
+                return futureSample.sample_id === sampleId;
+              });
+
+              if (
+                fallbackSpec &&
+                fallbackSpec.sample_type_id &&
+                Array.isArray(APP_STATE.sampleDefinitions) &&
+                APP_STATE.sampleDefinitions.length > 0
+              ) {
+                const fallbackDefinition = APP_STATE.sampleDefinitions.find(
+                  (def) => def.sample_type_id === fallbackSpec.sample_type_id
+                );
+
+                if (fallbackDefinition) {
+                  if (volumeMissing && volumeInput) {
+                    const fillValue =
+                      fallbackDefinition.fill_ml != null && fallbackDefinition.fill_ml !== ''
+                        ? fallbackDefinition.fill_ml
+                        : 2;
+                    volumeInput.value = fillValue;
+                  }
+                  if (hematocritMissing && hematocritInput) {
+                    const hctValue =
+                      fallbackDefinition.hct_percent != null && fallbackDefinition.hct_percent !== ''
+                        ? fallbackDefinition.hct_percent
+                        : 4;
+                    hematocritInput.value = hctValue;
+                  }
+                }
               }
             }
           }
@@ -13498,39 +13573,63 @@
         const customerCode = document.getElementById('future-spec-customer').value;
         const copySelect = document.getElementById('future-spec-copy-from');
 
+        if (!copySelect) {
+          return;
+        }
+
         if (!customerCode) {
           copySelect.innerHTML = '<option value="">Manual Entry</option>';
           return;
         }
 
-        // Find all events for this customer from historical specs
-        const customerEvents = {};
-        APP_STATE.customerSpecs
-          .filter((spec) => spec.customer === customerCode)
+        const customerSpecs = Array.isArray(APP_STATE.customerSpecs) ? APP_STATE.customerSpecs : [];
+        const eventsByYear = {};
+
+        customerSpecs
+          .filter((spec) => spec && spec.customer === customerCode)
           .forEach((spec) => {
-            const key = `${spec.event} ${spec.year}`;
-            if (!customerEvents[key]) {
-              customerEvents[key] = {
-                event: spec.event,
-                year: spec.year,
-              };
+            const yearKey = spec && spec.year !== undefined && spec.year !== null ? `${spec.year}`.trim() : 'Unknown';
+            if (!eventsByYear[yearKey]) {
+              eventsByYear[yearKey] = new Set();
+            }
+            if (spec.event) {
+              eventsByYear[yearKey].add(spec.event);
             }
           });
 
-        copySelect.innerHTML = '<option value="">Manual Entry</option>';
+        const sortedYears = Object.keys(eventsByYear).sort((a, b) => {
+          const yearA = parseInt(a, 10);
+          const yearB = parseInt(b, 10);
 
-        // Sort by year (descending) then event
-        const sortedEvents = Object.values(customerEvents).sort((a, b) => {
-          if (b.year !== a.year) return b.year - a.year;
-          return a.event.localeCompare(b.event);
+          if (!Number.isNaN(yearA) && !Number.isNaN(yearB)) {
+            return yearB - yearA;
+          }
+          if (!Number.isNaN(yearA)) return -1;
+          if (!Number.isNaN(yearB)) return 1;
+          return a.localeCompare(b);
         });
 
-        sortedEvents.forEach((item) => {
-          const optionValue = `${customerCode} ${item.event} ${item.year}`;
-          const optionText = `${customerCode} ${item.event} ${item.year}`;
-          copySelect.innerHTML += `<option value="${optionValue}">${optionText}</option>`;
+        let optionsHtml = '<option value="">Manual Entry</option>';
+
+        sortedYears.forEach((year) => {
+          const events = Array.from(eventsByYear[year]).sort((a, b) =>
+            `${a}`.localeCompare(`${b}`, undefined, { numeric: true, sensitivity: 'base' })
+          );
+
+          if (events.length === 0) {
+            return;
+          }
+
+          optionsHtml += `<optgroup label="${year}">`;
+          events.forEach((event) => {
+            const optionValue = `${customerCode} ${event} ${year}`;
+            const optionText = `${customerCode} ${event} ${year}`;
+            optionsHtml += `<option value="${optionValue}">${optionText}</option>`;
+          });
+          optionsHtml += '</optgroup>';
         });
 
+        copySelect.innerHTML = optionsHtml;
       }
 
       function calculateForecastedQuantity(customer, sampleIdToForecast) {
@@ -13791,36 +13890,28 @@
       function updateFutureSpecsList() {
         const listDiv = document.getElementById('future-specs-list');
 
-        // Group specs by customer/event/year
-        const grouped = {};
-        APP_STATE.futureSpecs.entries.forEach((spec) => {
-          const key = `${spec.customer}_${spec.event}_${spec.year}`;
-          if (!grouped[key]) {
-            grouped[key] = [];
-          }
-          grouped[key].push(spec);
-        });
+        const metadataEntries = (APP_STATE.futureSpecs && APP_STATE.futureSpecs.metadata) || {};
+        const futureEntries = Array.isArray(APP_STATE.futureSpecs?.entries)
+          ? APP_STATE.futureSpecs.entries
+          : [];
 
-        const metadataEntries = APP_STATE.futureSpecs.metadata || {};
-        Object.keys(metadataEntries).forEach((key) => {
-          if (!grouped[key]) {
-            const [metaCustomer = '', metaEvent = '', metaYear = ''] = key.split('_');
-            const metadataSamples = Array.isArray(metadataEntries[key].samples)
-              ? metadataEntries[key].samples.map((sample) => ({
-                  ...sample,
-                  customer: sample.customer || metaCustomer,
-                  event: sample.event || metaEvent,
-                  year:
-                    sample.year !== undefined && sample.year !== null
-                      ? sample.year
-                      : metaYear,
-                }))
-              : [];
-            grouped[key] = metadataSamples;
+        const metadataKeys = Object.keys(metadataEntries);
+        const entryOnlyKeys = [];
+
+        futureEntries.forEach((entry) => {
+          if (!entry) {
+            return;
+          }
+
+          const entryKey = `${entry.customer}_${entry.event}_${entry.year}`;
+          if (entryKey && !metadataEntries[entryKey] && !entryOnlyKeys.includes(entryKey)) {
+            entryOnlyKeys.push(entryKey);
           }
         });
 
-        if (Object.keys(grouped).length === 0) {
+        const allKeys = [...metadataKeys, ...entryOnlyKeys];
+
+        if (allKeys.length === 0) {
           listDiv.innerHTML =
             '<p class="text-center" style="color: var(--gray);">No future specifications created yet</p>';
           populateMigrationYearOptions();
@@ -13828,13 +13919,25 @@
         }
 
         let html = '';
-        Object.keys(grouped).forEach((key) => {
-          const specs = grouped[key];
-          const metadata = APP_STATE.futureSpecs.metadata[key] || {};
+        allKeys.forEach((key) => {
+          if (!key) {
+            return;
+          }
+
+          const metadata = metadataEntries[key] || {};
           const [customer, event, year] = key.split('_');
 
+          const specs = futureEntries.filter((spec) => {
+            if (!spec) {
+              return false;
+            }
+
+            const specKey = `${spec.customer}_${spec.event}_${spec.year}`;
+            return specKey === key;
+          });
+
           // Count assigned vs TBD
-          const assigned = specs.filter((s) => s.abo !== 'TBD').length;
+          const assigned = specs.filter((s) => s.abo && s.abo !== 'TBD').length;
           const total = specs.length;
 
           html += `
@@ -14072,32 +14175,14 @@
 
       function addFutureSpecSampleRow() {
         const modal = document.getElementById('future-spec-edit-modal');
-        if (!modal) return;
-        const tbody = modal.querySelector('#future-spec-edit-table tbody');
-        if (!tbody) return;
+        const tbody = modal ? modal.querySelector('#future-spec-edit-table tbody') : null;
+        if (!tbody) {
+          return;
+        }
 
-        const specKey = modal.dataset.specKey || '';
-        const [customer = '', eventName = '', yearValue = ''] = specKey.split('_');
-        const numericYear = Number(yearValue);
-        const resolvedYear = !Number.isNaN(numericYear) ? numericYear : yearValue;
-
-        const newRow = createFutureSpecEditRow({
-          customer,
-          event: eventName,
-          year: resolvedYear,
-          sample_id: '',
-          sample_type_id: '',
-          abo: 'TBD',
-          rh: 'TBD',
-          antigens: [],
-          antibodies: [],
-          dat_status: 'Negative',
-          status: 'draft',
-        });
-
+        const newRow = createFutureSpecEditRow({});
         tbody.appendChild(newRow);
       }
-
       function removeFutureSpecRow(button) {
         if (!button) return;
         const row = button.closest('tr');
@@ -15032,7 +15117,7 @@
 
       function saveFutureSpecEdits(specKey) {
         const modal = document.getElementById('future-spec-edit-modal');
-        const tbody = document.querySelector('#future-spec-edit-table tbody');
+        const tbody = modal ? modal.querySelector('#future-spec-edit-table tbody') : null;
         if (!modal || !tbody) {
           showAlert('error', 'Edit interface is unavailable');
           return;
@@ -15044,194 +15129,56 @@
           return;
         }
 
-        const [customer, event, year] = effectiveKey.split('_');
-
-        const existingSpecs = APP_STATE.futureSpecs.entries.filter(
-          (s) => s.customer === customer && s.event === event && s.year == year
-        );
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        const updatedSamples = [];
+        const futureEntries = Array.isArray(APP_STATE.futureSpecs?.entries)
+          ? APP_STATE.futureSpecs.entries
+          : [];
+        const [customer = '', event = '', year = ''] = effectiveKey.split('_');
 
         const existingSpecMap = new Map();
-        existingSpecs.forEach((spec) => {
-          if (spec && spec.sample_id) {
-            existingSpecMap.set(spec.sample_id, spec);
+        futureEntries
+          .filter((entry) => `${entry.customer}_${entry.event}_${entry.year}` === effectiveKey)
+          .forEach((entry) => {
+            if (entry && entry.sample_id) {
+              existingSpecMap.set(entry.sample_id, entry);
+            }
+          });
+
+        rows.forEach((row) => {
+          const sampleData = collectFutureSpecDataFromRow(row, effectiveKey, existingSpecMap);
+          if (sampleData) {
+            updatedSamples.push(sampleData);
           }
         });
 
-        const newAllocations = [];
-        const newDecisions = [];
-        const nowIso = new Date().toISOString();
-
-        APP_STATE.futureAllocations = Array.isArray(APP_STATE.futureAllocations)
-          ? APP_STATE.futureAllocations.filter((allocation) => allocation.specKey !== effectiveKey)
-          : [];
-
-        const updatedSpecs = [];
-
-        Array.from(tbody.querySelectorAll('tr')).forEach((row) => {
-          const specData = collectFutureSpecDataFromRow(row, effectiveKey, existingSpecMap);
-          if (!specData) {
-            return;
-          }
-
-          updatedSpecs.push(specData);
-
-          const suggestionsButton = row.querySelector('[data-suggestion-button]');
-          if (suggestionsButton) {
-            suggestionsButton.textContent = '💡 Suggestions';
-            suggestionsButton.classList.add('btn-outline');
-            suggestionsButton.classList.remove('btn-success');
-          }
-
-          const provisionalDataRaw = row.dataset.provisionalAllocation;
-          const sampleId = specData.sample_id;
-
-          if (provisionalDataRaw) {
-            let allocationData = null;
-            try {
-              allocationData = JSON.parse(provisionalDataRaw);
-            } catch (error) {
-              console.warn('Unable to parse provisional allocation for sample', sampleId, error);
-            }
-
-            delete row.dataset.provisionalAllocation;
-
-            if (allocationData && allocationData.sourceKey) {
-              const theoreticalVolume =
-                Number(allocationData.theoreticalVolume) || estimateSpecAllocationVolume(specData);
-              const plannedVolume = newAllocations
-                .filter((allocation) => allocation.sourceKey === allocationData.sourceKey)
-                .reduce((sum, allocation) => sum + (Number(allocation.allocatedVolume) || 0), 0);
-
-              const remainingVolume = calculateAvailableResourceVolume(
-                allocationData.sourceKey,
-                theoreticalVolume,
-                new Set([effectiveKey]),
-                plannedVolume
-              );
-
-              const desiredVolume =
-                Number(allocationData.allocatedVolume) || estimateSpecAllocationVolume(specData);
-              const finalVolume = Math.min(desiredVolume, remainingVolume);
-
-              if (finalVolume > 0) {
-                const finalAllocation = {
-                  allocationId: createId('alloc'),
-                  specKey: effectiveKey,
-                  sampleId,
-                  customer,
-                  event,
-                  year: Number(specData.year) || specData.year || Number(year) || year,
-                  sourceKey: allocationData.sourceKey,
-                  sourceType: allocationData.sourceType || 'Standing Order',
-                  abo: allocationData.abo ? normalizeAboValue(allocationData.abo) : null,
-                  rh: allocationData.rh ? normalizeRhValue(allocationData.rh) : null,
-                  allocatedVolume: finalVolume,
-                  theoreticalVolume,
-                  allocatedAt: nowIso,
-                  details:
-                    allocationData.details ||
-                    allocationData.savingsDetails ||
-                    allocationData.title ||
-                    'Accepted optimization suggestion.',
-                };
-
-                newAllocations.push(finalAllocation);
-
-                newDecisions.push({
-                  decisionId: createId('optDecision'),
-                  specKey: effectiveKey,
-                  sampleId,
-                  customer,
-                  event,
-                  year: Number(specData.year) || specData.year || Number(year) || year,
-                  decision: 'Accepted',
-                  sourceKey: finalAllocation.sourceKey,
-                  sourceType: finalAllocation.sourceType,
-                  timestamp: nowIso,
-                  details:
-                    allocationData.details ||
-                    allocationData.savingsDetails ||
-                    allocationData.title ||
-                    'Accepted optimization suggestion.',
-                });
-              } else {
-                newDecisions.push({
-                  decisionId: createId('optDecision'),
-                  specKey: effectiveKey,
-                  sampleId,
-                  customer,
-                  event,
-                  year: Number(specData.year) || specData.year || Number(year) || year,
-                  decision: 'Allocation Skipped',
-                  sourceKey: allocationData.sourceKey,
-                  timestamp: nowIso,
-                  details:
-                    'Suggested allocation could not be committed due to insufficient remaining volume.',
-                });
-              }
-            }
-          } else {
-            const suggestions = findBestSuggestionForSample(specData);
-            if (Array.isArray(suggestions) && suggestions.length > 0) {
-              const matchesSuggestion = suggestions.some((suggestion) => {
-                return (
-                  normalizeAboValue(suggestion.abo) === normalizeAboValue(specData.abo) &&
-                  normalizeRhValue(suggestion.rh) === normalizeRhValue(specData.rh) &&
-                  serializeAntigensForComparison(suggestion.antigens) ===
-                    serializeAntigensForComparison(specData.antigens)
-                );
-              });
-
-              if (!matchesSuggestion) {
-                newDecisions.push({
-                  decisionId: createId('optDecision'),
-                  specKey: effectiveKey,
-                  sampleId,
-                  customer,
-                  event,
-                  year: Number(specData.year) || specData.year || Number(year) || year,
-                  decision: 'Manual Entry',
-                  timestamp: nowIso,
-                  details: 'Manual entry saved without adopting available optimization suggestions.',
-                  suggestionCount: suggestions.length,
-                });
-              }
-            }
-          }
+        APP_STATE.futureSpecs.entries = futureEntries.filter((entry) => {
+          const key = `${entry.customer}_${entry.event}_${entry.year}`;
+          return key !== effectiveKey;
         });
+        APP_STATE.futureSpecs.entries.push(...updatedSamples);
 
-        if (newAllocations.length > 0) {
-          APP_STATE.futureAllocations.push(...newAllocations);
-        }
-        if (newDecisions.length > 0) {
-          APP_STATE.optimizationDecisions.push(...newDecisions);
+        if (!APP_STATE.futureSpecs.metadata) {
+          APP_STATE.futureSpecs.metadata = {};
         }
 
-        const metadata = APP_STATE.futureSpecs.metadata[effectiveKey] || {};
         const now = new Date().toISOString();
+        const metadata = APP_STATE.futureSpecs.metadata[effectiveKey] || {
+          created: now,
+          status: 'draft',
+          currentVersion: 0,
+        };
         metadata.lastModified = now;
-        metadata.currentVersion = (metadata.currentVersion || 0) + 1;
-        if (!metadata.created) {
-          metadata.created = now;
-        }
-        if (metadata.status === undefined) {
-          metadata.status = 'draft';
-        }
-        if (metadata.quantity === undefined) {
-          metadata.quantity = updatedSpecs.length;
-        }
-        metadata.samples = JSON.parse(JSON.stringify(updatedSpecs));
-
+        metadata.currentVersion = (Number(metadata.currentVersion) || 0) + 1;
+        metadata.samples = JSON.parse(JSON.stringify(updatedSamples));
         APP_STATE.futureSpecs.metadata[effectiveKey] = metadata;
 
-        APP_STATE.futureSpecs.entries = APP_STATE.futureSpecs.entries.filter(
-          (s) => !(s.customer === customer && s.event === event && s.year == year)
-        );
-        APP_STATE.futureSpecs.entries.push(...updatedSpecs);
-
+        if (!APP_STATE.futureSpecs.versions) {
+          APP_STATE.futureSpecs.versions = {};
+        }
         APP_STATE.futureSpecs.versions[`${effectiveKey}_v${metadata.currentVersion}`] = {
           timestamp: now,
-          samples: JSON.parse(JSON.stringify(updatedSpecs)),
+          samples: JSON.parse(JSON.stringify(updatedSamples)),
         };
 
         closeFutureSpecModal();
@@ -15240,11 +15187,9 @@
           'Updated future specification',
           `${customer} ${event} ${year} (v${metadata.currentVersion})`
         );
+        populateMigrationYearOptions();
         persistState();
-        showAlert(
-          'success',
-          `Saved changes to ${customer} ${event} ${year} (Version ${metadata.currentVersion})`
-        );
+        showAlert('success', `Saved changes to ${customer} ${event} ${year} (Version ${metadata.currentVersion})`);
       }
       function approveFutureSpec(specKey) {
         const metadata = APP_STATE.futureSpecs.metadata[specKey];
