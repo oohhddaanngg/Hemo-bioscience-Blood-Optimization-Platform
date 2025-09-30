@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Blood Optimization Platform v0.7.4 | Hemo bioscience</title>
+    <title>Blood Optimization Platform v0.7.5 | Hemo bioscience</title>
     <style>
       * {
         margin: 0;
@@ -1853,7 +1853,7 @@
       <!-- Header Bar -->
       <header class="header-bar">
         <div class="header-left">
-        <div class="version-badge">v0.7.4</div>
+        <div class="version-badge">v0.7.5</div>
           <div class="active-users" id="active-users" style="display: none">
             <span>👤 Active:</span>
             <span id="active-user-list">-</span>
@@ -7438,7 +7438,12 @@
       }
 
       function autoFillSampleDetails() {
-        const customerCode = document.getElementById('calc-customer')?.value || '';
+        const customerElement = document.getElementById('calc-customer');
+        if (!customerElement) {
+          return;
+        }
+
+        const customerCode = customerElement.value || '';
         const event = document.getElementById('calc-event')?.value || '';
         const sampleId = document.getElementById('calc-sample')?.value || '';
         const selectedYear = document.getElementById('calc-year')?.value || '';
