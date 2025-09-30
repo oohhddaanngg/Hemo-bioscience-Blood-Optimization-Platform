@@ -1,7 +1,7 @@
 Blood Optimization Platform - Business Logic & Process Manual
 
 Version: 2.0
-Date: 2025-09-26
+Date: 2025-09-30
 Purpose: This document is the authoritative guide to the business logic, data rules, and operational processes embedded within the Hemo bioscience Blood Optimization Platform. It is the single source of truth for all calculations and decision-making algorithms.
 
 1.0 Core Temporal Logic
@@ -53,3 +53,48 @@ DAT/Eluate Overage: 25-30% (multiplied by 1.25-1.30) to account for volume loss 
 4.0 Platform Vision & Scope
 
 4.1 Decision Support Tool: The platform's primary purpose is to increase efficiency and support decision-making. It is not a regulated document control system. Its outputs (e.g., the BUP) are planning documents, not final, regulated manufacturing records.
+
+
+
+# Hemo bioscience Blood Optimization Platform
+## Project Business Logic Manual
+
+This document is the authoritative source for all business rules and logic governing the platform.
+
+**1. Core Purpose**
+The platform is a web-based inventory management, optimization, and forecasting system. Its primary goals are to reduce Red Blood Cell (RBC) purchasing costs and minimize waste by identifying sharing opportunities and optimizing inventory usage.
+
+**2. Versioning**
+Each iteration of the single-page application's HTML file must be versioned using semantic versioning (e.g., v0.7.1). The version number must be updated in the file's `<title>` tag and in the visible version badge in the UI header.
+
+**3. User Management**
+The platform is designed for a single primary user per browser instance. The user's name is stored in local storage to tag all activities and changes.
+
+**4. Data Persistence**
+All application data is stored locally within the user's web browser in a transactional database called IndexedDB. This method is robust and ensures data persists between sessions, browser restarts, and computer reboots. Every change made by the user is immediately saved to this database, minimizing the risk of data loss.
+
+**5. Backup and Restore**
+The platform's primary backup mechanism is a manual export process.
+- **Exporting Data:** From the "Settings" -> "Backup & Data Management" panel, the user can export the entire application's data to a single JSON file. This file is the official backup record.
+- **Backup Filename:** Exported files will be named using the convention: `blood_platform_data_backup_YYYY-MM-DD_HHMMSS.json`.
+- **Restoring Data:** The user can import a previously exported JSON backup file. This action will completely overwrite all existing data in the browser's database with the content from the file. A confirmation prompt will be displayed before this irreversible action is executed.
+
+**6. Data Imports**
+- **CSV Imports:** Data for Sample Definitions, Historical Specifications, and Order Quantities can be imported from CSV files.
+- **Duplicate Detection:** All CSV import functions must perform duplicate detection. Records from an imported CSV file that already exist in the database will be skipped. The unique identifier for a record depends on its type:
+    - **Sample Definitions:** The unique key is `sample_type_id`.
+    - **Specifications & Quantities:** The unique key is a composite of `customer`, `event`, `year`, and `sample_id`.
+- **User Feedback:** After a CSV import is complete, the application must display a message to the user indicating the number of new records successfully imported and the number of duplicate records that were skipped.
+
+**7. Blood Calculation Logic**
+- **Base Formula:** pRBC Volume = (Quantity + 5 retention samples) × Sample Volume (mL) × (Hematocrit % / 100)
+- **Overage Tiers (Standard):**
+    - <200 samples: 15% overage
+    - 200-1000 samples: 10% overage
+    - 1001-2000 samples: 8% overage
+    - >2000 samples: 6% overage
+- **Special Overage (Overrides Standard):**
+    - DAT Positive (IgG/C3) & Eluate samples: 30% overage
+
+**8. Vision Clarification**
+The platform is an efficiency and decision-support tool. Its outputs (like the BUP) are intended to inform decisions and increase efficiency, not to serve as final, regulated manufacturing documents.
