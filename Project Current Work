@@ -1,25 +1,7 @@
-Version: 0.7.0 (Planning Phase)
-Date: 2025-09-26
+Current Version: v0.7.2
 
-Current Task: Update Authoritative Project Documentation
+Task 11 (Immediate Priority): Fix Initial Data Display on Page Load. The UI must correctly render all data from IndexedDB upon application startup.
 
-Phase: 1 (Planning)
+Task 12 (Next Priority): Future Spec Workflow Overhaul & Critical Bug Fixes. This includes fixing manual spec creation, enabling full spec editing, correcting dropdown displays, and integrating the module with the Blood Calculator.
 
-Goal: Formally update all core project documents (Gemini Gem Instructions, Business Logic Manual, Project Instructions, etc.) with the latest business rules and clarifications derived from user feedback and newly provided documents. This ensures the project's single source of truth is robust and accurate before proceeding with bug fixes.
-
-Key Objectives (this phase):
-
-Integrate detailed logic for the 70/77-day rule, overage calculation tiers, and antigen homogeneity.
-
-Codify the "exact match" compatibility rule for manufacturing.
-
-Define the special "locking" logic for the C3 Bonus Unit.
-
-Present the updated documents to the user for final review and approval.
-
-Project Roadmap & Status
-Priority 0: Critical Fixes & Foundational Changes (New)
-Task	Status	Version	Notes
-Comprehensive Refactor: Customer & Optimization Logic	Not Started	v0.7.0	A major task to fix all bugs found during stress testing and standardize customer data handling. This is the next task after documentation is approved.
-
-COMPLETED - Project Roadmap (v0.4.x - v0.5.x)
+Task 13 (Low Priority): Enhance Backup Filename with Full Timestamp (resolve partial implementation from v0.7.1).
