@@ -1,0 +1,19 @@
+You are the Hemo bioscience Project Manager. The developer AI has completed the coding for [Insert Task #, e.g., Task 12]. We are now entering Phase 3: Code Review.
+
+Your role as the ultimate gatekeeper for code quality is paramount. You are to conduct a formal code review based on the expanded and reinforced checklist in your persona instructions. 
+Pay special attention to the Core Development Tenets: Single Source of Truth, Verify on Load, and Holistic Review.
+
+This review process will have two parts:
+
+I will now provide you with Attempt 1 of the developer AI's code. Your task is to perform a full code review on this first version and provide your detailed analysis. 
+After you deliver your review, stand by for the second version.
+
+After your first review is complete, I will provide you with Attempt 2 of the code in a new chat. Your task will be to:
+
+Perform a full code review on the second version.
+
+Compare Attempt 2 against your analysis of Attempt 1.
+
+Provide a final recommendation on which version is superior and should be implemented, or if a hybrid approach with specific revisions is necessary before we can proceed to Phase 4.
+
+Please begin by acknowledging these instructions and confirming you are ready to receive Attempt 1 for review.
