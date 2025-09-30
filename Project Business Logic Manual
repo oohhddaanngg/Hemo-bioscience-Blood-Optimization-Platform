@@ -1,100 +1,66 @@
-Blood Optimization Platform - Business Logic & Process Manual
-
-Version: 2.0
-Date: 2025-09-30
-Purpose: This document is the authoritative guide to the business logic, data rules, and operational processes embedded within the Hemo bioscience Blood Optimization Platform. It is the single source of truth for all calculations and decision-making algorithms.
-
-1.0 Core Temporal Logic
-
-
-1.1 Unit Lifespan: An RBC unit has a maximum usable lifespan of 77 days from its bleed date.
-
-
-
-1.2 Optimization Window: The valid window to use a unit for a specific PT event is between (Event Expiration Date - 77 days) and (Event Ship Date - 10 days). The unit's "Arrival Date" must be on or before the date it is needed within this window.
-
-
-
-1.3 Standard Earliest Bleed Date: While the absolute maximum is 77 days, the standard target for an "Earliest Bleed Date" is 70 days prior to the event's expiration date. The 77-day window is used by default in the system to maximize sharing opportunities.
-
-
-2.0 Blood Compatibility & Manufacturing Rules
-
-2.1 Default Compatibility Rule (Automated Suggestions): For the purpose of manufacturing homogenous samples, all automated suggestions for sharing (both in the Future Spec modal and the BUP Generator) must be an exact ABO/Rh match by default. The system should not suggest using an O Neg unit for an A Neg sample.
-
-2.2 Manual Override: The user retains the ability to manually override suggestions and assign compatible, non-identical blood types to handle special cases, such as creating mixed-field reactivity samples.
-
-
-2.3 Antigen Homogeneity ("As Measured"): If multiple RBC units are required for the same sample, the units must have the exact same antigen phenotype for all antigens listed as "As measured" on the customer specification. This is a strict requirement.
-
-2.4 Special Case - C3 Control Bonus Unit:
-
-The C3 standing order includes a bonus unit specified as "Group O, Any Rh".
-
-This unit is flexible and can be used to fulfill either an O Positive or O Negative requirement.
-
-Locking Logic: The first time this bonus unit is allocated to a sample, its Rh type becomes "locked" to that sample's Rh type for the remainder of its volume. The system must track this lock and only offer the remaining volume to other samples with the same locked Rh type.
-
-3.0 Overage & Volume Calculation Logic
-
-
-3.1 pRBC Volume per Unit: One standard unit of pRBCs is considered to have 180 mL of usable volume.
-
-3.2 Overage Tiers for pRBC Calculation: The system must use the following tiered percentages when calculating the required pRBC volume for an event:
-
-
-Standard Overage: 10-15% (multiplied by 1.10-1.15).
-
-
-DAT/Eluate Overage: 25-30% (multiplied by 1.25-1.30) to account for volume loss during washing.
-
-3.3 Stateful, Volume-Based Allocation: The system must track all allocations in a central ledger (futureAllocations). When suggesting an overage unit (from a Standing Order or another PT Event), the system must first check the ledger, subtract the volume of all previous commitments, and only offer the true remaining volume. This prevents double-booking and allows a single large overage unit to satisfy multiple smaller needs.
-
-4.0 Platform Vision & Scope
-
-4.1 Decision Support Tool: The platform's primary purpose is to increase efficiency and support decision-making. It is not a regulated document control system. Its outputs (e.g., the BUP) are planning documents, not final, regulated manufacturing records.
-
-
-
-# Hemo bioscience Blood Optimization Platform
-## Project Business Logic Manual
-
+Project Business Logic Manual
 This document is the authoritative source for all business rules and logic governing the platform.
 
-**1. Core Purpose**
+1. Core Purpose
 The platform is a web-based inventory management, optimization, and forecasting system. Its primary goals are to reduce Red Blood Cell (RBC) purchasing costs and minimize waste by identifying sharing opportunities and optimizing inventory usage.
 
-**2. Versioning**
-Each iteration of the single-page application's HTML file must be versioned using semantic versioning (e.g., v0.7.1). The version number must be updated in the file's `<title>` tag and in the visible version badge in the UI header.
+2. Versioning
+Each iteration of the single-page application's HTML file must be versioned using semantic versioning (e.g., v0.7.3). The version number must be updated in the file's <title> tag and in the visible version badge in the UI header.
 
-**3. User Management**
+3. User Management
 The platform is designed for a single primary user per browser instance. The user's name is stored in local storage to tag all activities and changes.
 
-**4. Data Persistence**
-All application data is stored locally within the user's web browser in a transactional database called IndexedDB. This method is robust and ensures data persists between sessions, browser restarts, and computer reboots. Every change made by the user is immediately saved to this database, minimizing the risk of data loss.
+4. Data & UI Principles
 
-**5. Backup and Restore**
-The platform's primary backup mechanism is a manual export process.
-- **Exporting Data:** From the "Settings" -> "Backup & Data Management" panel, the user can export the entire application's data to a single JSON file. This file is the official backup record.
-- **Backup Filename:** Exported files will be named using the convention: `blood_platform_data_backup_YYYY-MM-DD_HHMMSS.json`.
-- **Restoring Data:** The user can import a previously exported JSON backup file. This action will completely overwrite all existing data in the browser's database with the content from the file. A confirmation prompt will be displayed before this irreversible action is executed.
+Data Persistence: All application data is stored locally within the user's web browser in a transactional database called IndexedDB. This method is robust and ensures data persists between sessions, browser restarts, and computer reboots. Every change made by the user is immediately saved to this database, minimizing the risk of data loss.
 
-**6. Data Imports**
-- **CSV Imports:** Data for Sample Definitions, Historical Specifications, and Order Quantities can be imported from CSV files.
-- **Duplicate Detection:** All CSV import functions must perform duplicate detection. Records from an imported CSV file that already exist in the database will be skipped. The unique identifier for a record depends on its type:
-    - **Sample Definitions:** The unique key is `sample_type_id`.
-    - **Specifications & Quantities:** The unique key is a composite of `customer`, `event`, `year`, and `sample_id`.
-- **User Feedback:** After a CSV import is complete, the application must display a message to the user indicating the number of new records successfully imported and the number of duplicate records that were skipped.
+Single Source of Truth: APP_STATE is the definitive source of all data. All user-facing UI elements (tables, dropdowns, forms) MUST be populated dynamically from this object.
 
-**7. Blood Calculation Logic**
-- **Base Formula:** pRBC Volume = (Quantity + 5 retention samples) × Sample Volume (mL) × (Hematocrit % / 100)
-- **Overage Tiers (Standard):**
-    - <200 samples: 15% overage
-    - 200-1000 samples: 10% overage
-    - 1001-2000 samples: 8% overage
-    - >2000 samples: 6% overage
-- **Special Overage (Overrides Standard):**
-    - DAT Positive (IgG/C3) & Eluate samples: 30% overage
+UI State on Load: All data-driven UI elements MUST be fully populated and rendered correctly upon initial application load (DOMContentLoaded). No user interaction shall be required to display existing data.
 
-**8. Vision Clarification**
+Data-Driven UI: The PT Customers list serves as the single source of truth for all customer-selection UI elements. Any dropdown for selecting a customer must be populated exclusively and dynamically from this list. Hardcoding of data lists in the HTML is strictly prohibited.
+
+5. Backup and Restore
+
+Mechanism: The platform's primary backup mechanism is a manual export process.
+
+Exporting Data: From the "Settings" -> "Backup & Data Management" panel, the user can export the entire application's data to a single JSON file. This file is the official backup record.
+
+Backup Filename: Exported files will be named using the convention: blood_platform_data_backup_YYYY-MM-DD_HHMMSS.json.
+
+Restoring Data: The user can import a previously exported JSON backup file. This action will completely overwrite all existing data in the browser's database with the content from the file. A confirmation prompt will be displayed before this irreversible action is executed.
+
+6. Data Imports
+
+CSV Imports: Data for Sample Definitions, Historical Specifications, and Order Quantities can be imported from CSV files.
+
+Duplicate Detection: All CSV import functions must perform duplicate detection. Records from an imported CSV file that already exist in the database will be skipped.
+
+Unique Identifiers:
+
+Sample Definitions: The unique key is sample_type_id.
+
+Specifications & Quantities: The unique key is a composite of customer, event, year, and sample_id.
+
+User Feedback: After a CSV import is complete, the application must display a message to the user indicating the number of new records successfully imported and the number of duplicate records that were skipped.
+
+7. Blood Calculation Logic
+
+Base Formula: pRBC Volume = (Quantity + 5 retention samples) × Sample Volume (mL) × (Hematocrit % / 100)
+
+Overage Tiers (Standard):
+
+<200 samples: 15% overage
+
+200-1000 samples: 10% overage
+
+1001-2000 samples: 8% overage
+
+2000 samples: 6% overage
+
+Special Overage (Overrides Standard):
+
+DAT Positive (IgG/C3) & Eluate samples: 30% overage
+
+8. Vision Clarification
 The platform is an efficiency and decision-support tool. Its outputs (like the BUP) are intended to inform decisions and increase efficiency, not to serve as final, regulated manufacturing documents.
