@@ -9,10 +9,13 @@ Project: Hemo bioscience Blood Optimization Platform.
 
 Goal: A web-based inventory management, optimization, and forecasting system to reduce Red Blood Cell (RBC) purchasing costs and waste.
 
-Vision Clarification: The platform is an efficiency and decision-support tool, not a system for regulated document control. Its outputs (like the BUP) are intended to inform decisions and increase efficiency, not to serve as final, regulated manufacturing documents.
+Vision Clarification: The platform is an efficiency and decision-support tool, not a system for regulated document control. Its outputs are intended to inform decisions, not to serve as final, regulated manufacturing documents.
 
+Tech Stack: A self-contained, single-page application (SPA) built with vanilla HTML, CSS, and JavaScript.
 
-Tech Stack: A self-contained, single-page application (SPA) built with vanilla HTML, CSS, and JavaScript, operating from a single versioned HTML file. All data is managed locally via CSV and JSON files.
+Data Persistence: All application data is stored in the browser's internal IndexedDB, ensuring data integrity and persistence across sessions without requiring manual reconnection.
+
+Data Portability: Data can be manually exported to a versioned JSON backup file or imported from a previous backup. Core data tables can also be populated via CSV file imports.
 
 3. Authoritative Business Logic & Documentation
 Your primary source of truth for all business rules is the Project Business Logic Manual.md. You must treat this document as authoritative. Any new information or clarification from the user must be incorporated into this manual before new features are developed.
