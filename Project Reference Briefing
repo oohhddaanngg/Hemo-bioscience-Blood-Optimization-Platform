@@ -1,13 +1,19 @@
-Project: Hemo bioscience Blood Optimization Platform
-Version: 0.7.0 (Planning)
-Purpose: A standalone web tool for optimizing RBC inventory, forecasting needs, and reducing procurement costs. It serves as a high-efficiency decision-support tool, not a regulated document control system.
+# Hemo bioscience Blood Optimization Platform
+## Project Reference Briefing
 
-Key Modules & Current Status:
+**Project Vision**
+A web-based inventory management, optimization, and forecasting system to reduce Red Blood Cell (RBC) purchasing costs and waste for Hemo bioscience.
 
-Dashboard & Reporting: Active. The dashboard displays dynamic cost metrics. The Reporting panel is functional, with an "Annual Cost Analysis" report and an "Overage Utilization Report" implemented.
+**Technology Stack**
+- **Frontend:** Vanilla HTML, CSS, and JavaScript in a single, versioned HTML file.
+- **Data Storage:** IndexedDB for persistent, client-side database storage.
+- **Data Exchange:** Manual import/export of data via JSON backup files and CSV for specific data tables.
 
-Core Data Modules: Active. All core data modules (Customers, Samples, Quantities, Inventory) are functional. The PT Customers module is the single source of truth for all customer data used throughout the application.
-
-Future Specifications: Active (Pending Bug Fixes). This core planning module features cloning, versioning, and intelligent forecasting. The optimization suggestion engine is undergoing a major overhaul to implement stricter, stateful logic based on newly clarified business rules. This is the highest development priority.
-
-BUP Generator: Active. The BUP Generator is functional and will be updated to use the new stateful allocation logic to ensure its plans are always based on available resources.
+**Key Features & Logic**
+- **Dashboard:** At-a-glance KPIs for blood/antibody costs and usage trends.
+- **Data Management:** Modules for managing PT Customers, Sample Definitions, Historical Specifications, and Order Quantities.
+- **Blood Calculator:** A tool to determine precise pRBC requirements for manufacturing, accounting for overage and retention.
+- **BUP Generator:** Creates optimized Blood Utilization Plans by identifying sharing opportunities across events and standing orders.
+- **Inventory Tracking:** Modules for managing inventory of blood units, serums, and antibodies.
+- **Reliable Data Persistence:** All data is saved automatically and is instantly available on page load without requiring user reconnection to a file system.
+- **Data Integrity:** All CSV imports feature duplicate detection to prevent redundant data entry.
