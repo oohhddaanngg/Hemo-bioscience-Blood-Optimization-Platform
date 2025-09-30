@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Blood Optimization Platform v0.7.2 | Hemo bioscience</title>
+    <title>Blood Optimization Platform v0.7.3 | Hemo bioscience</title>
     <style>
       * {
         margin: 0;
@@ -1853,7 +1853,7 @@
       <!-- Header Bar -->
       <header class="header-bar">
         <div class="header-left">
-        <div class="version-badge">v0.7.2</div>
+        <div class="version-badge">v0.7.3</div>
           <div class="active-users" id="active-users" style="display: none">
             <span>👤 Active:</span>
             <span id="active-user-list">-</span>
@@ -4784,6 +4784,7 @@
         APP_STATE.currentMonth = new Date().getMonth();
         APP_STATE.currentYear = new Date().getFullYear();
         renderCalendar();
+        updateAllTables();
 
         if (!document.getElementById('report-type-select')?.dataset.reportingInitialized) {
           initializeReportingPanel();
@@ -5792,6 +5793,7 @@
           customer.contacts = contacts;
           logActivity('Updated customer', name);
           showAlert('success', 'Customer updated successfully');
+          closeCustomerModal();
         } else {
           // Add new
           const newCustomer = {
@@ -5807,13 +5809,13 @@
           APP_STATE.customers.push(newCustomer);
           logActivity('Added customer', name);
           showAlert('success', 'Customer added successfully');
+          closeCustomerModal();
         }
 
         updateCustomerList();
         populateCustomerDropdowns();
         updateDashboard();
         persistState();
-        closeCustomerModal();
       }
 
       function editCustomer(customerId) {
@@ -10902,7 +10904,7 @@
 
             totalSpecs += imported;
             totalSkipped += skipped;
-            updateSpecTable();
+            updateAllTables();
             populateSpecFilters();
             logActivity('Imported specifications', `${imported} from ${file.name}`);
             showAlert(
@@ -11859,6 +11861,13 @@
           .join('');
       }
 
+      function updateAllTables() {
+        updateSampleTable();
+        updateSpecTable();
+        updateQuantitiesTable();
+        updateHistoricalQuantitiesTable();
+      }
+
       function populateSpecFilters() {
         // Get unique values for each filter
         const years = [
@@ -12077,7 +12086,7 @@
           )
         ) {
           APP_STATE.sampleDefinitions = [];
-          updateSampleTable();
+          updateAllTables();
           logActivity('Deleted all sample definitions', `${count} items deleted`);
           persistState();
           updateDashboard();
@@ -12166,7 +12175,7 @@
             (spec) => !keysToDelete.has(`${spec.customer}|${spec.event}|${spec.year}|${spec.sample_id}`)
           );
 
-          updateSpecTable();
+          updateAllTables();
           populateSpecFilters();
           logActivity('Bulk deleted specifications', `${count} items deleted`);
           persistState();
@@ -12194,7 +12203,7 @@
         const count = APP_STATE.customerSpecs.length;
         APP_STATE.customerSpecs = [];
 
-        updateSpecTable();
+        updateAllTables();
         populateSpecFilters();
         logActivity('Deleted all specifications');
         persistState();
