@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Blood Optimization Platform v0.7.3 | Hemo bioscience</title>
+    <title>Blood Optimization Platform v0.7.4 | Hemo bioscience</title>
     <style>
       * {
         margin: 0;
@@ -1853,7 +1853,7 @@
       <!-- Header Bar -->
       <header class="header-bar">
         <div class="header-left">
-        <div class="version-badge">v0.7.3</div>
+        <div class="version-badge">v0.7.4</div>
           <div class="active-users" id="active-users" style="display: none">
             <span>👤 Active:</span>
             <span id="active-user-list">-</span>
@@ -2295,10 +2295,6 @@
                     onchange="updateFutureCopyOptions()"
                   >
                     <option value="">Select Customer</option>
-                    <option value="WSLH">WSLH</option>
-                    <option value="ISLA">ISLA</option>
-                    <option value="OneWorld">OneWorld</option>
-                    <option value="Aurevia">Aurevia</option>
                   </select>
                 </div>
 
@@ -4785,6 +4781,7 @@
         APP_STATE.currentYear = new Date().getFullYear();
         renderCalendar();
         updateAllTables();
+        populateCustomerDropdowns();
 
         if (!document.getElementById('report-type-select')?.dataset.reportingInitialized) {
           initializeReportingPanel();
@@ -7352,17 +7349,21 @@
         if (customerCode) {
           const eventsSet = new Set();
 
-          APP_STATE.customerSpecs
-            .filter((spec) => spec.customer === customerCode)
-            .forEach((spec) => {
-              if (!selectedYear || String(spec.year) === String(selectedYear)) {
-                eventsSet.add(spec.event);
-              }
-            });
+          if (Array.isArray(APP_STATE.customerSpecs)) {
+            APP_STATE.customerSpecs
+              .filter((spec) => spec && spec.customer === customerCode)
+              .forEach((spec) => {
+                if (!selectedYear || String(spec.year) === String(selectedYear)) {
+                  eventsSet.add(spec.event);
+                }
+              });
+          }
 
-          const futureEntries = (APP_STATE.futureSpecs && APP_STATE.futureSpecs.entries) || [];
+          const futureEntries = Array.isArray(APP_STATE.futureSpecs?.entries)
+            ? APP_STATE.futureSpecs.entries
+            : [];
           futureEntries
-            .filter((spec) => spec.customer === customerCode)
+            .filter((spec) => spec && spec.customer === customerCode)
             .forEach((spec) => {
               if (!selectedYear || String(spec.year) === String(selectedYear)) {
                 eventsSet.add(spec.event);
@@ -7391,19 +7392,23 @@
         if (customerCode && event) {
           const samplesSet = new Set();
 
-          APP_STATE.customerSpecs
-            .filter((spec) => spec.customer === customerCode && spec.event === event)
-            .forEach((spec) => {
-              if (!selectedYear || String(spec.year) === String(selectedYear)) {
-                if (spec.sample_id) {
-                  samplesSet.add(spec.sample_id);
+          if (Array.isArray(APP_STATE.customerSpecs)) {
+            APP_STATE.customerSpecs
+              .filter((spec) => spec && spec.customer === customerCode && spec.event === event)
+              .forEach((spec) => {
+                if (!selectedYear || String(spec.year) === String(selectedYear)) {
+                  if (spec.sample_id) {
+                    samplesSet.add(spec.sample_id);
+                  }
                 }
-              }
-            });
+              });
+          }
 
-          const futureEntries = (APP_STATE.futureSpecs && APP_STATE.futureSpecs.entries) || [];
+          const futureEntries = Array.isArray(APP_STATE.futureSpecs?.entries)
+            ? APP_STATE.futureSpecs.entries
+            : [];
           futureEntries
-            .filter((spec) => spec.customer === customerCode && spec.event === event)
+            .filter((spec) => spec && spec.customer === customerCode && spec.event === event)
             .forEach((spec) => {
               if (!selectedYear || String(spec.year) === String(selectedYear)) {
                 if (spec.sample_id) {
@@ -7427,6 +7432,8 @@
         const event = document.getElementById('calc-event')?.value || '';
         const sampleId = document.getElementById('calc-sample')?.value || '';
         const selectedYear = document.getElementById('calc-year')?.value || '';
+        const volumeInput = document.getElementById('calc-volume');
+        const hematocritInput = document.getElementById('calc-hematocrit');
 
         if (customerCode && event && sampleId) {
           let spec = APP_STATE.customerSpecs.find(
@@ -7434,7 +7441,9 @@
           );
 
           if (!spec) {
-            const futureEntries = (APP_STATE.futureSpecs && APP_STATE.futureSpecs.entries) || [];
+            const futureEntries = Array.isArray(APP_STATE.futureSpecs?.entries)
+              ? APP_STATE.futureSpecs.entries
+              : [];
             const matches = futureEntries.filter((s) => {
               if (!s || s.customer !== customerCode || s.event !== event) {
                 return false;
@@ -7476,8 +7485,46 @@
                 (def) => def.sample_type_id === spec.sample_type_id
               );
               if (sampleDef) {
-                document.getElementById('calc-volume').value = sampleDef.fill_ml || 2;
-                document.getElementById('calc-hematocrit').value = sampleDef.hct_percent || 4;
+                if (volumeInput) volumeInput.value = sampleDef.fill_ml || 2;
+                if (hematocritInput) hematocritInput.value = sampleDef.hct_percent || 4;
+              }
+            }
+
+            if (
+              volumeInput &&
+              hematocritInput &&
+              (!volumeInput.value || Number(volumeInput.value) === 0 || !hematocritInput.value || Number(hematocritInput.value) === 0)
+            ) {
+              const futureEntries = Array.isArray(APP_STATE.futureSpecs?.entries)
+                ? APP_STATE.futureSpecs.entries
+                : [];
+              const futureMatch = futureEntries.find((futureSpec) => {
+                if (!futureSpec || futureSpec.customer !== customerCode || futureSpec.event !== event) {
+                  return false;
+                }
+                if (selectedYear && String(futureSpec.year) !== String(selectedYear)) {
+                  return false;
+                }
+                return futureSpec.sample_id === sampleId;
+              });
+
+              if (
+                futureMatch &&
+                futureMatch.sample_type_id &&
+                Array.isArray(APP_STATE.sampleDefinitions) &&
+                APP_STATE.sampleDefinitions.length > 0
+              ) {
+                const futureSampleDef = APP_STATE.sampleDefinitions.find(
+                  (def) => def.sample_type_id === futureMatch.sample_type_id
+                );
+                if (futureSampleDef) {
+                  if (!volumeInput.value || Number(volumeInput.value) === 0) {
+                    volumeInput.value = futureSampleDef.fill_ml || volumeInput.value;
+                  }
+                  if (!hematocritInput.value || Number(hematocritInput.value) === 0) {
+                    hematocritInput.value = futureSampleDef.hct_percent || hematocritInput.value;
+                  }
+                }
               }
             }
           }
@@ -13495,42 +13542,72 @@
       // ===============================
 
       function updateFutureCopyOptions() {
-        const customerCode = document.getElementById('future-spec-customer').value;
+        const customerCode = document.getElementById('future-spec-customer')?.value || '';
         const copySelect = document.getElementById('future-spec-copy-from');
+
+        if (!copySelect) {
+          return;
+        }
 
         if (!customerCode) {
           copySelect.innerHTML = '<option value="">Manual Entry</option>';
           return;
         }
 
-        // Find all events for this customer from historical specs
-        const customerEvents = {};
-        APP_STATE.customerSpecs
-          .filter((spec) => spec.customer === customerCode)
-          .forEach((spec) => {
-            const key = `${spec.event} ${spec.year}`;
-            if (!customerEvents[key]) {
-              customerEvents[key] = {
-                event: spec.event,
-                year: spec.year,
-              };
-            }
+        const yearsToEvents = {};
+
+        if (Array.isArray(APP_STATE.customerSpecs)) {
+          APP_STATE.customerSpecs
+            .filter((spec) => spec && spec.customer === customerCode)
+            .forEach((spec) => {
+              const eventName = spec.event ? String(spec.event).trim() : '';
+              const yearValue = spec.year !== undefined && spec.year !== null ? String(spec.year).trim() : '';
+
+              if (!eventName || !yearValue) {
+                return;
+              }
+
+              if (!yearsToEvents[yearValue]) {
+                yearsToEvents[yearValue] = new Set();
+              }
+              yearsToEvents[yearValue].add(eventName);
+            });
+        }
+
+        const years = Object.keys(yearsToEvents);
+        if (years.length === 0) {
+          copySelect.innerHTML = '<option value="">Manual Entry</option>';
+          return;
+        }
+
+        years.sort((a, b) => {
+          const numA = parseInt(a, 10);
+          const numB = parseInt(b, 10);
+          const isNumA = !Number.isNaN(numA);
+          const isNumB = !Number.isNaN(numB);
+
+          if (isNumA && isNumB) {
+            return numB - numA;
+          }
+          if (isNumA) return -1;
+          if (isNumB) return 1;
+          return `${b}`.localeCompare(`${a}`);
+        });
+
+        let optionsHtml = '<option value="">Manual Entry</option>';
+
+        years.forEach((year) => {
+          const events = Array.from(yearsToEvents[year]).sort((a, b) => `${a}`.localeCompare(`${b}`));
+          optionsHtml += `<optgroup label="${year}">`;
+          events.forEach((eventName) => {
+            const optionValue = `${customerCode} ${eventName} ${year}`;
+            const optionText = `${customerCode} ${eventName} ${year}`;
+            optionsHtml += `<option value="${optionValue}">${optionText}</option>`;
           });
-
-        copySelect.innerHTML = '<option value="">Manual Entry</option>';
-
-        // Sort by year (descending) then event
-        const sortedEvents = Object.values(customerEvents).sort((a, b) => {
-          if (b.year !== a.year) return b.year - a.year;
-          return a.event.localeCompare(b.event);
+          optionsHtml += '</optgroup>';
         });
 
-        sortedEvents.forEach((item) => {
-          const optionValue = `${customerCode} ${item.event} ${item.year}`;
-          const optionText = `${customerCode} ${item.event} ${item.year}`;
-          copySelect.innerHTML += `<option value="${optionValue}">${optionText}</option>`;
-        });
-
+        copySelect.innerHTML = optionsHtml;
       }
 
       function calculateForecastedQuantity(customer, sampleIdToForecast) {
@@ -13790,59 +13867,55 @@
 
       function updateFutureSpecsList() {
         const listDiv = document.getElementById('future-specs-list');
+        if (!listDiv) {
+          return;
+        }
 
-        // Group specs by customer/event/year
-        const grouped = {};
-        APP_STATE.futureSpecs.entries.forEach((spec) => {
-          const key = `${spec.customer}_${spec.event}_${spec.year}`;
-          if (!grouped[key]) {
-            grouped[key] = [];
+        const metadataEntries = APP_STATE.futureSpecs?.metadata || {};
+        const futureEntries = Array.isArray(APP_STATE.futureSpecs?.entries)
+          ? APP_STATE.futureSpecs.entries
+          : [];
+
+        const groupedEntries = futureEntries.reduce((acc, entry) => {
+          if (!entry) {
+            return acc;
           }
-          grouped[key].push(spec);
-        });
 
-        const metadataEntries = APP_STATE.futureSpecs.metadata || {};
-        Object.keys(metadataEntries).forEach((key) => {
-          if (!grouped[key]) {
-            const [metaCustomer = '', metaEvent = '', metaYear = ''] = key.split('_');
-            const metadataSamples = Array.isArray(metadataEntries[key].samples)
-              ? metadataEntries[key].samples.map((sample) => ({
-                  ...sample,
-                  customer: sample.customer || metaCustomer,
-                  event: sample.event || metaEvent,
-                  year:
-                    sample.year !== undefined && sample.year !== null
-                      ? sample.year
-                      : metaYear,
-                }))
-              : [];
-            grouped[key] = metadataSamples;
+          const key = `${entry.customer}_${entry.event}_${entry.year}`;
+          if (!acc[key]) {
+            acc[key] = [];
           }
-        });
+          acc[key].push(entry);
+          return acc;
+        }, {});
 
-        if (Object.keys(grouped).length === 0) {
+        const metadataKeys = Object.keys(metadataEntries);
+        const keysToRender = metadataKeys.length > 0 ? metadataKeys : Object.keys(groupedEntries);
+
+        if (keysToRender.length === 0) {
           listDiv.innerHTML =
             '<p class="text-center" style="color: var(--gray);">No future specifications created yet</p>';
           populateMigrationYearOptions();
           return;
         }
 
-        let html = '';
-        Object.keys(grouped).forEach((key) => {
-          const specs = grouped[key];
-          const metadata = APP_STATE.futureSpecs.metadata[key] || {};
-          const [customer, event, year] = key.split('_');
+        const renderedKeys = new Set();
 
-          // Count assigned vs TBD
-          const assigned = specs.filter((s) => s.abo !== 'TBD').length;
-          const total = specs.length;
+        const buildCardHtml = (specKey, metadata = {}, samples = []) => {
+          const [customer = '', event = '', year = ''] = specKey.split('_');
+          const total = samples.length;
+          const assigned = samples.filter(
+            (sample) => sample && sample.abo && sample.abo !== 'TBD'
+          ).length;
+          const status = metadata.status || 'draft';
+          const statusClass = status === 'approved' ? 'available' : 'limited';
 
-          html += `
+          let cardHtml = `
       <div class="card mb-2" style="background: var(--light); border: 1px solid var(--border);">
         <div class="card-header">
           <h4>${customer} ${event} ${year}</h4>
-          <span class="status-tag ${metadata.status === 'approved' ? 'available' : 'limited'}">
-            ${metadata.status || 'draft'}
+          <span class="status-tag ${statusClass}">
+            ${status}
           </span>
         </div>
         <div style="padding: 1rem;">
@@ -13850,16 +13923,16 @@
           <p>Quantity: ${metadata.quantity || 'Not set'}</p>
           <p>Version: v${metadata.currentVersion || 1}</p>`;
 
-          // Add optimization suggestions if they exist
-          const specsWithSuggestions = specs.filter(
-            (s) => s.optimizationSuggestions && s.optimizationSuggestions.length > 0
+          const specsWithSuggestions = samples.filter(
+            (sample) => sample && Array.isArray(sample.optimizationSuggestions) && sample.optimizationSuggestions.length > 0
           );
+
           if (specsWithSuggestions.length > 0) {
             const totalSuggestions = specsWithSuggestions.reduce(
-              (sum, s) => sum + s.optimizationSuggestions.length,
+              (sum, sample) => sum + sample.optimizationSuggestions.length,
               0
             );
-            html += `
+            cardHtml += `
             <div class="alert alert-info" style="margin: 0.5rem 0; padding: 0.75rem; background: #e3f2fd; border: 1px solid #1976d2; border-radius: 4px;">
               <strong>💡 ${totalSuggestions} Optimization Opportunities Found!</strong><br>
               <small>Compatible blood sources identified for ${specsWithSuggestions.length} samples</small>
@@ -13867,40 +13940,59 @@
                 <summary style="cursor: pointer; font-weight: 500;">View Suggestions</summary>
                 <div style="margin-top: 0.5rem;">`;
 
-            specsWithSuggestions.forEach((spec) => {
-              html += `<div style="margin: 0.5rem 0; padding: 0.5rem; background: white; border-radius: 3px;">
-                <strong>Sample ${spec.sample_id} (${spec.abo} ${spec.rh}):</strong><br>`;
+            specsWithSuggestions.forEach((sample) => {
+              cardHtml += `<div style="margin: 0.5rem 0; padding: 0.5rem; background: white; border-radius: 3px;">
+                <strong>Sample ${sample.sample_id} (${sample.abo} ${sample.rh}):</strong><br>`;
 
-              spec.optimizationSuggestions.forEach((suggestion) => {
-                html += `<div style="margin-left: 1rem; margin-top: 0.25rem;">
+              sample.optimizationSuggestions.forEach((suggestion) => {
+                cardHtml += `<div style="margin-left: 1rem; margin-top: 0.25rem;">
                   • <strong>${suggestion.sourceType}:</strong> ${suggestion.description}<br>
                   <small style="color: #666;">${suggestion.details} | ${suggestion.compatibility}</small>
                 </div>`;
               });
-              html += '</div>';
+              cardHtml += '</div>';
             });
 
-            html += `</div></details>
+            cardHtml += `</div></details>
             </div>`;
           }
 
-          html += `<div class="btn-group mt-2">
-            <button class="btn btn-primary btn-sm" onclick="viewFutureSpec('${key}')">
+          cardHtml += `<div class="btn-group mt-2">
+            <button class="btn btn-primary btn-sm" onclick="viewFutureSpec('${specKey}')">
               View/Edit
             </button>
-            <button class="btn btn-outline btn-sm" onclick="cloneFutureSpec('${key}')">
+            <button class="btn btn-outline btn-sm" onclick="cloneFutureSpec('${specKey}')">
               Clone
             </button>
-            <button class="btn btn-outline btn-sm" onclick="approveFutureSpec('${key}')">
-              ${metadata.status === 'approved' ? 'Unapprove' : 'Approve'}
+            <button class="btn btn-outline btn-sm" onclick="approveFutureSpec('${specKey}')">
+              ${status === 'approved' ? 'Unapprove' : 'Approve'}
             </button>
-            <button class="btn btn-danger btn-sm" onclick="deleteFutureSpec('${key}')">
+            <button class="btn btn-danger btn-sm" onclick="deleteFutureSpec('${specKey}')">
               Delete
             </button>
           </div>
         </div>
       </div>
     `;
+
+          return cardHtml;
+        };
+
+        let html = '';
+
+        keysToRender.forEach((specKey) => {
+          const metadata = metadataEntries[specKey] || {};
+          const samples = groupedEntries[specKey] || [];
+          html += buildCardHtml(specKey, metadata, samples);
+          renderedKeys.add(specKey);
+        });
+
+        Object.keys(groupedEntries).forEach((specKey) => {
+          if (renderedKeys.has(specKey)) {
+            return;
+          }
+          html += buildCardHtml(specKey, {}, groupedEntries[specKey]);
+          renderedKeys.add(specKey);
         });
 
         listDiv.innerHTML = html;
@@ -14072,29 +14164,16 @@
 
       function addFutureSpecSampleRow() {
         const modal = document.getElementById('future-spec-edit-modal');
-        if (!modal) return;
+        if (!modal) {
+          return;
+        }
+
         const tbody = modal.querySelector('#future-spec-edit-table tbody');
-        if (!tbody) return;
+        if (!tbody) {
+          return;
+        }
 
-        const specKey = modal.dataset.specKey || '';
-        const [customer = '', eventName = '', yearValue = ''] = specKey.split('_');
-        const numericYear = Number(yearValue);
-        const resolvedYear = !Number.isNaN(numericYear) ? numericYear : yearValue;
-
-        const newRow = createFutureSpecEditRow({
-          customer,
-          event: eventName,
-          year: resolvedYear,
-          sample_id: '',
-          sample_type_id: '',
-          abo: 'TBD',
-          rh: 'TBD',
-          antigens: [],
-          antibodies: [],
-          dat_status: 'Negative',
-          status: 'draft',
-        });
-
+        const newRow = createFutureSpecEditRow();
         tbody.appendChild(newRow);
       }
 
@@ -15030,221 +15109,156 @@
         }
       }
 
+
       function saveFutureSpecEdits(specKey) {
         const modal = document.getElementById('future-spec-edit-modal');
-        const tbody = document.querySelector('#future-spec-edit-table tbody');
-        if (!modal || !tbody) {
+        if (!modal) {
           showAlert('error', 'Edit interface is unavailable');
           return;
         }
-
-        const effectiveKey = specKey || modal.dataset.specKey;
+      
+        const tbody = modal.querySelector('#future-spec-edit-table tbody');
+        if (!tbody) {
+          showAlert('error', 'No editable samples were found');
+          return;
+        }
+      
+        const effectiveKey = modal.dataset.specKey || specKey;
         if (!effectiveKey) {
           showAlert('error', 'Unable to determine which specification to save');
           return;
         }
-
-        const [customer, event, year] = effectiveKey.split('_');
-
-        const existingSpecs = APP_STATE.futureSpecs.entries.filter(
-          (s) => s.customer === customer && s.event === event && s.year == year
-        );
-
-        const existingSpecMap = new Map();
-        existingSpecs.forEach((spec) => {
-          if (spec && spec.sample_id) {
-            existingSpecMap.set(spec.sample_id, spec);
-          }
-        });
-
-        const newAllocations = [];
-        const newDecisions = [];
-        const nowIso = new Date().toISOString();
-
-        APP_STATE.futureAllocations = Array.isArray(APP_STATE.futureAllocations)
-          ? APP_STATE.futureAllocations.filter((allocation) => allocation.specKey !== effectiveKey)
+      
+        const [customer = '', eventName = '', yearValue = ''] = effectiveKey.split('_');
+        const parsedYear = Number(yearValue);
+        const resolvedYear =
+          yearValue === '' || Number.isNaN(parsedYear) ? yearValue : parsedYear;
+      
+        APP_STATE.futureSpecs = APP_STATE.futureSpecs || {};
+        APP_STATE.futureSpecs.entries = Array.isArray(APP_STATE.futureSpecs.entries)
+          ? APP_STATE.futureSpecs.entries
           : [];
+        APP_STATE.futureSpecs.metadata = APP_STATE.futureSpecs.metadata || {};
+        APP_STATE.futureSpecs.versions = APP_STATE.futureSpecs.versions || {};
 
-        const updatedSpecs = [];
-
+        const entries = APP_STATE.futureSpecs.entries;
+        const existingSamplesForKey = entries.filter(
+          (entry) => `${entry.customer}_${entry.event}_${entry.year}` === effectiveKey
+        );
+        const existingSampleMap = new Map(
+          existingSamplesForKey
+            .filter((sample) => sample && sample.sample_id)
+            .map((sample) => [sample.sample_id, sample])
+        );
+      
+        const updatedSamples = [];
+      
         Array.from(tbody.querySelectorAll('tr')).forEach((row) => {
-          const specData = collectFutureSpecDataFromRow(row, effectiveKey, existingSpecMap);
-          if (!specData) {
+          const sampleIdInput = row.querySelector('.edit-sample-id');
+          const sampleId = sampleIdInput ? sampleIdInput.value.trim() : '';
+          if (!sampleId) {
             return;
           }
-
-          updatedSpecs.push(specData);
-
-          const suggestionsButton = row.querySelector('[data-suggestion-button]');
-          if (suggestionsButton) {
-            suggestionsButton.textContent = '💡 Suggestions';
-            suggestionsButton.classList.add('btn-outline');
-            suggestionsButton.classList.remove('btn-success');
-          }
-
-          const provisionalDataRaw = row.dataset.provisionalAllocation;
-          const sampleId = specData.sample_id;
-
-          if (provisionalDataRaw) {
-            let allocationData = null;
-            try {
-              allocationData = JSON.parse(provisionalDataRaw);
-            } catch (error) {
-              console.warn('Unable to parse provisional allocation for sample', sampleId, error);
-            }
-
-            delete row.dataset.provisionalAllocation;
-
-            if (allocationData && allocationData.sourceKey) {
-              const theoreticalVolume =
-                Number(allocationData.theoreticalVolume) || estimateSpecAllocationVolume(specData);
-              const plannedVolume = newAllocations
-                .filter((allocation) => allocation.sourceKey === allocationData.sourceKey)
-                .reduce((sum, allocation) => sum + (Number(allocation.allocatedVolume) || 0), 0);
-
-              const remainingVolume = calculateAvailableResourceVolume(
-                allocationData.sourceKey,
-                theoreticalVolume,
-                new Set([effectiveKey]),
-                plannedVolume
-              );
-
-              const desiredVolume =
-                Number(allocationData.allocatedVolume) || estimateSpecAllocationVolume(specData);
-              const finalVolume = Math.min(desiredVolume, remainingVolume);
-
-              if (finalVolume > 0) {
-                const finalAllocation = {
-                  allocationId: createId('alloc'),
-                  specKey: effectiveKey,
-                  sampleId,
-                  customer,
-                  event,
-                  year: Number(specData.year) || specData.year || Number(year) || year,
-                  sourceKey: allocationData.sourceKey,
-                  sourceType: allocationData.sourceType || 'Standing Order',
-                  abo: allocationData.abo ? normalizeAboValue(allocationData.abo) : null,
-                  rh: allocationData.rh ? normalizeRhValue(allocationData.rh) : null,
-                  allocatedVolume: finalVolume,
-                  theoreticalVolume,
-                  allocatedAt: nowIso,
-                  details:
-                    allocationData.details ||
-                    allocationData.savingsDetails ||
-                    allocationData.title ||
-                    'Accepted optimization suggestion.',
-                };
-
-                newAllocations.push(finalAllocation);
-
-                newDecisions.push({
-                  decisionId: createId('optDecision'),
-                  specKey: effectiveKey,
-                  sampleId,
-                  customer,
-                  event,
-                  year: Number(specData.year) || specData.year || Number(year) || year,
-                  decision: 'Accepted',
-                  sourceKey: finalAllocation.sourceKey,
-                  sourceType: finalAllocation.sourceType,
-                  timestamp: nowIso,
-                  details:
-                    allocationData.details ||
-                    allocationData.savingsDetails ||
-                    allocationData.title ||
-                    'Accepted optimization suggestion.',
-                });
-              } else {
-                newDecisions.push({
-                  decisionId: createId('optDecision'),
-                  specKey: effectiveKey,
-                  sampleId,
-                  customer,
-                  event,
-                  year: Number(specData.year) || specData.year || Number(year) || year,
-                  decision: 'Allocation Skipped',
-                  sourceKey: allocationData.sourceKey,
-                  timestamp: nowIso,
-                  details:
-                    'Suggested allocation could not be committed due to insufficient remaining volume.',
-                });
+      
+          const sampleTypeSelect = row.querySelector('.edit-sample-type');
+          const aboSelect = row.querySelector('.edit-abo');
+          const rhSelect = row.querySelector('.edit-rh');
+          const datSelect = row.querySelector('.edit-dat');
+      
+          const baseSample = existingSampleMap.get(sampleId) || {};
+      
+          const antigens = [];
+          const antigenContainerId = row.dataset.antigenContainerId;
+          const antigenContainer = antigenContainerId ? document.getElementById(antigenContainerId) : null;
+          if (antigenContainer) {
+            antigenContainer.querySelectorAll('.antigen-row').forEach((antigenRow) => {
+              const selects = antigenRow.querySelectorAll('select');
+              if (selects.length >= 2) {
+                const [antigenSelect, statusSelect] = selects;
+                const antigenValue = antigenSelect ? antigenSelect.value : '';
+                if (antigenValue) {
+                  antigens.push({
+                    antigen: antigenValue,
+                    status: statusSelect ? statusSelect.value : 'Positive',
+                  });
+                }
               }
-            }
-          } else {
-            const suggestions = findBestSuggestionForSample(specData);
-            if (Array.isArray(suggestions) && suggestions.length > 0) {
-              const matchesSuggestion = suggestions.some((suggestion) => {
-                return (
-                  normalizeAboValue(suggestion.abo) === normalizeAboValue(specData.abo) &&
-                  normalizeRhValue(suggestion.rh) === normalizeRhValue(specData.rh) &&
-                  serializeAntigensForComparison(suggestion.antigens) ===
-                    serializeAntigensForComparison(specData.antigens)
-                );
-              });
-
-              if (!matchesSuggestion) {
-                newDecisions.push({
-                  decisionId: createId('optDecision'),
-                  specKey: effectiveKey,
-                  sampleId,
-                  customer,
-                  event,
-                  year: Number(specData.year) || specData.year || Number(year) || year,
-                  decision: 'Manual Entry',
-                  timestamp: nowIso,
-                  details: 'Manual entry saved without adopting available optimization suggestions.',
-                  suggestionCount: suggestions.length,
-                });
-              }
-            }
+            });
           }
+      
+          const antibodies = [];
+          const antibodyContainerId = row.dataset.antibodyContainerId;
+          const antibodyContainer = antibodyContainerId ? document.getElementById(antibodyContainerId) : null;
+          if (antibodyContainer) {
+            antibodyContainer.querySelectorAll('.antibody-row select').forEach((selectEl) => {
+              if (selectEl && selectEl.value) {
+                antibodies.push(selectEl.value);
+              }
+            });
+          }
+      
+          const sample = {
+            ...baseSample,
+            customer: customer || baseSample.customer || '',
+            event: eventName || baseSample.event || '',
+            year: resolvedYear !== '' ? resolvedYear : baseSample.year,
+            sample_id: sampleId,
+            sample_type_id: sampleTypeSelect ? sampleTypeSelect.value : baseSample.sample_type_id || '',
+            abo: aboSelect ? aboSelect.value || 'TBD' : baseSample.abo || 'TBD',
+            rh: rhSelect ? rhSelect.value || 'TBD' : baseSample.rh || 'TBD',
+            dat_status: datSelect ? datSelect.value || 'Negative' : baseSample.dat_status || 'Negative',
+            antigens,
+            antibodies,
+          };
+      
+          if (!sample.status) {
+            sample.status = 'draft';
+          }
+      
+          if (
+            sample.forecasted_quantity === undefined ||
+            sample.forecasted_quantity === null ||
+            Number.isNaN(Number(sample.forecasted_quantity))
+          ) {
+            sample.forecasted_quantity = calculateForecastedQuantity(customer, sample.sample_id);
+          }
+      
+          updatedSamples.push(sample);
         });
-
-        if (newAllocations.length > 0) {
-          APP_STATE.futureAllocations.push(...newAllocations);
-        }
-        if (newDecisions.length > 0) {
-          APP_STATE.optimizationDecisions.push(...newDecisions);
-        }
-
-        const metadata = APP_STATE.futureSpecs.metadata[effectiveKey] || {};
-        const now = new Date().toISOString();
-        metadata.lastModified = now;
-        metadata.currentVersion = (metadata.currentVersion || 0) + 1;
-        if (!metadata.created) {
-          metadata.created = now;
-        }
-        if (metadata.status === undefined) {
-          metadata.status = 'draft';
-        }
-        if (metadata.quantity === undefined) {
-          metadata.quantity = updatedSpecs.length;
-        }
-        metadata.samples = JSON.parse(JSON.stringify(updatedSpecs));
-
-        APP_STATE.futureSpecs.metadata[effectiveKey] = metadata;
-
-        APP_STATE.futureSpecs.entries = APP_STATE.futureSpecs.entries.filter(
-          (s) => !(s.customer === customer && s.event === event && s.year == year)
+      
+        APP_STATE.futureSpecs.entries = entries.filter(
+          (entry) => `${entry.customer}_${entry.event}_${entry.year}` !== effectiveKey
         );
-        APP_STATE.futureSpecs.entries.push(...updatedSpecs);
-
+      
+        APP_STATE.futureSpecs.entries.push(...updatedSamples);
+      
+        const nowIso = new Date().toISOString();
+        const metadata = APP_STATE.futureSpecs.metadata[effectiveKey] || {
+          created: nowIso,
+          currentVersion: 0,
+          status: 'draft',
+          quantity: 0,
+        };
+      
+        metadata.lastModified = nowIso;
+        metadata.currentVersion = (metadata.currentVersion || 0) + 1;
+        metadata.samples = JSON.parse(JSON.stringify(updatedSamples));
+      
+        APP_STATE.futureSpecs.metadata[effectiveKey] = metadata;
+      
         APP_STATE.futureSpecs.versions[`${effectiveKey}_v${metadata.currentVersion}`] = {
-          timestamp: now,
-          samples: JSON.parse(JSON.stringify(updatedSpecs)),
+          timestamp: nowIso,
+          samples: JSON.parse(JSON.stringify(updatedSamples)),
         };
 
-        closeFutureSpecModal();
-        updateFutureSpecsList();
         logActivity(
           'Updated future specification',
-          `${customer} ${event} ${year} (v${metadata.currentVersion})`
+          `${customer} ${eventName} ${resolvedYear} (v${metadata.currentVersion})`
         );
+        closeFutureSpecModal();
+        updateFutureSpecsList();
         persistState();
-        showAlert(
-          'success',
-          `Saved changes to ${customer} ${event} ${year} (Version ${metadata.currentVersion})`
-        );
+        showAlert('success', 'Future specification updated successfully');
       }
       function approveFutureSpec(specKey) {
         const metadata = APP_STATE.futureSpecs.metadata[specKey];
