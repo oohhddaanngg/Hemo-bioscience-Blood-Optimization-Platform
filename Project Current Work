@@ -1,7 +1,35 @@
-Current Version: v0.7.2
+# Hemo bioscience Blood Optimization Platform
+## Current Work & Roadmap
 
-Task 11 (Immediate Priority): Fix Initial Data Display on Page Load. The UI must correctly render all data from IndexedDB upon application startup.
+**Current Version:** v0.7.2
 
-Task 12 (Next Priority): Future Spec Workflow Overhaul & Critical Bug Fixes. This includes fixing manual spec creation, enabling full spec editing, correcting dropdown displays, and integrating the module with the Blood Calculator.
+---
 
-Task 13 (Low Priority): Enhance Backup Filename with Full Timestamp (resolve partial implementation from v0.7.1).
+### In Progress
+
+- **Task 11 (Immediate Priority): Fix Critical UI Bugs**
+  - **Description:** Address two high-priority bugs identified in v0.7.2.
+  - **Bug 1:** Data (e.g., Sample Definitions) is not rendering on initial page load/refresh, but appears after a CSV import forces a UI update.
+  - **Bug 2:** The "Add Customer" modal does not close automatically after a successful save.
+  - **Target Version:** v0.7.3
+
+---
+
+### Next Up
+
+- **Task 12 (High Priority): Future Spec Workflow Overhaul**
+  - **Description:** Implement critical fixes and features to make the Future Specifications module fully functional.
+  - **Requirements:**
+    1. Fix the bug where manually created specs do not appear in the UI.
+    2. Enable full editing of cloned specs (add/delete/modify samples, IDs, and types).
+    3. Fix the "Copy Structure From" dropdown to display customer codes.
+    4. Integrate the Future Specs module with the Blood Calculator.
+  - **Target Version:** v0.7.3
+
+---
+
+### Backlog
+
+- **Task 13 (Low Priority): Enhance Backup Filename Timestamp**
+  - **Description:** The v0.7.1 fix for backup filenames included the date but not the time. This needs to be updated to a full timestamp (YYYY-MM-DD_HHMMSS) to allow for multiple unique backups on the same day.
+  - **Target Version:** v0.7.3
