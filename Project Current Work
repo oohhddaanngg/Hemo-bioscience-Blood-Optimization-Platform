@@ -6,18 +6,19 @@ Last Updated: 2025-10-01
 ## Roadmap & Task List
 
 ### In Progress
-- **Task 16: [Planning] Platform Stabilization Post-QA Failure**
-  - **Objective:** Address all blocking issues from the v0.7.9 QA rejection, including the fatal parsing error and duplicate function definitions, to produce a stable, fully interactive application.
+- **Task 17: [Planning] Synchronize APP_STATE Version**
+  - **Objective:** Align the internal `APP_STATE.version` property with the visible application version (v0.8.0) as recommended by the final QA review.
   - **Status:** Awaiting plan approval.
   - **Next Step:** User approval of the proposed plan.
 
 ### Up Next
 - **Task 10: [Planning] Create "Future Specifications" Feature**
   - **Objective:** Allow users to define specifications that will only become active on a future date.
-  - **Status:** On hold pending platform stabilization.
-  - **Next Step:** Resume planning once a stable version is confirmed.
+  - **Status:** Ready for planning to commence. Platform is now stable.
+  - **Next Step:** Kickoff planning session.
 
 ### Completed
+- **Task 16:** Platform Stabilization Post-QA Failure
 - **Task 15:** Critical Hotfix for JavaScript Syntax Error (Failed QA)
 - **Task 14:** Diagnostic Analysis of v0.7.8 Failure
 - **Task 13:** Hotfix for Lot Definition Race Condition (Failed)
