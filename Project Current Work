@@ -6,18 +6,19 @@ Last Updated: 2025-10-01
 ## Roadmap & Task List
 
 ### In Progress
-- **Task 15: [Implementation/QA] Critical Hotfix for JavaScript Syntax Error**
-  - **Objective:** Fix the fatal SyntaxError in v0.7.8 to restore all application functionality.
-  - **Status:** Instructions generated. Awaiting implementation and external QA.
-  - **Next Step:** Implementation by Developer AI; QA Review by ChatGPT.
+- **Task 16: [Planning] Platform Stabilization Post-QA Failure**
+  - **Objective:** Address all blocking issues from the v0.7.9 QA rejection, including the fatal parsing error and duplicate function definitions, to produce a stable, fully interactive application.
+  - **Status:** Awaiting plan approval.
+  - **Next Step:** User approval of the proposed plan.
 
 ### Up Next
 - **Task 10: [Planning] Create "Future Specifications" Feature**
   - **Objective:** Allow users to define specifications that will only become active on a future date.
   - **Status:** On hold pending platform stabilization.
-  - **Next Step:** Resume planning once v0.7.9 is confirmed stable.
+  - **Next Step:** Resume planning once a stable version is confirmed.
 
 ### Completed
+- **Task 15:** Critical Hotfix for JavaScript Syntax Error (Failed QA)
 - **Task 14:** Diagnostic Analysis of v0.7.8 Failure
 - **Task 13:** Hotfix for Lot Definition Race Condition (Failed)
 - **Task 12:** Hotfix for Initial Table Load Failure (Failed)
