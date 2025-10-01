@@ -1,33 +1,39 @@
 # Project Current Work: Hemo bioscience Blood Optimization Platform
-## Focus: Stability and Core Feature Refinement
+## Focus: v0.9.0 - Forecasting Tools & UI Bug Fixes
 Last Updated: 2025-10-01
 
 ---
 ## Roadmap & Task List
 
-### In Progress
-- **Task 18: [Planning Approved] Overhaul Blood Calculator Module**
-  - **Objective:** Rework the module into a forecast and sharing window analysis tool with automated date and quantity population.
-  - **Status:** Plan approved. Awaiting instruction generation.
+### In Progress (v0.9.0 Release Cycle)
+- **Task 18: [Implementation/QA] Overhaul Blood Calculator Module**
+  - **Objective:** Rework the module into a forecast and sharing window analysis tool.
+  - **Plan Summary:**
+    - Redesign UI to use dynamic dropdowns for Customer, Year, Event, and Sample ID.
+    - Implement a `normalizeSampleId(sampleId, customer)` function to handle inconsistent, customer-specific naming conventions.
+    - Implement a new forecasting algorithm that uses the normalized Sample ID to aggregate all relevant historical data.
+    - Implement a "Find Sharing Opportunities" feature that dynamically finds and displays other products/events with overlapping manufacturing windows.
+    - Fetch and display the Earliest Bleed Date, Ship Date, and Expiration Date from the manufacturing calendar.
 
-- **Task 19: [Planning Approved] Fix Data Rendering in Quantities Panels**
+- **Task 19: [Implementation/QA] Fix Data Rendering in Quantities Panels**
   - **Objective:** Correct the bugs preventing Historical and Confirmed Order Quantities from displaying on initial load.
-  - **Status:** Plan approved. Awaiting instruction generation.
+  - **Plan Summary:**
+    - Investigate and repair the `updateHistoricalQuantitiesTable` and `updateConfirmedQuantitiesTable` functions.
+    - The fix must ensure data tables are fully rendered the first time a user navigates to the panel, adhering to the "Verify on Load" tenet.
 
-- **Task 20: [Planning] Fix Dropdown Logic and UI Inconsistencies**
+- **Task 20: [Implementation/QA] Fix Dropdown Logic and UI Inconsistencies**
   - **Objective:** Correct all reported bugs related to dropdown filters and UI elements across multiple modules.
-  - **Status:** Awaiting plan approval.
-  - **Next Step:** User approval of the proposed plan.
+  - **Plan Summary:**
+    - Repair the cascading dropdown logic in the Historical Quantities, Order Quantities, and Historical Specifications panels so that Year and Event filters populate correctly.
+    - In the Future Specifications panel, replace the "Year" text input with a dynamic dropdown and fix the "Event" dropdown to show real event names instead of hardcoded values.
+    - The functionality of the working dropdowns in the Blood Calculator should be used as the model for consistency.
+
+- **Status for all v0.9.0 tasks:** All plans are approved and detailed instructions have been generated. Awaiting implementation and a subsequent, comprehensive QA review.
+- **Next Step:** Implementation by Developer AI; QA Review by ChatGPT.
 
 ### Up Next
 - **Task 17: [On Hold] Synchronize APP_STATE Version**
-  - **Objective:** Align the internal `APP_STATE.version` property with the visible application version.
-  - **Status:** On hold pending completion of higher-priority tasks.
-
 - **Task 10: [Planning] Create "Future Specifications" Feature**
-  - **Objective:** Allow users to define specifications that will only become active on a future date.
-  - **Status:** Ready for planning to commence.
-  - **Next Step:** Kickoff planning session.
 
 ### Completed
 - **Task 16:** Platform Stabilization Post-QA Failure
