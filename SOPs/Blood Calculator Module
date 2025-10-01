@@ -1,0 +1,29 @@
+Blood Calculator Module SOP
+
+1. Objective To provide a standardized procedure for using the Blood Calculator module to generate an optimized blood usage plan. This tool helps users determine the most efficient way to fulfill component needs while preserving rare blood types, calculating necessary overages, and estimating savings.
+2. Scope This SOP covers the functionality within the Blood Usage Planner (BUP) panel. It includes selecting required blood pools, generating usage suggestions, and interpreting the results. It does not cover the creation of specifications or the management of lot definitions.
+3. Procedure
+1.	Navigate to the BUP Panel:
+o	From the main application interface, click on "BUP" in the left-hand navigation menu.
+2.	Define Required Blood Pools:
+o	The BUP panel displays a list of all available blood types (e.g., O+, O-, A+, A-, etc.).
+o	For each blood type that is required for an order, click the corresponding "Add to Pool" button. This will move the blood type from the "Available" list to the "Required Pools" list.
+o	To remove a blood type from the required pool, click the corresponding "Remove" button.
+3.	Generate the Optimized Plan:
+o	Once all necessary blood types have been added to the "Required Pools" list, click the "Generate Suggestions" button.
+o	The system will process the request and populate the "Optimization Suggestions" and "Estimated Savings" tables.
+4.	Interpret the Results:
+o	Optimization Suggestions Table: This table provides the recommended usage plan.
+	Required: The blood type and quantity initially requested.
+	Suggested: The recommended blood type to use. The calculator may suggest a more common, compatible type to preserve a rarer one (e.g., suggesting O+ to fulfill an A+ need).
+	Overage: The additional quantity calculated based on business rules.
+	Total: The final quantity (Required + Overage) to pull from inventory.
+o	Estimated Savings Table: This table quantifies the benefit of the optimization.
+	It lists any rare blood types that were preserved by substituting them with more common, compatible units.
+5.	Export the Plan:
+o	To save a copy of the generated plan, click the "Export BUP as CSV" button. This will download a .csv file containing the data from the "Optimization Suggestions" table.
+4. Key Business Rules (Reference: Project Business Logic Manual)
+•	Blood Compatibility: The calculator strictly adheres to ABO/Rh compatibility rules. For example, it knows that O- can be given to any patient, and A+ can receive O-, O+, A-, and A+. The suggestions will never violate these rules.
+•	Overage Calculation: The system automatically calculates the required overage for each blood type. The formula is based on factors defined in the business logic, such as historical usage and discard rates.
+•	Optimization Hierarchy: The primary goal of the optimization is to preserve rare blood types. The calculator will always attempt to substitute a rarer required type (like O-) with a more common compatible type (like O+) if available and appropriate for the need.
+•	Single Source of Truth: All data displayed in the BUP panel, including on-hand inventory levels used in calculations, is drawn directly from the central APP_STATE object upon load.
