@@ -6,13 +6,16 @@ Last Updated: 2025-10-01
 ## Roadmap & Task List
 
 ### In Progress
-- **Task 18: [Planning] Overhaul Blood Calculator Module**
+- **Task 18: [Planning Approved] Overhaul Blood Calculator Module**
   - **Objective:** Rework the module into a forecast and sharing window analysis tool with automated date and quantity population.
-  - **Status:** Awaiting plan approval.
-  - **Next Step:** User approval of the proposed plan.
+  - **Status:** Plan approved. Awaiting instruction generation.
 
-- **Task 19: [Planning] Fix Data Rendering in Quantities Panels**
+- **Task 19: [Planning Approved] Fix Data Rendering in Quantities Panels**
   - **Objective:** Correct the bugs preventing Historical and Confirmed Order Quantities from displaying on initial load.
+  - **Status:** Plan approved. Awaiting instruction generation.
+
+- **Task 20: [Planning] Fix Dropdown Logic and UI Inconsistencies**
+  - **Objective:** Correct all reported bugs related to dropdown filters and UI elements across multiple modules.
   - **Status:** Awaiting plan approval.
   - **Next Step:** User approval of the proposed plan.
 
@@ -23,7 +26,7 @@ Last Updated: 2025-10-01
 
 - **Task 10: [Planning] Create "Future Specifications" Feature**
   - **Objective:** Allow users to define specifications that will only become active on a future date.
-  - **Status:** Ready for planning to commence. Platform is now stable.
+  - **Status:** Ready for planning to commence.
   - **Next Step:** Kickoff planning session.
 
 ### Completed
