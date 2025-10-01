@@ -6,12 +6,21 @@ Last Updated: 2025-10-01
 ## Roadmap & Task List
 
 ### In Progress
-- **Task 17: [Planning] Synchronize APP_STATE Version**
-  - **Objective:** Align the internal `APP_STATE.version` property with the visible application version (v0.8.0) as recommended by the final QA review.
+- **Task 18: [Planning] Overhaul Blood Calculator Module**
+  - **Objective:** Rework the module into a forecast and sharing window analysis tool with automated date and quantity population.
+  - **Status:** Awaiting plan approval.
+  - **Next Step:** User approval of the proposed plan.
+
+- **Task 19: [Planning] Fix Data Rendering in Quantities Panels**
+  - **Objective:** Correct the bugs preventing Historical and Confirmed Order Quantities from displaying on initial load.
   - **Status:** Awaiting plan approval.
   - **Next Step:** User approval of the proposed plan.
 
 ### Up Next
+- **Task 17: [On Hold] Synchronize APP_STATE Version**
+  - **Objective:** Align the internal `APP_STATE.version` property with the visible application version.
+  - **Status:** On hold pending completion of higher-priority tasks.
+
 - **Task 10: [Planning] Create "Future Specifications" Feature**
   - **Objective:** Allow users to define specifications that will only become active on a future date.
   - **Status:** Ready for planning to commence. Platform is now stable.
@@ -19,9 +28,4 @@ Last Updated: 2025-10-01
 
 ### Completed
 - **Task 16:** Platform Stabilization Post-QA Failure
-- **Task 15:** Critical Hotfix for JavaScript Syntax Error (Failed QA)
-- **Task 14:** Diagnostic Analysis of v0.7.8 Failure
-- **Task 13:** Hotfix for Lot Definition Race Condition (Failed)
-- **Task 12:** Hotfix for Initial Table Load Failure (Failed)
-- **Task 11:** Implement "Last Saved" Timestamp
 ---
