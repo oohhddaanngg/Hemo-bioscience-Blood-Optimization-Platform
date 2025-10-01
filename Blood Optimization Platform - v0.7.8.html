@@ -838,6 +838,24 @@
         border-left: 4px solid var(--danger);
       }
 
+      .init-error-banner {
+        position: sticky;
+        top: 0;
+        z-index: 1100;
+        margin-bottom: 0;
+        border-radius: 0;
+        justify-content: space-between;
+      }
+
+      .init-error-banner .init-error-dismiss {
+        background: none;
+        border: none;
+        color: inherit;
+        font-size: 1.25rem;
+        line-height: 1;
+        cursor: pointer;
+      }
+
       .alert-info {
         background: var(--hemo-blue-lighter);
         color: var(--hemo-blue);
@@ -4594,10 +4612,51 @@
       // Initialization
       // ===============================
 
+      function removeInitializationErrorBanner() {
+        const banner = document.getElementById('init-error-banner');
+        if (banner) {
+          banner.remove();
+        }
+      }
+
+      function showInitializationErrorBanner(message) {
+        const text = message || 'Initialization failed. See console for details.';
+        let banner = document.getElementById('init-error-banner');
+
+        if (!banner) {
+          banner = document.createElement('div');
+          banner.id = 'init-error-banner';
+          banner.className = 'alert alert-error init-error-banner';
+          banner.innerHTML = `
+            <span class="init-error-message"></span>
+            <button type="button" class="init-error-dismiss" aria-label="Dismiss">&times;</button>
+          `;
+
+          const dismissButton = banner.querySelector('.init-error-dismiss');
+          if (dismissButton) {
+            dismissButton.addEventListener('click', () => {
+              banner.remove();
+            });
+          }
+
+          document.body.prepend(banner);
+        }
+
+        const messageEl = banner.querySelector('.init-error-message');
+        if (messageEl) {
+          messageEl.textContent = text;
+        }
+
+        banner.style.display = 'flex';
+      }
+
       document.addEventListener('DOMContentLoaded', async function () {
-        // Apply saved theme
-        document.body.setAttribute('data-theme', APP_STATE.theme);
-        updateThemeIcon();
+        try {
+          removeInitializationErrorBanner();
+
+          // Apply saved theme
+          document.body.setAttribute('data-theme', APP_STATE.theme);
+          updateThemeIcon();
 
         // Initialize IndexedDB and load any existing state
         let storedState = null;
@@ -4815,7 +4874,11 @@
         initializeDragAndDrop();
 
         // Persist state every 30 seconds
-        setInterval(persistState, 30000);
+          setInterval(persistState, 30000);
+        } catch (error) {
+          console.error('Initialization failed:', error);
+          showInitializationErrorBanner('Initialization failed. See console for details.');
+        }
       });
 
       // ===============================
@@ -7312,6 +7375,7 @@
             yearSelect.innerHTML += `<option value="${year}">${year}</option>`;
           });
         }
+      }
 
       function updateEventOptions() {
         const customerCode = document.getElementById('calc-customer')?.value || '';
@@ -7362,7 +7426,8 @@
         });
 
         updateSampleOptions();
-    
+      }
+
       function updateSampleOptions() {
         const customerCode = document.getElementById('calc-customer')?.value || '';
         const selectedYear = document.getElementById('calc-year')?.value || '';
@@ -7542,7 +7607,6 @@
       }
 
       function calculateBloodNeeds() {
-        const customer = document.getElementById('calc-customer').value;
         const quantity = parseInt(document.getElementById('calc-quantity').value) || 0;
         const volume = parseFloat(document.getElementById('calc-volume').value) || 0;
         const hematocrit = parseFloat(document.getElementById('calc-hematocrit').value) || 0;
@@ -8013,17 +8077,6 @@
 
         return groups;
       }
-
-      // Debug: Log exactly what we're working with
-      console.log('=== BUP DEBUG for OneWorld 4th ===');
-      console.log('Selected Events:', selectedEvents);
-      console.log('Blood Groups after calculation:', bloodGroups);
-      console.log(
-        'Calendar entries:',
-        APP_STATE.manufacturingCalendar.filter(
-          (e) => e.description?.includes('HQC') || e.description?.includes('OneWorld')
-        )
-      );
 
       function findSharingOpportunities(bloodGroups, selectedEvents) {
         const opportunities = [];
@@ -12275,6 +12328,12 @@
             : parseInt(APP_STATE.specPagination.pageSize);
         const totalPages = Math.ceil(specs.length / pageSize);
         const currentPage = APP_STATE.specPagination.currentPage;
+        const filterActive =
+          APP_STATE.specPagination.filterCustomer ||
+          APP_STATE.specPagination.filterEvent ||
+          APP_STATE.specPagination.filterYear ||
+          APP_STATE.specPagination.filterSampleId ||
+          APP_STATE.specPagination.filterSampleType;
 
         // Update info text
         const startIndex = Math.min((currentPage - 1) * pageSize + 1, specs.length);
@@ -13752,7 +13811,6 @@
           // Parse the copyFrom string correctly
           // Format is "Customer Event Year" e.g. "OneWorld 4th 2025"
           const copyParts = copyFrom.split(' ');
-          let copyCustomer = '';
           let copyEvent = '';
           let copyYear = '';
 
@@ -14636,10 +14694,6 @@
 
       function findAvailableBlood(customer, event, year) {
         // This is a simplified version - you'd expand this with real calendar data
-        const scheduleEntry = APP_STATE.manufacturingCalendar.find(
-          (e) => e.description && e.description.includes(customer) && e.description.includes(event)
-        );
-
         // Mock data for testing WSLH 1st 2026
         return {
           window: {

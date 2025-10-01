@@ -1,0 +1,15 @@
+#!/bin/sh
+set -e
+
+npx prettier --config .prettierrc "Blood Optimization Platform - v0.7.8.html" > /dev/null
+
+node --input-type=module <<'NODE' | npx eslint --config eslint.config.js --stdin --stdin-filename inline.js
+import { readFileSync } from 'node:fs';
+const htmlPath = 'Blood Optimization Platform - v0.7.8.html';
+const html = readFileSync(htmlPath, 'utf8');
+const match = html.match(/<script>([\s\S]*)<\/script>/);
+if (!match) {
+  process.exit(0);
+}
+process.stdout.write(match[1]);
+NODE

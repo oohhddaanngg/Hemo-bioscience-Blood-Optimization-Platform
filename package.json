@@ -1,0 +1,14 @@
+{
+  "name": "blood-optimization-platform",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "eslint": "^9.0.0",
+    "prettier": "^3.2.5"
+  },
+  "scripts": {
+    "format": "npx prettier --write \"Blood Optimization Platform - v0.7.8.html\"",
+    "format:check": "npx prettier --config .prettierrc \"Blood Optimization Platform - v0.7.8.html\" > /dev/null",
+    "lint:html": "node tools/lint-inline.mjs"
+  }
+}
