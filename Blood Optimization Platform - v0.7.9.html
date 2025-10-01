@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Blood Optimization Platform v0.7.8 | Hemo bioscience</title>
+    <title>Blood Optimization Platform v0.7.9 | Hemo bioscience</title>
     <style>
       * {
         margin: 0;
@@ -1853,7 +1853,7 @@
       <!-- Header Bar -->
       <header class="header-bar">
         <div class="header-left">
-        <div class="version-badge">v0.7.8</div>
+        <div class="version-badge">v0.7.9</div>
           <div class="active-users" id="active-users" style="display: none">
             <span>👤 Active:</span>
             <span id="active-user-list">-</span>
@@ -12093,12 +12093,16 @@
                                                     }
                                                 </td>
                                                 <td>
-                                                    <button class="btn btn-danger btn-sm" onclick="deleteSpec(${index})"
-                                                            ${
-                                                              !APP_STATE.writeAccess
-                                                                ? 'disabled'
-                                                                : ''
-                                                            }>Delete</button>
+                                                    <button
+                                                        class="btn btn-danger btn-sm"
+                                                        onclick="deleteSpec(${index})"
+                                                        ${
+                                                          !APP_STATE.writeAccess
+                                                            ? 'disabled'
+                                                            : ''
+                                                        }>
+                                                        Delete
+                                                    </button>
                                                 </td>
                                             </tr>
                                         `
