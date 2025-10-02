@@ -1,4 +1,28 @@
 # Project Current Work: Hemo bioscience Blood Optimization Platform
+## Focus: v1.0.0 - Future Specifications Feature
+Last Updated: 2025-10-02
+
+---
+## Roadmap & Task List
+
+### In Progress
+- **Task 10: [Planning] Create "Future Specifications" Feature**
+  - **Objective:** Allow users to define specifications that will only become active on a future date, enabling proactive planning for future proficiency testing events.
+  - **Status:** Kicking off the planning phase.
+  - **Next Step:** Awaiting user input to begin formulating the detailed plan.
+
+### Completed
+- **Task 23: Critical Hotfix for Syntax Error in saveQuantity (v0.9.3)**
+  - **Outcome:** Successfully resolved the blocking syntax error, leading to the approval of the stable v0.9.3 release. This task closes out the v0.9.x development cycle.
+- **Task 17:** Synchronize APP_STATE Version (Obsolete; completed in v0.9.3 release)
+- **Task 16:** Platform Stabilization Post-QA Failure (v0.8.0)
+- **Task 15:** Critical Hotfix for JavaScript Syntax Error (Failed QA)
+- **Task 14:** Diagnostic Analysis of v0.7.8 Failure
+- **Task 13:** Hotfix for Lot Definition Race Condition (Failed)
+- **Task 12:** Hotfix for Initial Table Load Failure (Failed)
+- **Task 11:** Implement "Last Saved" Timestamp
+
+# Project Current Work: Hemo bioscience Blood Optimization Platform
 ## Focus: v0.9.3 - Critical Syntax Hotfix
 Last Updated: 2025-10-02
 
