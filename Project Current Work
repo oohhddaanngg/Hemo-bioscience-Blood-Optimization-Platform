@@ -1,4 +1,30 @@
 # Project Current Work: Hemo bioscience Blood Optimization Platform
+## Focus: v0.9.2 - Second Hotfix for Initial Render Failure
+Last Updated: 2025-10-02
+
+---
+## Roadmap & Task List
+
+### In Progress
+- **Task 22: [Planning] Second Hotfix for Initial Table Render**
+  - **Objective:** Fix the blocking bug from the v0.9.1 QA rejection by correctly implementing the idempotent render hooks in the `switchPanel` function as explicitly detailed in the QA review.
+  - **Status:** Awaiting plan approval.
+  - **Next Step:** User approval of the proposed plan.
+
+### On Hold
+- **Task 21:** Hotfix for Initial Table Render (Failed QA)
+- **Task 18-20 (Combined):** The feature and bug fix work for the v0.9.0 release is complete but not yet merged pending a successful hotfix.
+
+### Up Next
+- **Task 17: [On Hold] Synchronize APP_STATE Version**
+- **Task 10: [Planning] Create "Future Specifications" Feature**
+
+### Completed
+- **Task 16:** Platform Stabilization Post-QA Failure
+---
+
+
+# Project Current Work: Hemo bioscience Blood Optimization Platform
 ## Focus: v0.9.1 - Hotfix for Initial Render Failure
 Last Updated: 2025-10-02
 
