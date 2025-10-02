@@ -1,4 +1,33 @@
 # Project Current Work: Hemo bioscience Blood Optimization Platform
+## Focus: v0.9.4 - Hotfix for Logic Regressions
+Last Updated: 2025-10-02
+
+---
+## Roadmap & Task List
+
+### In Progress
+- **Task 24: [Planning] Fix Blood Calculator Forecasting and Sharing Logic**
+  - **Objective:** Correct the faulty forecasting algorithm and repair the non-functional "Find Sharing Opportunities" button.
+  - **Status:** Awaiting plan approval.
+  - **Next Step:** User approval of the proposed plan.
+
+- **Task 25: [Planning] Correct BUP Generator Overage Range Calculation**
+  - **Objective:** Fix the overage calculation to produce a valid range instead of identical low/high values.
+  - **Status:** Awaiting plan approval.
+  - **Next Step:** User approval of the proposed plan.
+
+### On Hold
+- **Task 10: [On Hold] Create "Future Specifications" Feature**
+  - **Objective:** Allow users to define specifications that will only become active on a future date.
+  - **Status:** On hold pending stabilization of the v0.9.3 feature set.
+
+### Completed
+- **Task 23: Critical Hotfix for Syntax Error in saveQuantity (v0.9.3)**
+- **Task 17:** Synchronize APP_STATE Version (Obsolete; completed in v0.9.3 release)
+- **Task 16:** Platform Stabilization Post-QA Failure (v0.8.0)
+---
+
+# Project Current Work: Hemo bioscience Blood Optimization Platform
 ## Focus: v1.0.0 - Future Specifications Feature
 Last Updated: 2025-10-02
 
