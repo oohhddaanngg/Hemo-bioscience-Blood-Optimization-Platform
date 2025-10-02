@@ -1,4 +1,28 @@
 # Project Current Work: Hemo bioscience Blood Optimization Platform
+## Focus: v0.9.1 - Hotfix for Initial Render Failure
+Last Updated: 2025-10-02
+
+---
+## Roadmap & Task List
+
+### In Progress
+- **Task 21: [Planning] Hotfix for Initial Table Render**
+  - **Objective:** Fix the blocking bug from the v0.9.0 QA review by ensuring the Order Quantities and Historical Quantities tables render their data on the first panel visit.
+  - **Status:** Awaiting plan approval.
+  - **Next Step:** User approval of the proposed plan.
+
+### On Hold
+- **Task 18-20 (Combined):** The feature and bug fix work for the v0.9.0 release is complete but not yet merged pending the successful hotfix from Task 21.
+
+### Up Next
+- **Task 17: [On Hold] Synchronize APP_STATE Version**
+- **Task 10: [Planning] Create "Future Specifications" Feature**
+
+### Completed
+- **Task 16:** Platform Stabilization Post-QA Failure
+---
+
+# Project Current Work: Hemo bioscience Blood Optimization Platform
 ## Focus: v0.9.0 - Forecasting Tools & UI Bug Fixes
 Last Updated: 2025-10-01
 
