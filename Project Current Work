@@ -1,4 +1,27 @@
 # Project Current Work: Hemo bioscience Blood Optimization Platform
+## Focus: v1.0.1 - Remediation of Failed v1.0.0 Release
+Last Updated: 2025-10-03
+
+---
+## Roadmap & Task List
+
+### In Progress
+- **Task 30: [Planning] Remediate Incomplete v1.0.0 Implementation**
+  - **Objective:** To correctly and completely implement all features and logic from the original v1.0.0 plan (Tasks 27, 28, 29) that were missing or incomplete in the rejected build.
+  - **Status:** Awaiting plan approval.
+  - **Next Step:** User approval of the proposed plan.
+
+### On Hold
+- **Tasks 27, 28, 29:** Superseded by Task 30.
+- **Task 26:** Address Non-Blocking QA Feedback.
+- **Task 10:** Create "Future Specifications" Feature.
+
+### Completed
+- **Task 24 & 25 (v0.9.4):** Fixed Blood Calculator logic and BUP Generator overage calculation.
+---
+
+
+# Project Current Work: Hemo bioscience Blood Optimization Platform
 ## Focus: v1.0.0 - Advanced Forecasting & UI Enhancements
 Last Updated: 2025-10-03
 
