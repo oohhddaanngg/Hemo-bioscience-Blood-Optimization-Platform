@@ -1,4 +1,52 @@
 # Project Current Work: Hemo bioscience Blood Optimization Platform
+## Focus: v0.9.5 - Post-QA Code Cleanup
+Last Updated: 2025-10-03
+
+---
+## Roadmap & Task List
+
+### In Progress
+- **Task 26: [Planning] Address Non-Blocking QA Feedback**
+  - **Objective:** Address the two minor cleanup items from the v0.9.4 QA review to improve code hygiene and UI text consistency.
+  - **Status:** Awaiting plan approval.
+  - **Next Step:** User approval of the proposed plan.
+
+### On Hold
+- **Task 10: [On Hold] Create "Future Specifications" Feature**
+  - **Objective:** Allow users to define specifications that will only become active on a future date.
+  - **Status:** On hold pending completion of Task 26.
+
+### Completed
+- **Task 24: Fix Blood Calculator Forecasting and Sharing Logic (v0.9.4)**
+- **Task 25: Correct BUP Generator Overage Range Calculation (v0.9.4)**
+- **Task 23: Critical Hotfix for Syntax Error in saveQuantity (v0.9.3)**
+- **Task 17:** Synchronize APP_STATE Version (Obsolete; completed in v0.9.3 release)
+- **Task 16:** Platform Stabilization Post-QA Failure (v0.8.0)
+---
+
+# Project Current Work: Hemo bioscience Blood Optimization Platform
+## Focus: v0.9.4 - Hotfix for Logic Regressions
+Last Updated: 2025-10-02
+
+---
+## Roadmap & Task List
+
+### In Progress
+- **Task 24: [Implementation/QA] Fix Blood Calculator Forecasting and Sharing Logic**
+- **Task 25: [Implementation/QA] Correct BUP Generator Overage Range Calculation**
+  - **Status:** Instructions generated. Awaiting implementation and external QA for v0.9.4 release.
+  - **Next Step:** Implementation by Developer AI; QA Review by ChatGPT.
+
+### On Hold
+- **Task 10: [On Hold] Create "Future Specifications" Feature**
+
+### Completed
+- **Task 23: Critical Hotfix for Syntax Error in saveQuantity (v0.9.3)**
+- **Task 17:** Synchronize APP_STATE Version (Obsolete; completed in v0.9.3 release)
+- **Task 16:** Platform Stabilization Post-QA Failure (v0.8.0)
+---
+
+# Project Current Work: Hemo bioscience Blood Optimization Platform
 ## Focus: v0.9.4 - Hotfix for Logic Regressions
 Last Updated: 2025-10-02
 
