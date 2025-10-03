@@ -1,4 +1,27 @@
 # Project Current Work: Hemo bioscience Blood Optimization Platform
+## Focus: v1.1.0 - Refactor for Standardized Data
+Last Updated: 2025-10-03
+
+---
+## Roadmap & Task List
+
+### In Progress
+- **Task 32: [Planning] Refactor Forecasting for Standardized Sample IDs**
+  - **Objective:** Overhaul the forecasting logic to align with the new, standardized sample ID format by removing all obsolete normalization code and simplifying the data aggregation process.
+  - **Status:** Awaiting plan approval.
+  - **Next Step:** User approval of the proposed plan.
+
+### On Hold
+- **Task 26:** Address Non-Blocking QA Feedback (Obsolete due to data overhaul)
+- **Task 10:** Create "Future Specifications" Feature
+
+### Completed
+- **Task 31:** Critical Hotfix for v1.0.1 Regressions (Obsolete due to data overhaul)
+- **Task 24 & 25 (v0.9.4):** Fixed Blood Calculator logic and BUP Generator overage calculation.
+---
+
+
+# Project Current Work: Hemo bioscience Blood Optimization Platform
 ## Focus: v0.9.5 - Post-QA Code Cleanup
 Last Updated: 2025-10-03
 
