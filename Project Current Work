@@ -1,4 +1,27 @@
 # Project Current Work: Hemo bioscience Blood Optimization Platform
+## Focus: v1.0.2 - Critical Hotfix for v1.0.1 Regressions
+Last Updated: 2025-10-03
+
+---
+## Roadmap & Task List
+
+### In Progress
+- **Task 31: [Planning] Critical Hotfix for v1.0.1 Regressions and Failures**
+  - **Objective:** Restore core functionality by fixing the two critical TypeError crashes in the Blood Calculator and correcting the faulty Licon normalization logic.
+  - **Status:** Awaiting plan approval.
+  - **Next Step:** User approval of the proposed plan.
+
+### On Hold
+- **Task 30:** Remediation of Incomplete v1.0.0 Implementation (Failed; superseded by Task 31)
+- **Task 26:** Address Non-Blocking QA Feedback
+- **Task 10:** Create "Future Specifications" Feature
+
+### Completed
+- **Task 24 & 25 (v0.9.4):** Fixed Blood Calculator logic and BUP Generator overage calculation.
+---
+
+
+# Project Current Work: Hemo bioscience Blood Optimization Platform
 ## Focus: v1.0.2 - Code & UI Cleanup
 Last Updated: 2025-10-03
 
