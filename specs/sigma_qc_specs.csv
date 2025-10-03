@@ -1,0 +1,13 @@
+customer,event,year,sample_id,sample_type_id,antibody_1,antibody_2,abo,rh,antigens,is_dat_positive
+SigmaQC,1st,2023,IN0101R,RBC3_2ml,,,B,Pos,Fya-neg,FALSE
+SigmaQC,1st,2023,IN0101S,SER_3ml,Anti-Fya,,,,FALSE,
+SigmaQC,1st,2023,IN0101X,RBC3_2ml,,,O,Neg,Fya-pos,FALSE
+SigmaQC,1st,2024,IN0101R,RBC3_2ml,,,O,Pos,C-pos c-neg E-neg e-pos K-neg,FALSE
+SigmaQC,1st,2024,IN0101S,SER_3ml,Anti-E,Anti-K,,,FALSE,
+SigmaQC,1st,2024,IN0101X,RBC3_2ml,,,O,Pos,C-neg c-pos E-pos e-neg K-pos,FALSE
+SigmaQC,1st,2025,IN0101R,RBC3_2ml,,,Asub,Neg,C-neg E-neg c-pos e-pos K-neg S-neg,FALSE
+SigmaQC,1st,2025,IN0101S,SER_3ml,Anti-D,Anti-S,,,FALSE,
+SigmaQC,1st,2025,IN0101X,RBC3_2ml,,,A1,Neg,S-neg,FALSE
+SigmaQC,1st,2026,IN0101R,RBC3_2ml,,,,,,
+SigmaQC,1st,2026,IN0101S,SER_3ml,,,,,,
+SigmaQC,1st,2026,IN0101X,RBC3_2ml,,,,,,

@@ -1,0 +1,161 @@
+customer,event,year,sample_id,sample_type_id,antibody_1,antibody_2,abo,rh,antigens,is_dat_positive
+Licon,1st,2023,L1PR1,RBC8_5ml,,,B,Positive,N/A,FALSE
+Licon,1st,2023,L1PS1,SER_5ml,,,,,N/A,FALSE
+Licon,1st,2023,L1PR2,RBC8_5ml,,,O,Negative,N/A,FALSE
+Licon,1st,2023,L1PS2,SER_5ml,,,,,N/A,FALSE
+Licon,1st,2023,L2PR1,RBC8_5ml,,,A1,Negative,A1-pos E-neg K-neg,FALSE
+Licon,1st,2023,L2PS1,SER_5ml,Anti-E,Anti-K,,,N/A,FALSE
+Licon,1st,2023,L2DR1,RBC8_5ml,,,A1,Negative,A1-pos E-neg K-pos,FALSE
+Licon,1st,2023,L3PR1,RBC8_5ml,,,A1,Negative,A1-pos E-neg K-neg,FALSE
+Licon,1st,2023,L3PS1,SER_5ml,Anti-E,Anti-K,,,N/A,FALSE
+Licon,1st,2023,L3DR1,RBC8_5ml,,,A1,Negative,A1-pos E-neg K-pos,FALSE
+Licon,2nd,2023,L1PR1,RBC8_5ml,,,A1,Negative,A1-pos,FALSE
+Licon,2nd,2023,L1PS1,SER_5ml,,,,,N/A,FALSE
+Licon,2nd,2023,L1PR2,RBC8_5ml,,,O,Positive,N/A,FALSE
+Licon,2nd,2023,L1PS2,SER_5ml,,,,,N/A,FALSE
+Licon,2nd,2023,L2PR1,RBC8_5ml,,,O,Negative,Jka-neg,FALSE
+Licon,2nd,2023,L2PS1,SER_5ml,Anti-D,Anti-Jka,,,N/A,FALSE
+Licon,2nd,2023,L2DR1,RBC8_5ml,,,O,Negative,Jka-pos,FALSE
+Licon,2nd,2023,L3PR1,RBC8_5ml,,,O,Negative,Jka-neg,FALSE
+Licon,2nd,2023,L3PS1,SER_5ml,Anti-D,Anti-Jka,,,N/A,FALSE
+Licon,2nd,2023,L3DR1,RBC8_5ml,,,O,Negative,Jka-pos,FALSE
+Licon,3rd,2023,L1PR1,RBC8_5ml,,,A1B,Positive,N/A,FALSE
+Licon,3rd,2023,L1PS1,SER_5ml,,,,,N/A,FALSE
+Licon,3rd,2023,L1PR2,RBC8_5ml,,,A1,Negative,N/A,FALSE
+Licon,3rd,2023,L1PS2,SER_5ml,,,,,N/A,FALSE
+Licon,3rd,2023,L2PR1,RBC8_5ml,,,B,Positive,E-neg Fya-neg,FALSE
+Licon,3rd,2023,L2PS1,SER_5ml,Anti-E,Anti-Fya,,,N/A,FALSE
+Licon,3rd,2023,L2DR1,RBC8_5ml,,,O,Positive,E-neg Fya-neg,FALSE
+Licon,3rd,2023,L3PR1,RBC8_5ml,,,B,Positive,E-neg Fya-neg,FALSE
+Licon,3rd,2023,L3PS1,SER_5ml,Anti-E,Anti-Fya,,,N/A,FALSE
+Licon,3rd,2023,L3DR1,RBC8_5ml,,,O,Positive,E-neg Fya-neg,FALSE
+Licon,4th,2023,L1PR1,RBC8_5ml,,,B,Negative,N/A,FALSE
+Licon,4th,2023,L1PS1,SER_5ml,,,,,N/A,FALSE
+Licon,4th,2023,L1PR2,RBC8_5ml,,,A1,Positive,A1-pos,FALSE
+Licon,4th,2023,L1PS2,SER_5ml,,,,,N/A,FALSE
+Licon,4th,2023,L2PR1,RBC8_5ml,,,O,Positive,c-neg s-neg,FALSE
+Licon,4th,2023,L2PS1,SER_5ml,Anti-c,Anti-s,,,N/A,FALSE
+Licon,4th,2023,L2DR1,RBC8_5ml,,,O,Positive,c-neg s-pos,FALSE
+Licon,4th,2023,L3PR1,RBC8_5ml,,,O,Positive,c-neg s-neg,FALSE
+Licon,4th,2023,L3PS1,SER_5ml,Anti-c,Anti-s,,,N/A,FALSE
+Licon,4th,2023,L3DR1,RBC8_5ml,,,O,Positive,c-neg s-pos,FALSE
+Licon,1st,2024,L1PR1,RBC8_5ml,,,O,Positive,N/A,FALSE
+Licon,1st,2024,L1PS1,SER_5ml,,,,,N/A,FALSE
+Licon,1st,2024,L1PR2,RBC8_5ml,,,AB,Negative,N/A,FALSE
+Licon,1st,2024,L1PS2,SER_5ml,,,,,N/A,FALSE
+Licon,1st,2024,L2PR1,RBC8_5ml,,,O,Negative,Fyb-neg,FALSE
+Licon,1st,2024,L2PS1,SER_5ml,Anti-D,Anti-Fyb,,,N/A,FALSE
+Licon,1st,2024,L2DR1,RBC8_5ml,,,O,Negative,Fyb-pos,FALSE
+Licon,1st,2024,L3PR1,RBC8_5ml,,,O,Negative,Fyb-neg,FALSE
+Licon,1st,2024,L3PS1,SER_5ml,Anti-D,Anti-Fyb,,,N/A,FALSE
+Licon,1st,2024,L3DR1,RBC8_5ml,,,O,Negative,Fyb-pos,FALSE
+Licon,2nd,2024,L1PR1,RBC8_5ml,,,A,Negative,N/A,FALSE
+Licon,2nd,2024,L1PS1,SER_5ml,,,,,N/A,FALSE
+Licon,2nd,2024,L1PR2,RBC8_5ml,,,O,Negative,N/A,FALSE
+Licon,2nd,2024,L1PS2,SER_5ml,,,,,N/A,FALSE
+Licon,2nd,2024,L2PR1,RBC8_5ml,,,A1,Positive,A1-pos c-neg K-neg,FALSE
+Licon,2nd,2024,L2PS1,SER_5ml,Anti-c,Anti-K,,,N/A,FALSE
+Licon,2nd,2024,L2DR1,RBC8_5ml,,,A1,Positive,A1-pos c-pos K-neg,FALSE
+Licon,2nd,2024,L3PR1,RBC8_5ml,,,A1,Positive,A1-pos c-neg K-neg,FALSE
+Licon,2nd,2024,L3PS1,SER_5ml,Anti-c,Anti-K,,,N/A,FALSE
+Licon,2nd,2024,L3DR1,RBC8_5ml,,,A1,Positive,A1-pos c-pos K-neg,FALSE
+Licon,3rd,2024,L1PR1,RBC8_5ml,,,B,Positive,N/A,FALSE
+Licon,3rd,2024,L1PS1,SER_5ml,,,,,N/A,FALSE
+Licon,3rd,2024,L1PR2,RBC8_5ml,,,A,Positive,N/A,FALSE
+Licon,3rd,2024,L1PS2,SER_5ml,,,,,N/A,FALSE
+Licon,3rd,2024,L2PR1,RBC8_5ml,,,Asub,Positive,A1-neg s-neg,FALSE
+Licon,3rd,2024,L2PS1,SER_5ml,Anti-s,,,,N/A,FALSE
+Licon,3rd,2024,L2DR1,RBC8_5ml,,,O,Positive,s-pos,FALSE
+Licon,3rd,2024,L3PR1,RBC8_5ml,,,Asub,Positive,A1-neg s-neg,FALSE
+Licon,3rd,2024,L3PS1,SER_5ml,Anti-s,,,,N/A,FALSE
+Licon,3rd,2024,L3DR1,RBC8_5ml,,,O,Positive,s-pos,FALSE
+Licon,4th,2024,L1PR1,RBC8_5ml,,,B,Negative,N/A,FALSE
+Licon,4th,2024,L1PS1,SER_5ml,,,,,N/A,FALSE
+Licon,4th,2024,L1PR2,RBC8_5ml,,,B,Positive,N/A,FALSE
+Licon,4th,2024,L1PS2,SER_5ml,,,,,N/A,FALSE
+Licon,4th,2024,L2PR1,RBC8_5ml,,,O,Negative,Jka-neg,FALSE
+Licon,4th,2024,L2PS1,SER_5ml,Anti-D,Anti-Jka,,,N/A,FALSE
+Licon,4th,2024,L2DR1,RBC8_5ml,,,O,Negative,Jka-pos,FALSE
+Licon,4th,2024,L3PR1,RBC8_5ml,,,O,Negative,Jka-neg,FALSE
+Licon,4th,2024,L3PS1,SER_5ml,Anti-D,Anti-Jka,,,N/A,FALSE
+Licon,4th,2024,L3DR1,RBC8_5ml,,,O,Negative,Jka-pos,FALSE
+Licon,1st,2025,L1PR1,RBC8_5ml,,,A1B,Negative,N/A,FALSE
+Licon,1st,2025,L1PS1,SER_5ml,,,,,N/A,FALSE
+Licon,1st,2025,L1PR2,RBC8_5ml,,,Asub,Positive,N/A,FALSE
+Licon,1st,2025,L1PS2,SER_5ml,,,,,N/A,FALSE
+Licon,1st,2025,L2PR1,RBC8_5ml,,,A1B,Negative,Cw-neg,FALSE
+Licon,1st,2025,L2PS1,SER_5ml,Anti-Cw,,,,N/A,FALSE
+Licon,1st,2025,L2DR1,RBC8_5ml,,,Any,Any,Cw-pos,FALSE
+Licon,1st,2025,L3PR1,RBC8_5ml,,,A1B,Negative,Cw-neg,FALSE
+Licon,1st,2025,L3PS1,SER_5ml,Anti-Cw,,,,N/A,FALSE
+Licon,1st,2025,L3DR1,RBC8_5ml,,,Any,Any,Cw-pos,FALSE
+Licon,2nd,2025,L1PR1,RBC8_5ml,,,B,Positive,N/A,FALSE
+Licon,2nd,2025,L1PS1,SER_5ml,,,,,N/A,FALSE
+Licon,2nd,2025,L1PR2,RBC8_5ml,,,A1B,Positive,N/A,FALSE
+Licon,2nd,2025,L1PS2,SER_5ml,,,,,N/A,FALSE
+Licon,2nd,2025,L2PR1,RBC8_5ml,,,B,Positive,E-neg Fya-neg,FALSE
+Licon,2nd,2025,L2PS1,SER_5ml,Anti-E,Anti-Fya,,,N/A,FALSE
+Licon,2nd,2025,L2DR1,RBC8_5ml,,,B,Positive,E-neg Fya-pos,FALSE
+Licon,2nd,2025,L3PR1,RBC8_5ml,,,B,Positive,E-neg Fya-neg,FALSE
+Licon,2nd,2025,L3PS1,SER_5ml,Anti-E,Anti-Fya,,,N/A,FALSE
+Licon,2nd,2025,L3DR1,RBC8_5ml,,,B,Positive,E-neg Fya-pos,FALSE
+Licon,3rd,2025,L1PR1,RBC8_5ml,,,Asub,Negative,N/A,FALSE
+Licon,3rd,2025,L1PS1,SER_5ml,,,,,N/A,FALSE
+Licon,3rd,2025,L1PR2,RBC8_5ml,,,B,Negative,N/A,FALSE
+Licon,3rd,2025,L1PS2,SER_5ml,,,,,N/A,FALSE
+Licon,3rd,2025,L2PR1,RBC8_5ml,,,O,Positive,c-neg s-neg,FALSE
+Licon,3rd,2025,L2PS1,SER_5ml,Anti-c,Anti-s,,,N/A,FALSE
+Licon,3rd,2025,L2DR1,RBC8_5ml,,,O,Positive,c-neg s-pos,FALSE
+Licon,3rd,2025,L3PR1,RBC8_5ml,,,O,Positive,c-neg s-neg,FALSE
+Licon,3rd,2025,L3PS1,SER_5ml,Anti-c,Anti-s,,,N/A,FALSE
+Licon,3rd,2025,L3DR1,RBC8_5ml,,,O,Positive,c-neg s-pos,FALSE
+Licon,4th,2025,L1PR1,RBC8_5ml,,,O,Negative,N/A,FALSE
+Licon,4th,2025,L1PS1,SER_5ml,,,,,N/A,FALSE
+Licon,4th,2025,L1PR2,RBC8_5ml,,,A1,Positive,N/A,FALSE
+Licon,4th,2025,L1PS2,SER_5ml,,,,,N/A,FALSE
+Licon,4th,2025,L2PR1,RBC8_5ml,,,O,Negative,K-neg,FALSE
+Licon,4th,2025,L2PS1,SER_5ml,Anti-D,Anti-K,,,N/A,FALSE
+Licon,4th,2025,L2DR1,RBC8_5ml,,,O,Negative,K-pos,FALSE
+Licon,4th,2025,L3PR1,RBC8_5ml,,,O,Negative,K-neg,FALSE
+Licon,4th,2025,L3PS1,SER_5ml,Anti-D,Anti-K,,,N/A,FALSE
+Licon,4th,2025,L3DR1,RBC8_5ml,,,O,Negative,K-pos,FALSE
+Licon,1st,2026,L1PR1,RBC8_5ml,,,,,,
+Licon,1st,2026,L1PS1,SER_5ml,,,,,,
+Licon,1st,2026,L1PR2,RBC8_5ml,,,,,,
+Licon,1st,2026,L1PS2,SER_5ml,,,,,,
+Licon,1st,2026,L2PR1,RBC8_5ml,,,,,,
+Licon,1st,2026,L2PS1,SER_5ml,,,,,,
+Licon,1st,2026,L2DR1,RBC8_5ml,,,,,,
+Licon,1st,2026,L3PR1,RBC8_5ml,,,,,,
+Licon,1st,2026,L3PS1,SER_5ml,,,,,,
+Licon,1st,2026,L3DR1,RBC8_5ml,,,,,,
+Licon,2nd,2026,L1PR1,RBC8_5ml,,,,,,
+Licon,2nd,2026,L1PS1,SER_5ml,,,,,,
+Licon,2nd,2026,L1PR2,RBC8_5ml,,,,,,
+Licon,2nd,2026,L1PS2,SER_5ml,,,,,,
+Licon,2nd,2026,L2PR1,RBC8_5ml,,,,,,
+Licon,2nd,2026,L2PS1,SER_5ml,,,,,,
+Licon,2nd,2026,L2DR1,RBC8_5ml,,,,,,
+Licon,2nd,2026,L3PR1,RBC8_5ml,,,,,,
+Licon,2nd,2026,L3PS1,SER_5ml,,,,,,
+Licon,2nd,2026,L3DR1,RBC8_5ml,,,,,,
+Licon,3rd,2026,L1PR1,RBC8_5ml,,,,,,
+Licon,3rd,2026,L1PS1,SER_5ml,,,,,,
+Licon,3rd,2026,L1PR2,RBC8_5ml,,,,,,
+Licon,3rd,2026,L1PS2,SER_5ml,,,,,,
+Licon,3rd,2026,L2PR1,RBC8_5ml,,,,,,
+Licon,3rd,2026,L2PS1,SER_5ml,,,,,,
+Licon,3rd,2026,L2DR1,RBC8_5ml,,,,,,
+Licon,3rd,2026,L3PR1,RBC8_5ml,,,,,,
+Licon,3rd,2026,L3PS1,SER_5ml,,,,,,
+Licon,3rd,2026,L3DR1,RBC8_5ml,,,,,,
+Licon,4th,2026,L1PR1,RBC8_5ml,,,,,,
+Licon,4th,2026,L1PS1,SER_5ml,,,,,,
+Licon,4th,2026,L1PR2,RBC8_5ml,,,,,,
+Licon,4th,2026,L1PS2,SER_5ml,,,,,,
+Licon,4th,2026,L2PR1,RBC8_5ml,,,,,,
+Licon,4th,2026,L2PS1,SER_5ml,,,,,,
+Licon,4th,2026,L2DR1,RBC8_5ml,,,,,,
+Licon,4th,2026,L3PR1,RBC8_5ml,,,,,,
+Licon,4th,2026,L3PS1,SER_5ml,,,,,,
+Licon,4th,2026,L3DR1,RBC8_5ml,,,,,,

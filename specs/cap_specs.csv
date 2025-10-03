@@ -1,0 +1,4 @@
+customer,event,year,sample_id,sample_type_id,antibody_1,antibody_2,abo,rh,antigens,is_dat_positive,special_order,mixed_field_ratio,sharing_eligible
+CAP,B,2025,ADAT-04,DAT15_4ml,,,,,,FALSE,FALSE,,TRUE
+CAP,B,2025,ADAT-05,DAT15_4ml,,,,,,TRUE,FALSE,,TRUE
+CAP,B,2025,ADAT-06,DAT15_4ml,,,,,,TRUE,FALSE,,TRUE
