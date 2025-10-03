@@ -6,6 +6,30 @@ Last Updated: 2025-10-03
 ## Roadmap & Task List
 
 ### In Progress
+- **Task 27: [Implementation/QA] Enhance Sample ID Normalization Logic**
+- **Task 28: [Implementation/QA] Implement Universal Table Pagination**
+- **Task 29: [Implementation/QA] Integrate Forecasting into BUP Generator**
+
+- **Status for all v1.0.0 tasks:** All plans are approved with refinements. Instructions generated.
+- **Next Step:** Implementation by Developer AI; QA Review by ChatGPT.
+
+### On Hold
+- **Task 26: [On Hold] Address Non-Blocking QA Feedback**
+- **Task 10: [On Hold] Create "Future Specifications" Feature**
+
+### Completed
+- **Task 24 & 25 (v0.9.4):** Fixed Blood Calculator logic and BUP Generator overage calculation.
+---
+
+
+# Project Current Work: Hemo bioscience Blood Optimization Platform
+## Focus: v1.0.0 - Advanced Forecasting & UI Enhancements
+Last Updated: 2025-10-03
+
+---
+## Roadmap & Task List
+
+### In Progress
 - **Task 27: [Planning] Enhance Sample ID Normalization Logic**
   - **Objective:** Add specific normalization rules for all customers with unconventional sample IDs (ISLA, Aurevia, etc.) to ensure forecasting accuracy.
 - **Task 28: [Planning] Implement Universal Table Pagination**
