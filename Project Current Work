@@ -1,4 +1,31 @@
 # Project Current Work: Hemo bioscience Blood Optimization Platform
+## Focus: v1.0.2 - Code & UI Cleanup
+Last Updated: 2025-10-03
+
+---
+## Roadmap & Task List
+
+### In Progress
+- **Task 26: [Planning] Address Non-Blocking QA Feedback**
+  - **Objective:** Address the minor cleanup items from the v0.9.4 QA review (duplicate function, stale UI text) to improve code hygiene and UI consistency.
+  - **Status:** Re-proposing plan for final approval.
+  - **Next Step:** User approval of the proposed plan.
+
+### On Hold
+- **Task 10: [On Hold] Create "Future Specifications" Feature**
+  - **Objective:** Allow users to define specifications that will only become active on a future date.
+  - **Status:** On hold pending completion of Task 26.
+
+### Completed
+- **Task 30: Remediate Incomplete v1.0.0 Implementation (v1.0.1)**
+  - **Outcome:** Successfully implemented trend-based forecasting, universal pagination, and BUP forecast integration.
+- **Task 24 & 25 (v0.9.4):** Fixed Blood Calculator logic and BUP Generator overage calculation.
+- **Task 23 (v0.9.3):** Fixed critical syntax error.
+- **Task 16 (v0.8.0):** Initial platform stabilization.
+---
+
+
+# Project Current Work: Hemo bioscience Blood Optimization Platform
 ## Focus: v1.0.1 - Remediation of Failed v1.0.0 Release
 Last Updated: 2025-10-03
 
